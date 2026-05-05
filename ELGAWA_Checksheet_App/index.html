@@ -540,7 +540,9 @@ function getWorkerRoster(){
 }
 function getCustomUsers(){try{const raw=JSON.parse(localStorage.getItem("elg_custom_users")||"{}");const clean={};Object.keys(raw).forEach(k=>{if(raw[k]&&typeof raw[k]==="object"&&raw[k].pass&&raw[k].name)clean[k]=raw[k]});if(Object.keys(clean).length!==Object.keys(raw).length){localStorage.setItem("elg_custom_users",JSON.stringify(clean))}return clean}catch(e){return{}}}
 function saveCustomUsers(cu){try{localStorage.setItem("elg_custom_users",JSON.stringify(cu))}catch(e){}}
-function getUsers(){return{...BASE_USERS,...getCustomUsers()}}
+function getDisabledUsers(){try{return JSON.parse(localStorage.getItem("elg_disabled_users")||"[]")}catch(e){return[]}}
+function saveDisabledUsers(list){try{localStorage.setItem("elg_disabled_users",JSON.stringify(list))}catch(e){}}
+function getUsers(){const all={...BASE_USERS,...getCustomUsers()};const disabled=getDisabledUsers();disabled.forEach(u=>{delete all[u]});return all}
 let USERS=getUsers();
 function getGuyanaDate(){return new Date().toLocaleDateString("en-CA",{timeZone:"America/Guyana"})}
 function getGuyanaDateTime(){return new Date(new Date().toLocaleString("en-US",{timeZone:"America/Guyana"}))}
@@ -4542,11 +4544,15 @@ function renderUserList(){
   const cu=getCustomUsers();
   const roles=["Worker","Team Lead","Supervisor","Engineer","Project Lead"];
   list.innerHTML=Object.keys(USERS).filter(u=>USERS[u]&&USERS[u].name&&USERS[u].pass).map(u=>{
-    const isCustom=cu[u]!==undefined;
+    const isBase=!!BASE_USERS[u];
     const usr=USERS[u];
     const roleOpts=roles.map(r=>`<option value="${r}" ${usr.role===r?"selected":""}>${r}</option>`).join("");
-    return`<div class="user-row"><div class="user-info"><span class="uname">${u}</span><span class="ufull">${usr.name}</span></div>
-    <div class="user-actions"><select class="role-select" onchange="changeUserRole('${u}',this.value)">${roleOpts}</select>${isCustom?`<button class="rm-btn" onclick="removeUser('${u}')">×</button>`:""}</div></div>`;
+    return`<div class="user-row" id="urow_${u}"><div class="user-info" onclick="toggleUserActions('${u}')" style="cursor:pointer"><span class="uname">${u}</span><span class="ufull">${usr.name}</span><span class="utap" style="font-size:9px;color:#aaa">tap to manage</span></div>
+    <div class="user-actions"><select class="role-select" onchange="changeUserRole('${u}',this.value)">${roleOpts}</select></div></div>
+    <div class="user-action-panel" id="upanel_${u}" style="display:none;padding:8px 12px;background:#fff3f3;border-radius:0 0 10px 10px;margin-top:-6px;margin-bottom:6px;border:1.5px solid var(--danger);border-top:none;animation:fadeIn 0.2s">
+    <button class="btn full" style="background:var(--danger);color:white;font-size:13px;font-weight:700;padding:10px" onclick="removeUser('${u}')">🗑️ Remove ${u}</button>
+    <button class="btn full" style="background:var(--grey);color:white;font-size:11px;padding:6px;margin-top:4px" onclick="toggleUserActions('${u}')">Cancel</button>
+    </div>`;
   }).join("");
 }
 function changeUserRole(username,newRole){
@@ -4564,6 +4570,9 @@ function addNewUser(){
   const pass=document.getElementById("newPassword").value;
   const role=document.getElementById("newRole").value;
   if(!uname||!fname||!pass){return}
+  // Re-enable if it was a disabled base user
+  const dis=getDisabledUsers();
+  if(dis.includes(uname)){saveDisabledUsers(dis.filter(u=>u!==uname))}
   USERS=getUsers();
   if(USERS[uname]){showToast(t("userExists"));return}
   const cu=getCustomUsers();
@@ -4574,11 +4583,21 @@ function addNewUser(){
   document.getElementById("newPassword").value="";
   renderUserList();showToast(t("userAdded"));
 }
+function toggleUserActions(uname){
+  const panel=document.getElementById("upanel_"+uname);
+  if(!panel)return;
+  // Close all other panels first
+  document.querySelectorAll(".user-action-panel").forEach(p=>{if(p.id!=="upanel_"+uname)p.style.display="none"});
+  panel.style.display=panel.style.display==="none"?"block":"none";
+}
 function removeUser(uname){
-  if(BASE_USERS[uname]){showToast("Cannot remove built-in user: "+uname);return}
+  if(uname==="admin"){showToast("Cannot remove admin account");return}
   if(!confirm(t("removeUserConfirm")+" "+uname+"?"))return;
-  const cu=getCustomUsers();delete cu[uname];
-  saveCustomUsers(cu);USERS=getUsers();
+  // Remove from custom users if present
+  const cu=getCustomUsers();delete cu[uname];saveCustomUsers(cu);
+  // If base user, add to disabled list
+  if(BASE_USERS[uname]){const dis=getDisabledUsers();if(!dis.includes(uname))dis.push(uname);saveDisabledUsers(dis)}
+  USERS=getUsers();
   renderUserList();showToast(t("userRemoved"));
 }
 function saveUserChanges(){
