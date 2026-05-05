@@ -114,6 +114,8 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .t-card.commissioning{border-color:var(--commissioning);background:linear-gradient(135deg,#c4dfd0 0%,#e6f0eb 100%);border-left:6px solid var(--commissioning)}.t-card.commissioning h3{color:var(--commissioning);font-size:16px}.t-card.commissioning .icon{background:var(--commissioning);color:white}
 .settings-row{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
 .pill-btn{padding:8px 16px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;color:#555}
+.settings-pill{background:var(--navy);color:white;border-color:var(--navy);font-size:14px;padding:10px 20px;box-shadow:0 2px 8px rgba(31,78,121,.3);animation:settingsPulse 3s ease-in-out infinite}
+@keyframes settingsPulse{0%,100%{box-shadow:0 2px 8px rgba(31,78,121,.3)}50%{box-shadow:0 2px 16px rgba(31,78,121,.5)}}
 .hist-sec{margin-top:20px}
 .hist-sec h3{color:var(--navy);font-size:14px;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--blue-bg)}
 .h-item{background:white;border-radius:8px;padding:10px 12px;margin-bottom:6px;box-shadow:0 1px 3px rgba(0,0,0,.04);font-size:12px}
@@ -212,8 +214,9 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1a1a2e,#16213e);color:white;padding:12px 24px;border-radius:12px;font-size:13px;z-index:200;display:none;box-shadow:0 8px 32px rgba(0,0,0,.3);white-space:nowrap;font-weight:500;backdrop-filter:blur(10px)}
 .toast.show{display:block;animation:fadeUp .3s}
 @keyframes fadeUp{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
-.install-banner{background:linear-gradient(90deg,var(--navy),var(--navy-lt));color:white;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;font-size:13px;display:none}
-.install-banner button{padding:6px 14px;background:white;color:var(--navy);border:none;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer}
+.install-banner{background:linear-gradient(135deg,#e67e22,#f39c12);color:white;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:600;display:none;box-shadow:0 4px 12px rgba(230,126,34,.4)}
+.install-banner button{padding:10px 20px;background:white;color:#e67e22;border:none;border-radius:20px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.15);animation:installBounce 2s ease-in-out infinite}
+@keyframes installBounce{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 .install-banner .dismiss{background:transparent;color:rgba(255,255,255,.7);font-size:18px;padding:0 6px}
 .add-btn{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:11px;background:linear-gradient(135deg,var(--success),#20c997);color:white;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px;box-shadow:0 3px 10px rgba(40,167,69,.2);transition:all .2s}
 .add-btn:active{transform:scale(.97);box-shadow:0 1px 4px rgba(40,167,69,.2)}
@@ -321,10 +324,11 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
     <button class="tab-btn" onclick="switchTab('reports',this)" id="tabBtnReports">📊</button>
     <button class="tab-btn" onclick="switchTab('history',this)" id="tabBtnHistory">📂</button>
     <button class="tab-btn" onclick="switchTab('attendance',this)" id="tabBtnAttendance" style="display:none">📋</button>
+    <button class="tab-btn" onclick="showSettings()" id="tabBtnSettings">⚙️</button>
   </div>
   <div id="tabForms">
     <div class="settings-row" id="settingsRow">
-    <button class="pill-btn" onclick="exportCSV()" id="exportBtn" style="display:none">📊 Export CSV</button><button class="pill-btn" onclick="showSettings()" id="settingsBtn"></button></div>
+    <button class="pill-btn" onclick="exportCSV()" id="exportBtn" style="display:none">📊 Export CSV</button></div>
     <div class="team-grid" id="teamGrid"></div>
   </div>
   <div id="tabReports" class="hidden">
@@ -396,6 +400,21 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
       <div class="time-field" id="notifTimeWrap" style="display:none"><label id="reminderTimeLabel"></label><input type="time" id="notifTime" value="16:30" onchange="saveNotifTime()"></div>
     </div>
     <div class="s-card"><h3 id="aboutTitle"></h3><p id="aboutInfo"></p></div>
+    <div class="s-card">
+      <h3 id="changePwTitle">Change Password</h3>
+      <p style="font-size:11px;color:var(--grey);margin-bottom:8px" id="changePwDesc">Update your login password</p>
+      <div class="admin-add">
+        <input type="password" id="currentPw" placeholder="Current password" class="full">
+        <input type="password" id="newPw" placeholder="New password" class="full">
+        <input type="password" id="confirmPw" placeholder="Confirm new password" class="full">
+        <button class="btn btn-success full" onclick="changePassword()" id="changePwBtn">🔒 Change Password</button>
+      </div>
+    </div>
+    <div class="s-card" id="installFromSettings" style="display:none">
+      <h3>📲 Install App</h3>
+      <p style="font-size:11px;color:var(--grey);margin-bottom:8px">Add this app to your home screen for quick access</p>
+      <button class="btn btn-primary full" onclick="installApp()" id="installFromSettingsBtn">📲 Install to Home Screen</button>
+    </div>
   </div>
   <!-- Users Tab (admin only) -->
   <div id="settingsUsers" class="s-tab-content" style="display:none">
@@ -480,7 +499,8 @@ const BASE_USERS={
   orlando:{pass:"orlando2026",name:"Orlando Dariel Molina Tamayo",role:"Team Lead",teams:"all"},
   osvaldo:{pass:"osvaldo2026",name:"Osvaldo Quintana Gonzalez",role:"Team Lead",teams:"all"},
   dima:{pass:"dima2026",name:"Dima Ytoiz Yaruk",role:"Team Lead",teams:"all"},
-  romario:{pass:"romario2026",name:"Romario Barron",role:"Team Lead",teams:"all"}
+  romario:{pass:"romario2026",name:"Romario Barron",role:"Team Lead",teams:"all"},
+  kenny:{pass:"kenny2026",name:"Kenneth Soerowidjojo",role:"Team Lead",teams:"all"}
 };
 // Worker roster — these are personnel names for dropdowns (NOT login accounts)
 // Admin can add more via Settings > Manage Workers
@@ -1277,7 +1297,7 @@ function applyLang(){
   const tabR=document.getElementById("tabBtnReports");if(tabR)tabR.textContent=t("reports");
   const tabH=document.getElementById("tabBtnHistory");if(tabH)tabH.textContent=t("history");
   const tabA=document.getElementById("tabBtnAttendance");if(tabA)tabA.textContent="📋 "+t("attendance");
-  const setBtn=document.getElementById("settingsBtn");if(setBtn)setBtn.textContent=t("settings");
+  const setBtn2=document.getElementById("tabBtnSettings");if(setBtn2)setBtn2.textContent="⚙️";
   const rptLbl=document.getElementById("rptDateLabel");if(rptLbl)rptLbl.textContent=t("reportDate");
   const backBtn1=document.getElementById("backBtn1");if(backBtn1)backBtn1.textContent="← "+t("back");
   const langTitle=document.getElementById("langTitle");if(langTitle)langTitle.textContent=t("language");
@@ -1285,6 +1305,9 @@ function applyLang(){
   const remDesc=document.getElementById("reminderDesc");if(remDesc)remDesc.textContent=t("reminderText");
   const remTimeLbl=document.getElementById("reminderTimeLabel");if(remTimeLbl)remTimeLbl.textContent=t("reminderTime");
   const aboutTitle=document.getElementById("aboutTitle");if(aboutTitle)aboutTitle.textContent=t("about");
+  const cpT=document.getElementById("changePwTitle");if(cpT)cpT.textContent=t("changePwTitle");
+  const cpD=document.getElementById("changePwDesc");if(cpD)cpD.textContent=t("changePwDesc");
+  const cpB=document.getElementById("changePwBtn");if(cpB)cpB.textContent=t("changePwBtn");
   // Report tab buttons
   const rptMain=document.getElementById("rptTabMain");if(rptMain)rptMain.textContent=t("dailySummaryTab");
   const rptTools=document.getElementById("rptTabTools");if(rptTools)rptTools.textContent=t("toolsTab");
@@ -1338,6 +1361,36 @@ function doLogin(){
     try{localStorage.setItem("elg_user",JSON.stringify(currentUser))}catch(e){}
     showDash();
   }else{document.getElementById("loginErr").style.display="block"}
+}
+function changePassword(){
+  const cur=document.getElementById("currentPw").value;
+  const np=document.getElementById("newPw").value;
+  const cp=document.getElementById("confirmPw").value;
+  if(!cur||!np||!cp){showToast("Please fill in all fields");return}
+  if(np!==cp){showToast("New passwords don't match");return}
+  if(np.length<4){showToast("Password must be at least 4 characters");return}
+  // Verify current password
+  const u=currentUser.username;
+  USERS=getUsers();
+  if(USERS[u].pass!==cur){showToast("Current password is incorrect");return}
+  // Update password
+  if(BASE_USERS[u]){
+    // Base user — store override in custom users
+    const cu=getCustomUsers();
+    cu[u]={...USERS[u],pass:np};
+    saveCustomUsers(cu);
+  }else{
+    // Custom user — update directly
+    const cu=getCustomUsers();
+    if(cu[u]){cu[u].pass=np;saveCustomUsers(cu)}
+  }
+  USERS=getUsers();
+  currentUser.pass=np;
+  try{localStorage.setItem("elg_user",JSON.stringify(currentUser))}catch(e){}
+  document.getElementById("currentPw").value="";
+  document.getElementById("newPw").value="";
+  document.getElementById("confirmPw").value="";
+  showToast("Password changed successfully!");
 }
 function doLogout(){
   stopReportRefresh();
@@ -5213,7 +5266,34 @@ document.addEventListener("change",e=>{if(e.target.dataset.key==="ot"&&e.target.
 let deferredPrompt;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;document.querySelector(".install-banner").style.display="flex"});
 function installApp(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.querySelector(".install-banner").style.display="none"})}}
-function dismissInstall(){document.querySelector(".install-banner").style.display="none"}
+function dismissInstall(){document.querySelector(".install-banner").style.display="none";try{sessionStorage.setItem("elg_install_dismissed","1")}catch(e){}}
+// Show install banner every visit until app is installed (standalone mode)
+(function(){
+  const isDismissed=sessionStorage.getItem("elg_install_dismissed");
+  const isStandalone=window.matchMedia("(display-mode:standalone)").matches||window.navigator.standalone;
+  if(isStandalone){document.querySelector(".install-banner").style.display="none";return}
+  if(!isDismissed){
+    const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent);
+    const b=document.querySelector(".install-banner");
+    if(b){
+      if(isIOS){
+        b.style.display="flex";
+        const btn=document.getElementById("installBtn");
+        if(btn){btn.textContent="📲 Tap Share ➜ Add to Home Screen";btn.onclick=function(){dismissInstall()}}
+      }else{
+        // Android/Chrome — show banner with instructions even before beforeinstallprompt fires
+        b.style.display="flex";
+        const btn=document.getElementById("installBtn");
+        if(btn&&!deferredPrompt){btn.textContent="📲 Use browser menu ➜ Install";btn.onclick=function(){dismissInstall()}}
+      }
+    }
+  }
+  // Also show install button in Settings if not standalone
+  setTimeout(function(){
+    const isf=document.getElementById("installFromSettings");
+    if(isf&&!isStandalone)isf.style.display="block";
+  },1000);
+})()
 // Check stored login
 try{const u=JSON.parse(localStorage.getItem("elg_user"));
 if(u&&u.username){currentUser=u;LANG=localStorage.getItem("elg_lang")||"en";
@@ -5227,7 +5307,7 @@ if(u&&u.username){currentUser=u;LANG=localStorage.getItem("elg_lang")||"en";
 setTimeout(()=>{document.getElementById("splash").classList.add("hide");setTimeout(()=>document.getElementById("splash").style.display="none",500)},1200);
 if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
 scheduleNotification();
-document.getElementById("loginHint").innerHTML=`Password: firstname + 2026<br><b>admin</b> (Paul) | <b>akeem</b> <b>shaheed</b> (Engineers)<br><b>ashish</b> <b>johnny</b> (Supervisors)<br><b>ronny</b> <b>orlando</b> <b>osvaldo</b> <b>dima</b> <b>romario</b> (Leads)`;
+document.getElementById("loginHint").innerHTML=`Enter your username and password to sign in<br><span style="font-size:9px;color:#bbb">Contact admin if you forgot your password</span>`;
 </script>
 </body>
 </html>
