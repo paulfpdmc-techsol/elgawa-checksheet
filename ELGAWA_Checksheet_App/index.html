@@ -538,6 +538,14 @@ function getWorkerRoster(){
   const filtered=roster.filter(w=>!userNames.includes(w.toLowerCase()));
   return filtered.sort((a,b)=>a.localeCompare(b));
 }
+function getAllPersonnel(){
+  // Everyone: workers + team leads/supervisors/engineers (for tool assignment etc.)
+  const workers=getWorkerRoster();
+  const allUsers=getUsers();
+  const userFullNames=Object.values(allUsers).filter(u=>u.name).map(u=>u.name);
+  const combined=[...new Set([...workers,...userFullNames])];
+  return combined.sort((a,b)=>a.localeCompare(b));
+}
 function getCustomUsers(){try{const raw=JSON.parse(localStorage.getItem("elg_custom_users")||"{}");const clean={};Object.keys(raw).forEach(k=>{if(raw[k]&&typeof raw[k]==="object"&&raw[k].pass&&raw[k].name)clean[k]=raw[k]});if(Object.keys(clean).length!==Object.keys(raw).length){localStorage.setItem("elg_custom_users",JSON.stringify(clean))}return clean}catch(e){return{}}}
 function saveCustomUsers(cu){try{localStorage.setItem("elg_custom_users",JSON.stringify(cu))}catch(e){}}
 function getDisabledUsers(){try{return JSON.parse(localStorage.getItem("elg_disabled_users")||"[]")}catch(e){return[]}}
@@ -3459,14 +3467,14 @@ function buildToolRow(i,row){
   const otherVal=isOther?saved:"";
   let toolOpts=`<option value="">${t("selectTool")}</option>`;
   COMMON_TOOLS.forEach(tl=>{toolOpts+=`<option value="${tl}" ${selectVal===tl?"selected":""}>${translateTool(tl)}</option>`});
-  // Assigned To dropdown from worker roster
-  const userNames=getWorkerRoster();
+  // Assigned To dropdown — all personnel (workers + team leads/supervisors/engineers)
+  const allPersonnel=getAllPersonnel();
   const savedAssign=row.assignedTo||"";
-  const isOtherAssign=savedAssign&&!userNames.includes(savedAssign)&&savedAssign!=="Other";
+  const isOtherAssign=savedAssign&&!allPersonnel.includes(savedAssign)&&savedAssign!=="Other";
   const assignSelectVal=isOtherAssign?"Other":savedAssign;
   const assignOtherVal=isOtherAssign?savedAssign:"";
   let assignOpts=`<option value="">${t("selectWorkerAssign")}</option>`;
-  userNames.forEach(n=>{assignOpts+=`<option value="${n}" ${assignSelectVal===n?"selected":""}>${n}</option>`});
+  allPersonnel.forEach(n=>{assignOpts+=`<option value="${n}" ${assignSelectVal===n?"selected":""}>${n}</option>`});
   assignOpts+=`<option value="Other" ${assignSelectVal==="Other"?"selected":""}>${t("otherMaterial")}</option>`;
   // Location dropdown
   const savedLoc=row.toolLocation||"";
