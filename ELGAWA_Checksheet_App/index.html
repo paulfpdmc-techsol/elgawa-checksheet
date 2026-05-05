@@ -127,7 +127,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .h-btn:active{background:var(--lt-grey)}
 .h-btn.del{color:var(--danger);border-color:var(--danger)}
 .user-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--lt-grey);border-radius:10px;margin-bottom:6px}
-.user-info{display:flex;flex-direction:column;gap:1px}
+.user-info{display:flex;align-items:center;gap:1px}
 .user-info .uname{font-weight:700;font-size:13px;color:var(--navy)}
 .user-info .ufull{font-size:11px;color:var(--grey)}
 .user-actions{display:flex;align-items:center;gap:6px}
@@ -1359,13 +1359,32 @@ function loadSaved(){try{savedSheets=JSON.parse(localStorage.getItem("elg_sheets
 function saveSaved(){try{localStorage.setItem("elg_sheets",JSON.stringify(savedSheets))}catch(e){console.error("Save failed:",e);showToast(t("storageFull"))}}
 
 function doLogin(){
-  USERS=getUsers();
   const u=document.getElementById("loginUser").value.trim().toLowerCase(),p=document.getElementById("loginPass").value;
-  if(USERS[u]&&USERS[u].pass===p){
-    currentUser={username:u,...USERS[u]};
-    try{localStorage.setItem("elg_user",JSON.stringify(currentUser))}catch(e){}
-    showDash();
-  }else{document.getElementById("loginErr").style.display="block"}
+  const loginBtn=document.querySelector("#loginScreen .btn");
+  if(loginBtn){loginBtn.textContent="Signing in...";loginBtn.disabled=true}
+  // Pull latest users from cloud first, then authenticate
+  cloudLoadUsers().then(()=>{
+    USERS=getUsers();
+    if(USERS[u]&&USERS[u].pass===p){
+      currentUser={username:u,...USERS[u]};
+      try{localStorage.setItem("elg_user",JSON.stringify(currentUser))}catch(e){}
+      showDash();
+    }else{
+      document.getElementById("loginErr").style.display="block";
+      if(loginBtn){loginBtn.textContent="Sign In";loginBtn.disabled=false}
+    }
+  }).catch(()=>{
+    // If cloud fails, try with local data
+    USERS=getUsers();
+    if(USERS[u]&&USERS[u].pass===p){
+      currentUser={username:u,...USERS[u]};
+      try{localStorage.setItem("elg_user",JSON.stringify(currentUser))}catch(e){}
+      showDash();
+    }else{
+      document.getElementById("loginErr").style.display="block";
+      if(loginBtn){loginBtn.textContent="Sign In";loginBtn.disabled=false}
+    }
+  });
 }
 function changePassword(){
   const cur=document.getElementById("currentPw").value;
@@ -1390,6 +1409,7 @@ function changePassword(){
     if(cu[u]){cu[u].pass=np;saveCustomUsers(cu)}
   }
   USERS=getUsers();
+  cloudSaveUsers();
   currentUser.pass=np;
   try{localStorage.setItem("elg_user",JSON.stringify(currentUser))}catch(e){}
   document.getElementById("currentPw").value="";
@@ -4393,6 +4413,33 @@ function testFirebaseConnection(url){
     .then(r=>r.ok)
     .catch(()=>false);
 }
+// Cloud user sync — admin changes push to Firebase, all devices pull on login
+function cloudSaveUsers(){
+  const fb=getFirebaseUrl();if(!fb)return Promise.resolve(false);
+  const cu=getCustomUsers();
+  const dis=getDisabledUsers();
+  const payload={customUsers:cu,disabledUsers:dis,updatedAt:Date.now()};
+  return fetch(`${fb}/appUsers.json`,{method:"PUT",body:JSON.stringify(payload),headers:{"Content-Type":"application/json"}})
+    .then(r=>{if(!r.ok)throw new Error("user sync fail");return true})
+    .catch(()=>false);
+}
+function cloudLoadUsers(){
+  const fb=getFirebaseUrl();if(!fb)return Promise.resolve(false);
+  return fetch(`${fb}/appUsers.json`)
+    .then(r=>r.json())
+    .then(data=>{
+      if(!data||!data.customUsers)return false;
+      // Merge: cloud data wins for shared keys, keep local-only keys
+      const localCU=getCustomUsers();
+      const cloudCU=data.customUsers||{};
+      const merged={...localCU,...cloudCU};
+      saveCustomUsers(merged);
+      if(data.disabledUsers&&Array.isArray(data.disabledUsers)){saveDisabledUsers(data.disabledUsers)}
+      USERS=getUsers();
+      return true;
+    })
+    .catch(()=>false);
+}
 
 function buildPDFDoc(data){
   const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");const tm=TEAMS[data.teamKey];
@@ -4543,11 +4590,13 @@ function renderUserList(){
   USERS=getUsers();
   const cu=getCustomUsers();
   const roles=["Worker","Team Lead","Supervisor","Engineer","Project Lead"];
-  list.innerHTML=Object.keys(USERS).filter(u=>USERS[u]&&USERS[u].name&&USERS[u].pass).map(u=>{
+  const userKeys=Object.keys(USERS).filter(u=>USERS[u]&&USERS[u].name&&USERS[u].pass);
+  list.innerHTML=`<div style="text-align:right;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;padding:4px 12px;background:var(--lt-grey);border-radius:8px">Total Users: ${userKeys.length}</div>`+userKeys.map((u,i)=>{
     const isBase=!!BASE_USERS[u];
     const usr=USERS[u];
+    const num=i+1;
     const roleOpts=roles.map(r=>`<option value="${r}" ${usr.role===r?"selected":""}>${r}</option>`).join("");
-    return`<div class="user-row" id="urow_${u}"><div class="user-info" onclick="toggleUserActions('${u}')" style="cursor:pointer"><span class="uname">${u}</span><span class="ufull">${usr.name}</span><span class="utap" style="font-size:9px;color:#aaa">tap to manage</span></div>
+    return`<div class="user-row" id="urow_${u}"><div class="user-info" onclick="toggleUserActions('${u}')" style="cursor:pointer"><span style="font-size:11px;font-weight:700;color:white;background:var(--navy);border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;flex-shrink:0">${num}</span><div><span class="uname">${u}</span><span class="ufull">${usr.name}</span></div></div>
     <div class="user-actions"><select class="role-select" onchange="changeUserRole('${u}',this.value)">${roleOpts}</select></div></div>
     <div class="user-action-panel" id="upanel_${u}" style="display:none;padding:8px 12px;background:#fff3f3;border-radius:0 0 10px 10px;margin-top:-6px;margin-bottom:6px;border:1.5px solid var(--danger);border-top:none;animation:fadeIn 0.2s">
     <button class="btn full" style="background:var(--danger);color:white;font-size:13px;font-weight:700;padding:10px" onclick="removeUser('${u}')">🗑️ Remove ${u}</button>
@@ -4557,11 +4606,11 @@ function renderUserList(){
 }
 function changeUserRole(username,newRole){
   const cu=getCustomUsers();
-  if(cu[username]){cu[username].role=newRole;saveCustomUsers(cu);USERS=getUsers();showToast(username+" → "+newRole)}
+  if(cu[username]){cu[username].role=newRole;saveCustomUsers(cu);USERS=getUsers();cloudSaveUsers();showToast(username+" → "+newRole)}
   else{
     // For base users, save override in custom users
     const base=BASE_USERS[username];
-    if(base){cu[username]={...base,role:newRole};saveCustomUsers(cu);USERS=getUsers();showToast(username+" → "+newRole)}
+    if(base){cu[username]={...base,role:newRole};saveCustomUsers(cu);USERS=getUsers();cloudSaveUsers();showToast(username+" → "+newRole)}
   }
 }
 function addNewUser(){
@@ -4578,6 +4627,7 @@ function addNewUser(){
   const cu=getCustomUsers();
   cu[uname]={pass:pass,name:fname,role:role,teams:"all"};
   saveCustomUsers(cu);USERS=getUsers();
+  cloudSaveUsers();
   document.getElementById("newUsername").value="";
   document.getElementById("newFullName").value="";
   document.getElementById("newPassword").value="";
@@ -4598,6 +4648,7 @@ function removeUser(uname){
   // If base user, add to disabled list
   if(BASE_USERS[uname]){const dis=getDisabledUsers();if(!dis.includes(uname))dis.push(uname);saveDisabledUsers(dis)}
   USERS=getUsers();
+  cloudSaveUsers();
   renderUserList();showToast(t("userRemoved"));
 }
 function saveUserChanges(){
@@ -4615,10 +4666,11 @@ function renderWorkerRoster(){
   const list=document.getElementById("workerRosterList");
   const custom=getCustomWorkers();
   const allWorkers=getWorkerRoster();
-  list.innerHTML=allWorkers.map(name=>{
+  list.innerHTML=`<div style="text-align:right;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;padding:4px 12px;background:var(--lt-grey);border-radius:8px">Total Workers: ${allWorkers.length}</div>`+allWorkers.map((name,i)=>{
     const isCustom=custom.includes(name);
     const isBase=BASE_WORKER_ROSTER.includes(name);
-    return`<div class="user-row"><div><span class="uname">${name}</span>${isCustom?`<span class="urole"> (${t("edit")})</span>`:""}</div>${isCustom?`<button onclick="removeWorker('${name.replace(/'/g,"\\'")}')">${t("removeUser")}</button>`:""}</div>`;
+    const num=i+1;
+    return`<div class="user-row"><div style="display:flex;align-items:center"><span style="font-size:10px;font-weight:700;color:white;background:#e67e22;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;flex-shrink:0">${num}</span><span class="uname">${name}</span>${isCustom?`<span class="urole"> (${t("edit")})</span>`:""}</div>${isCustom?`<button onclick="removeWorker('${name.replace(/'/g,"\\'")}')">${t("removeUser")}</button>`:""}</div>`;
   }).join("");
 }
 function addWorkerToRoster(){
