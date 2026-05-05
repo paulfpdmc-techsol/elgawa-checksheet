@@ -499,7 +499,8 @@ const BASE_USERS={
   orlando:{pass:"orlando2026",name:"Orlando Dariel Molina Tamayo",role:"Team Lead",teams:"all"},
   osvaldo:{pass:"osvaldo2026",name:"Osvaldo Quintana Gonzalez",role:"Team Lead",teams:"all"},
   dima:{pass:"dima2026",name:"Dima Ytoiz Yaruk",role:"Team Lead",teams:"all"},
-  romario:{pass:"romario2026",name:"Romario Barron",role:"Team Lead",teams:"all"}
+  romario:{pass:"romario2026",name:"Romario Barron",role:"Team Lead",teams:"all"},
+  kenny:{pass:"kenny2026",name:"Kenneth Soerowidjojo",role:"Team Lead",teams:"all"}
 };
 // Worker roster — these are personnel names for dropdowns (NOT login accounts)
 // Admin can add more via Settings > Manage Workers
@@ -5306,7 +5307,7 @@ if(u&&u.username){currentUser=u;LANG=localStorage.getItem("elg_lang")||"en";
 setTimeout(()=>{document.getElementById("splash").classList.add("hide");setTimeout(()=>document.getElementById("splash").style.display="none",500)},1200);
 if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
 scheduleNotification();
-document.getElementById("loginHint").innerHTML=`Enter your username and password to sign in`;
+document.getElementById("loginHint").innerHTML=`Enter your username and password to sign in<br><span style="font-size:9px;color:#bbb">Contact admin if you forgot your password</span>`;
 </script>
 </body>
 </html>
