@@ -132,7 +132,8 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .user-info .ufull{font-size:11px;color:var(--grey)}
 .user-actions{display:flex;align-items:center;gap:6px}
 .role-select{padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:11px;font-weight:600;background:white;min-width:90px}
-.rm-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--danger);color:var(--danger);background:white;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.rm-btn{width:36px;height:36px;min-width:36px;min-height:36px;border-radius:50%;border:2px solid var(--danger);color:white;background:var(--danger);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:rgba(0,0,0,0.1);touch-action:manipulation;z-index:2;flex-shrink:0}
+.admin-users .user-row .rm-btn{background:var(--danger);color:white;border-radius:50%;padding:0;width:36px;height:36px;min-width:36px;min-height:36px;font-size:18px}
 .settings-tabs{display:flex;gap:4px;margin-bottom:12px;padding:4px;background:white;border-radius:10px;box-shadow:var(--shadow)}
 .s-tab{flex:1;padding:10px 6px;text-align:center;font-size:11px;font-weight:700;border:none;background:none;border-radius:8px;cursor:pointer;color:var(--grey);transition:all .2s}
 .s-tab.active{background:linear-gradient(135deg,var(--navy),var(--navy-lt));color:white;box-shadow:0 3px 10px rgba(31,78,121,.25)}
@@ -428,6 +429,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
         <select id="newRole"><option value="Worker" class="optWorker">Worker</option><option value="Team Lead" class="optTeamLead">Team Lead</option><option value="Supervisor" class="optSupervisor">Supervisor</option><option value="Engineer" class="optEngineer">Engineer</option></select>
         <button class="btn btn-success full" onclick="addNewUser()" id="addUserBtn"></button>
       </div>
+      <button class="btn btn-primary full" onclick="saveUserChanges()" style="margin-top:10px;font-weight:700;font-size:14px" id="saveUsersBtn">💾 Save Changes</button>
     </div>
     <div id="adminWorkersCard" class="s-card">
       <h3 id="workerRosterTitle"></h3>
@@ -1085,6 +1087,7 @@ const T={
   dupNewArea:{en:"If this is a different area, task, or shift for the same crew → OK to submit",es:"Si es un área, tarea o turno diferente para el mismo equipo → OK para enviar",nl:"Als dit een ander gebied, taak of dienst is voor dezelfde ploeg → OK om in te dienen"},
   // Confirm dialogs
   removeUserConfirm:{en:"Remove",es:"¿Eliminar a",nl:"Verwijder"},
+  saveChanges:{en:"Save Changes",es:"Guardar Cambios",nl:"Wijzigingen Opslaan"},
   removeWorkerConfirm:{en:"Remove %s from roster?",es:"¿Eliminar a %s de la lista?",nl:"%s van lijst verwijderen?"},
   removeOTConfirm:{en:"Remove %s from OT eligible list?",es:"¿Eliminar a %s de la lista de elegibles HE?",nl:"%s van OT-lijst verwijderen?"},
   rememberedOnDevice:{en:"This will be remembered on this device.",es:"Esto se recordará en este dispositivo.",nl:"Dit wordt onthouden op dit apparaat."},
@@ -4572,10 +4575,18 @@ function addNewUser(){
   renderUserList();showToast(t("userAdded"));
 }
 function removeUser(uname){
+  if(BASE_USERS[uname]){showToast("Cannot remove built-in user: "+uname);return}
   if(!confirm(t("removeUserConfirm")+" "+uname+"?"))return;
   const cu=getCustomUsers();delete cu[uname];
   saveCustomUsers(cu);USERS=getUsers();
   renderUserList();showToast(t("userRemoved"));
+}
+function saveUserChanges(){
+  USERS=getUsers();
+  renderUserList();
+  showToast("✅ All user changes saved!");
+  const btn=document.getElementById("saveUsersBtn");
+  if(btn){btn.textContent="✅ Saved!";setTimeout(()=>{btn.textContent="💾 "+t("saveChanges")},2000)}
 }
 // Worker roster management (separate from login users)
 function renderWorkerRoster(){
