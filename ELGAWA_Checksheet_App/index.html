@@ -80,7 +80,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .card-expand-hdr .ce-title{font-size:16px;font-weight:800;color:var(--navy)}
 .card-expand-hdr .ce-done{padding:8px 20px;border:none;border-radius:10px;background:var(--success);color:white;font-weight:700;font-size:13px;cursor:pointer;margin-left:auto}
 .card-expand-body{padding:16px;max-width:600px;margin:0 auto}
-.submit-bar{position:fixed;bottom:0;left:0;right:0;padding:12px 16px;background:white;box-shadow:0 -4px 20px rgba(0,0,0,.1);z-index:150;display:flex;gap:8px;justify-content:center}
+.submit-bar{position:sticky;bottom:0;left:0;right:0;padding:12px 16px;background:white;box-shadow:0 -4px 20px rgba(0,0,0,.1);z-index:150;display:flex;gap:8px;justify-content:center}
 .submit-bar .btn{flex:1;max-width:200px}
 .submit-bar .btn:disabled{opacity:.5;cursor:not-allowed}
 .login-hint{color:#aaa;font-size:10px;text-align:center;margin-top:14px;line-height:1.6}
@@ -183,7 +183,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .tot-row{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap}
 .tot-f{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600}
 .tot-f input{width:60px;padding:6px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-weight:700;text-align:center}
-.action-bar{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px 14px;box-shadow:0 -2px 10px rgba(0,0,0,.1);display:flex;gap:8px;justify-content:center;z-index:90}
+.action-bar{position:sticky;bottom:0;left:0;right:0;background:white;padding:10px 14px;box-shadow:0 -2px 10px rgba(0,0,0,.1);display:flex;gap:8px;justify-content:center;z-index:90}
 .btn{padding:12px 22px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,.1)}
 .btn:active{opacity:.85}
 .btn-primary{background:var(--navy);color:white}.btn-success{background:var(--success);color:white}
@@ -236,7 +236,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .admin-add input,.admin-add select{padding:8px;border:1.5px solid var(--border);border-radius:7px;font-size:12px}
 .admin-add .full{grid-column:1/-1}
 .photo-section{margin-top:6px}
-.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-top:8px}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-top:8px;max-height:350px;overflow-y:auto;padding-bottom:8px}
 .photo-thumb{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:#eee;cursor:pointer}
 .photo-thumb img{width:100%;height:100%;object-fit:cover}
 .photo-thumb .remove-photo{position:absolute;top:2px;right:2px;background:var(--danger);color:white;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
@@ -502,7 +502,9 @@ const BASE_USERS={
   osvaldo:{pass:"osvaldo2026",name:"Osvaldo Quintana Gonzalez",role:"Team Lead",teams:"all"},
   dima:{pass:"dima2026",name:"Dima Ytoiz Yaruk",role:"Team Lead",teams:"all"},
   romario:{pass:"romario2026",name:"Romario Barron",role:"Team Lead",teams:"all"},
-  kenny:{pass:"kenny2026",name:"Kenneth Soerowidjojo",role:"Team Lead",teams:"all"}
+  kenny:{pass:"kenny2026",name:"Kenneth Soerowidjojo",role:"Team Lead",teams:"all"},
+  julio:{pass:"julio2026",name:"Julio Caraballo",role:"Team Lead",teams:"all"},
+  jose:{pass:"jose2026",name:"Jose Rodriguez",role:"Team Lead",teams:"all"}
 };
 // Worker roster — these are personnel names for dropdowns (NOT login accounts)
 // Admin can add more via Settings > Manage Workers
@@ -1771,6 +1773,7 @@ function renderReportData(date,daySheets){
       ${workBL.length?`<span style="color:var(--danger)"><b>${t("blockedLabel")}</b> ${workBL.map(w=>w.task).join(", ")}</span><br>`:""}
       ${matUsed.length?`<b>${t("materialsLabel")}</b> ${matUsed.map(m=>`${m.material} (${m.qtyUsed} ${m.unit||""})`).join(", ")}<br>`:""}
       ${sheets[0].target?`<b>${t("targetLabel")}</b> ${sheets[0].target}<br><b>${t("actualLabel")}</b> ${sheets[0].actual||"—"}<br>`:""}</p>
+      <button class="btn btn-outline" style="font-size:11px;padding:6px 14px;margin-top:6px;border-color:${tm.color};color:${tm.color}" onclick="exportTeamPDF('${tk}','${date}')">📄 Export PDF</button>
     </div>`;
   });
 
@@ -3582,11 +3585,19 @@ function openForm(teamKey,prefill){
   // Smart defaults: load last submission for this team if no prefill
   let pf=prefill||{};
   if(!prefill){
-    const lastForTeam=savedSheets.filter(s=>s.teamKey===teamKey).sort((a,b)=>new Date(b.savedAt||0)-new Date(a.savedAt||0))[0];
-    if(lastForTeam){
-      pf={teamLead:lastForTeam.teamLead,location:lastForTeam.location,floor:lastForTeam.floor,
-        manRows:(lastForTeam.manRows||[]).map(r=>({name:r.name,trade:r.trade})),
-        toolRows:(lastForTeam.toolRows||[]).map(r=>({toolName:r.toolName,toolCode:r.toolCode,assignedTo:r.assignedTo}))};
+    // Check for auto-saved draft first
+    const draft=restoreDraft(teamKey);
+    if(draft&&draft.date===today){
+      pf=draft;
+      _formPhotos=draft.photos||[];
+      showToast("📝 Draft restored");
+    }else{
+      const lastForTeam=savedSheets.filter(s=>s.teamKey===teamKey).sort((a,b)=>new Date(b.savedAt||0)-new Date(a.savedAt||0))[0];
+      if(lastForTeam){
+        pf={teamLead:lastForTeam.teamLead,location:lastForTeam.location,floor:lastForTeam.floor,
+          manRows:(lastForTeam.manRows||[]).map(r=>({name:r.name,trade:r.trade})),
+          toolRows:(lastForTeam.toolRows||[]).map(r=>({toolName:r.toolName,toolCode:r.toolCode,assignedTo:r.assignedTo}))};
+      }
     }
   }
   const weatherKeys=["clearSunny","partlyCloudy","overcast","lightRain","heavyRain","stormy"];
@@ -3745,13 +3756,20 @@ function openForm(teamKey,prefill){
   </div></div>
 
   <div class="action-bar">
-    <button class="btn btn-outline" onclick="saveForm('${teamKey}')">${t("saveDraft")}</button>
     <button class="btn btn-success btn-submit" onclick="submitAndShare('${teamKey}')">${t("submitShare")}</button>
     <button class="btn btn-outline" onclick="clearForm()">${t("clear")}</button>
   </div>`;
   v.innerHTML=html;
   // Render Card Flow overlay on the form
   setTimeout(()=>renderCardFlow(teamKey),50);
+  // Wire silent auto-save on any field change
+  setTimeout(()=>{
+    const formEl=document.getElementById("formView");
+    if(formEl){
+      formEl.addEventListener("input",()=>autoSaveForm(teamKey));
+      formEl.addEventListener("change",()=>autoSaveForm(teamKey));
+    }
+  },200);
   window.scrollTo(0,0);
 }
 
@@ -3823,7 +3841,6 @@ function renderCardFlow(teamKey){
     </div>
     <div class="card-stack" id="cardStack">${cardsHtml}</div>
     <div class="submit-bar">
-      <button class="btn btn-outline" onclick="saveForm('${teamKey}')">${t("saveDraft")}</button>
       <button class="btn btn-success btn-submit" onclick="submitAndShare('${teamKey}')" ${pct<60?"disabled":""}>${t("submitShare")}</button>
     </div>`;
   
@@ -3880,7 +3897,7 @@ function openCardSection(sectionId,idx){
       backBtn=document.createElement("button");
       backBtn.id="backToOverview";
       backBtn.className="btn btn-outline";
-      backBtn.style.cssText="position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:200;padding:12px 24px;border-radius:30px;background:white;box-shadow:0 4px 20px rgba(0,0,0,.15);font-weight:700;font-size:14px";
+      backBtn.style.cssText="position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:150;padding:12px 24px;border-radius:30px;background:var(--navy);color:white;box-shadow:0 4px 20px rgba(0,0,0,.25);font-weight:700;font-size:14px;border:none";
       backBtn.textContent="← Back to Overview";
       backBtn.onclick=closeCardSection;
       document.body.appendChild(backBtn);
@@ -4238,7 +4255,27 @@ function getExistingSubmissions(teamKey,date){
 }
 let _submitting=false; // lock to prevent double-tap
 
-function saveForm(tk){const d=collectForm(tk);d._id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);savedSheets.push(d);saveSaved();cloudSaveSheet(d).then(ok=>{if(ok)showToast(t("synced"));else showToast(t("saved"))}).catch(()=>showToast(t("saved")))}
+// Silent local auto-save — saves form to localStorage only (never to cloud)
+let _autoSaveTimer=null;
+function autoSaveForm(tk){
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer=setTimeout(()=>{
+    try{
+      const d=collectForm(tk);
+      localStorage.setItem("elg_draft_"+tk,JSON.stringify(d));
+    }catch(e){}
+  },1500);
+}
+function restoreDraft(tk){
+  try{
+    const raw=localStorage.getItem("elg_draft_"+tk);
+    if(raw)return JSON.parse(raw);
+  }catch(e){}
+  return null;
+}
+function clearDraft(tk){
+  try{localStorage.removeItem("elg_draft_"+tk)}catch(e){}
+}
 function submitAndShare(tk){
   // Prevent double-tap
   if(_submitting){showToast(t("submissionInProgress"));return}
@@ -4267,6 +4304,7 @@ function submitAndShare(tk){
   const d=collectForm(tk);
   d._id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   savedSheets.push(d);saveSaved();
+  clearDraft(tk); // Clear local auto-save after successful submit
   // Cloud sync
   cloudSaveSheet(d).then(ok=>{
     if(ok)showToast(t("synced"));
@@ -4449,6 +4487,33 @@ function cloudLoadUsers(){
     .catch(()=>false);
 }
 
+function exportTeamPDF(teamKey,date){
+  // Find sheets for this team on this date
+  const allSheets=[...savedSheets];
+  // Also try cloud data if loaded
+  const sheets=allSheets.filter(s=>s.teamKey===teamKey&&s.date===date);
+  if(!sheets.length){
+    // Try loading from cloud
+    cloudLoadSheets(date).then(cloudSheets=>{
+      const tSheets=cloudSheets.filter(s=>s.teamKey===teamKey);
+      if(tSheets.length){
+        const d=tSheets[tSheets.length-1]; // Latest submission
+        const tm=TEAMS[teamKey];
+        const fn=`Checksheet_${tm.name.replace(/\s/g,"_")}_${date}.pdf`;
+        const pdfDoc=buildPDFDoc(d);
+        pdfDoc.save(fn);
+        showToast("📄 PDF downloaded — share via WhatsApp");
+      }else{showToast("No data found for this team")}
+    });
+    return;
+  }
+  const d=sheets[sheets.length-1]; // Latest submission
+  const tm=TEAMS[teamKey];
+  const fn=`Checksheet_${tm.name.replace(/\s/g,"_")}_${date}.pdf`;
+  const pdfDoc=buildPDFDoc(d);
+  pdfDoc.save(fn);
+  showToast("📄 PDF downloaded — share via WhatsApp");
+}
 function buildPDFDoc(data){
   const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");const tm=TEAMS[data.teamKey];
   const W=215.9,H=279.4,M=12;let y=12;
@@ -4519,7 +4584,7 @@ function buildPDFDoc(data){
   pdf.setFontSize(7);pdf.setTextColor(150);pdf.text(`ELGAWA | ${tm.name} | ${new Date().toLocaleString()} | ${data.savedBy||data.submittedBy||""}`,W/2,H-8,{align:"center"});
   return pdf;
 }
-function clearForm(){if(confirm(t("clearConfirm"))){document.querySelectorAll("#formView input:not([type=date]),#formView textarea").forEach(el=>{if(el.type!=="date"&&!el.readOnly)el.value=""});document.querySelectorAll("#formView select").forEach(el=>el.selectedIndex=0);document.querySelectorAll(".other-input").forEach(el=>el.style.display="none")}}
+function clearForm(){if(confirm(t("clearConfirm"))){document.querySelectorAll("#formView input:not([type=date]),#formView textarea").forEach(el=>{if(el.type!=="date"&&!el.readOnly)el.value=""});document.querySelectorAll("#formView select").forEach(el=>el.selectedIndex=0);document.querySelectorAll(".other-input").forEach(el=>el.style.display="none");if(_formTeamKey)clearDraft(_formTeamKey)}}
 function downloadPDF(i){generatePDF(savedSheets[i])}
 function sharePDF(i){generatePDF(savedSheets[i],true)}
 
