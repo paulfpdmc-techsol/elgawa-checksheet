@@ -83,20 +83,22 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .submit-bar{position:sticky;bottom:0;left:0;right:0;padding:12px 16px;background:white;box-shadow:0 -4px 20px rgba(0,0,0,.1);z-index:150;display:flex;gap:8px;justify-content:center}
 .submit-bar .btn{flex:1;max-width:200px}
 .submit-bar .btn:disabled{opacity:.5;cursor:not-allowed}
-.login-hint{color:#aaa;font-size:10px;text-align:center;margin-top:14px;line-height:1.6}
+.login-hint{color:#777;font-size:10px;text-align:center;margin-top:14px;line-height:1.6}
 .nav{background:linear-gradient(135deg,var(--navy) 0%,#1a6fc4 50%,var(--navy-lt) 100%);color:white;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 6px 30px rgba(31,78,121,.4)}
 .nav .brand{font-weight:800;font-size:15px;letter-spacing:-.3px}.nav .right{display:flex;align-items:center;gap:8px}
 .nav .uname{font-size:11px;opacity:.9;background:rgba(255,255,255,.12);padding:3px 8px;border-radius:6px}
 .btn-s{padding:5px 10px;border:1.5px solid rgba(255,255,255,.4);background:transparent;color:white;border-radius:6px;font-size:11px;cursor:pointer}
-.lang-toggle{padding:4px 8px;border:1.5px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:white;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .2s}
+.lang-toggle{padding:4px 10px;border:1.5px solid rgba(255,255,255,.6);background:rgba(255,255,255,.15);color:white;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .2s;letter-spacing:1px}
 .lang-toggle:active{background:rgba(255,255,255,.25)}
 .dash{max-width:600px;margin:0 auto;padding:16px}
 .dash-hdr{text-align:center;margin-bottom:16px}
 .dash-hdr h2{color:var(--navy);font-size:18px}.dash-hdr p{color:var(--grey);font-size:12px;margin-top:2px}
-.tab-row{display:flex;gap:6px;margin-bottom:14px;padding:4px;background:white;border-radius:12px;box-shadow:var(--shadow)}
-.tab-btn{flex:1;padding:13px 8px;text-align:center;font-size:13px;font-weight:700;cursor:pointer;background:none;border:none;color:var(--grey);border-radius:10px;transition:all .2s ease;position:relative;overflow:hidden;letter-spacing:-.2px}
+.tab-row{display:flex;gap:4px;margin-bottom:14px;padding:4px;background:white;border-radius:14px;box-shadow:var(--shadow)}
+.tab-btn{flex:1;padding:8px 4px 6px;text-align:center;cursor:pointer;background:none;border:none;color:var(--grey);border-radius:10px;transition:all .2s ease;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:1px}
+.tab-btn .tab-icon{font-size:18px;line-height:1}
+.tab-btn .tab-label{font-size:8px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
 .tab-btn:active{transform:scale(.95)}
-.tab-btn.active{color:white;background:linear-gradient(135deg,var(--navy),var(--navy-lt));box-shadow:0 6px 20px rgba(31,78,121,.35);transform:translateY(-1px)}
+.tab-btn.active{color:white;background:linear-gradient(135deg,var(--navy),var(--navy-lt));box-shadow:0 4px 16px rgba(31,78,121,.3)}
 .team-grid{display:grid;grid-template-columns:1fr;gap:10px}
 .t-card{background:white;border-radius:var(--radius);padding:18px 16px;cursor:pointer;border-left:6px solid var(--navy);box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:14px;transition:all .25s ease;position:relative;overflow:hidden}
 .t-card::after{content:"";position:absolute;top:0;right:0;width:60px;height:100%;background:linear-gradient(90deg,transparent,rgba(31,78,121,.03));pointer-events:none}
@@ -140,7 +142,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .s-tab-content{animation:fadeIn .2s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .s-tab-icon{display:block;font-size:16px;margin-bottom:2px}
-.empty{text-align:center;padding:24px;color:#bbb;font-size:12px}
+.empty{text-align:center;padding:24px;color:#888;font-size:12px}
 .form-wrap{max-width:600px;margin:0 auto;padding:12px;padding-bottom:80px}
 .back-row{margin-bottom:8px}
 .back-btn{background:none;border:none;color:var(--navy-lt);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:4px}
@@ -176,7 +178,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .mini-field input,.mini-field select{width:100%;padding:10px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:white;min-height:40px}
 .mat-name{font-size:12px;font-weight:600;color:#444;margin-bottom:6px;padding:4px 0;border-bottom:1px dashed #ddd}
 .ck-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0f0}
-.ck-num{color:#bbb;font-size:10px;width:18px;text-align:center;flex-shrink:0}
+.ck-num{color:#888;font-size:10px;width:18px;text-align:center;flex-shrink:0}
 .ck-text{flex:1;font-size:12px;line-height:1.3}
 .ck-sel select{width:55px;padding:4px 2px;border:1.5px solid var(--border);border-radius:5px;font-size:11px}
 .notes-ta{width:100%;height:70px;padding:10px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;resize:vertical;font-family:inherit}
@@ -265,7 +267,19 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .chip.selected-green{background:var(--success);color:white;border-color:var(--success)}
 @keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .animate-in{animation:slideIn .3s ease forwards}
-@media(min-width:500px){.info-grid{grid-template-columns:1fr 1fr}.target-grid{grid-template-columns:1fr 1fr 1fr}.team-grid{grid-template-columns:1fr 1fr}}
+/* View toggle */
+.view-toggle-row{display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-bottom:8px}
+.view-toggle-btn{width:36px;height:36px;border-radius:10px;border:2px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .2s ease;color:var(--grey)}
+.view-toggle-btn.active{background:var(--navy);color:white;border-color:var(--navy);box-shadow:0 3px 10px rgba(31,78,121,.25)}
+.view-toggle-btn:active{transform:scale(.92)}
+/* Grid/icon view */
+.team-grid.grid-view{grid-template-columns:repeat(3,1fr)!important;gap:8px}
+.team-grid.grid-view .t-card{flex-direction:column;text-align:center;padding:14px 8px 10px;gap:6px;border-left:none!important;border-top:4px solid var(--navy)}
+.team-grid.grid-view .t-card.ducting{border-top-color:var(--ducting)}.team-grid.grid-view .t-card.copper{border-top-color:var(--copper)}.team-grid.grid-view .t-card.ahu{border-top-color:var(--ahu)}.team-grid.grid-view .t-card.insulation{border-top-color:var(--insulation)}.team-grid.grid-view .t-card.general{border-top-color:var(--general)}.team-grid.grid-view .t-card.refrigerant{border-top-color:var(--refrigerant)}.team-grid.grid-view .t-card.drainage{border-top-color:var(--drainage)}.team-grid.grid-view .t-card.controls{border-top-color:var(--controls)}.team-grid.grid-view .t-card.commissioning{border-top-color:var(--commissioning)}
+.team-grid.grid-view .t-card .icon{width:44px;height:44px;font-size:22px}
+.team-grid.grid-view .t-card h3{font-size:11px;line-height:1.2;margin-bottom:0}
+.team-grid.grid-view .t-card p{display:none}
+@media(min-width:500px){.info-grid{grid-template-columns:1fr 1fr}.target-grid{grid-template-columns:1fr 1fr 1fr}.team-grid{grid-template-columns:1fr 1fr}.team-grid.grid-view{grid-template-columns:repeat(3,1fr)!important}}
 
 .att-card{background:white;border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
 .att-card h3{font-size:14px;color:var(--navy);margin-bottom:10px}
@@ -321,15 +335,19 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 <div id="dashView" class="dash hidden">
   <div class="dash-hdr"><h2 id="dashHdr"></h2><p id="dashDate"></p></div>
   <div class="tab-row">
-    <button class="tab-btn active" onclick="switchTab('forms',this)" id="tabBtnForms">✍️</button>
-    <button class="tab-btn" onclick="switchTab('reports',this)" id="tabBtnReports">📊</button>
-    <button class="tab-btn" onclick="switchTab('history',this)" id="tabBtnHistory">📂</button>
-    <button class="tab-btn" onclick="switchTab('attendance',this)" id="tabBtnAttendance" style="display:none">📋</button>
-    <button class="tab-btn" onclick="showSettings()" id="tabBtnSettings">⚙️</button>
+    <button class="tab-btn active" onclick="switchTab('forms',this)" id="tabBtnForms"><span class="tab-icon">✍️</span><span class="tab-label">Forms</span></button>
+    <button class="tab-btn" onclick="switchTab('reports',this)" id="tabBtnReports"><span class="tab-icon">📊</span><span class="tab-label">Reports</span></button>
+    <button class="tab-btn" onclick="switchTab('history',this)" id="tabBtnHistory"><span class="tab-icon">📂</span><span class="tab-label">History</span></button>
+    <button class="tab-btn" onclick="switchTab('attendance',this)" id="tabBtnAttendance" style="display:none"><span class="tab-icon">📋</span><span class="tab-label">Attend</span></button>
+    <button class="tab-btn" onclick="showSettings()" id="tabBtnSettings"><span class="tab-icon">⚙️</span><span class="tab-label">Settings</span></button>
   </div>
   <div id="tabForms">
     <div class="settings-row" id="settingsRow">
     <button class="pill-btn" onclick="exportCSV()" id="exportBtn" style="display:none">📊 Export CSV</button></div>
+    <div class="view-toggle-row" id="viewToggleRow">
+      <button class="view-toggle-btn active" id="viewListBtn" onclick="setTeamView('list')" title="List view">📋</button>
+      <button class="view-toggle-btn" id="viewGridBtn" onclick="setTeamView('grid')" title="Grid view">🔲</button>
+    </div>
     <div class="team-grid" id="teamGrid"></div>
   </div>
   <div id="tabReports" class="hidden">
@@ -459,7 +477,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
         <input type="url" id="firebaseUrlInput" placeholder="https://your-project.firebaseio.com" class="full" style="font-size:12px">
         <button class="btn btn-success full" onclick="saveCloudUrl()" id="cloudSaveBtn"></button>
       </div>
-      <p style="font-size:10px;color:#999;margin-top:8px" id="firebaseHintText"></p>
+      <p style="font-size:10px;color:#777;margin-top:8px" id="firebaseHintText"></p>
     </div>
     <div id="adminReportAccessCard" class="s-card">
       <h3 id="reportAccessTitle"></h3>
@@ -504,7 +522,7 @@ const BASE_USERS={
   romario:{pass:"romario2026",name:"Romario Barron",role:"Team Lead",teams:"all"},
   kenny:{pass:"kenny2026",name:"Kenneth Soerowidjojo",role:"Team Lead",teams:"all"},
   julio:{pass:"julio2026",name:"Julio Caraballo",role:"Team Lead",teams:"all"},
-  jose:{pass:"jose2026",name:"Jose Rodriguez",role:"Team Lead",teams:"all"}
+  jose:{pass:"jose2026",name:"Jose Gonzalez",role:"Team Lead",teams:"all"}
 };
 // Worker roster — these are personnel names for dropdowns (NOT login accounts)
 // Admin can add more via Settings > Manage Workers
@@ -1308,11 +1326,11 @@ function applyLang(){
   const logoutBtn=document.getElementById("logoutBtn");if(logoutBtn)logoutBtn.textContent=t("signOut");
   const ltb=document.getElementById("langToggleBtn");if(ltb)ltb.textContent="🌐 "+(LANG==="en"?"EN":LANG==="es"?"ES":"NL");
   const dashHdr=document.getElementById("dashHdr");if(dashHdr)dashHdr.textContent=t("dailyChecksheet");
-  const tabF=document.getElementById("tabBtnForms");if(tabF)tabF.textContent=t("forms");
-  const tabR=document.getElementById("tabBtnReports");if(tabR)tabR.textContent=t("reports");
-  const tabH=document.getElementById("tabBtnHistory");if(tabH)tabH.textContent=t("history");
-  const tabA=document.getElementById("tabBtnAttendance");if(tabA)tabA.textContent="📋 "+t("attendance");
-  const setBtn2=document.getElementById("tabBtnSettings");if(setBtn2)setBtn2.textContent="⚙️";
+  const tabF=document.getElementById("tabBtnForms");if(tabF){const s=tabF.querySelector(".tab-label");if(s)s.textContent=t("forms")}
+  const tabR=document.getElementById("tabBtnReports");if(tabR){const s=tabR.querySelector(".tab-label");if(s)s.textContent=t("reports")}
+  const tabH=document.getElementById("tabBtnHistory");if(tabH){const s=tabH.querySelector(".tab-label");if(s)s.textContent=t("history")}
+  const tabA=document.getElementById("tabBtnAttendance");if(tabA){const s=tabA.querySelector(".tab-label");if(s)s.textContent=t("attendance")}
+  const setBtn2=document.getElementById("tabBtnSettings");if(setBtn2){const s=setBtn2.querySelector(".tab-label");if(s)s.textContent=t("settings")}
   const rptLbl=document.getElementById("rptDateLabel");if(rptLbl)rptLbl.textContent=t("reportDate");
   const backBtn1=document.getElementById("backBtn1");if(backBtn1)backBtn1.textContent="← "+t("back");
   const langTitle=document.getElementById("langTitle");if(langTitle)langTitle.textContent=t("language");
@@ -1469,6 +1487,20 @@ function getTeamSubtitle(key){
   const map={ducting:"ductworkInstall",copper:"refrigerantCW",ahu:"ahuInstall",insulation:"thermalAcoustic",general:"siteSupportMat",refrigerant:"refrigerantSupport",drainage:"drainageCondensate",controls:"controlsElectrical",commissioning:"commissioningTesting"};
   return map[key]?t(map[key]):TEAMS[key].subtitle;
 }
+function getTeamView(){try{return localStorage.getItem("elg_team_view")||"list"}catch(e){return"list"}}
+function setTeamView(mode){
+  try{localStorage.setItem("elg_team_view",mode)}catch(e){}
+  const grid=document.getElementById("teamGrid");
+  const listBtn=document.getElementById("viewListBtn");
+  const gridBtn=document.getElementById("viewGridBtn");
+  if(mode==="grid"){
+    grid.classList.add("grid-view");
+    gridBtn.classList.add("active");listBtn.classList.remove("active");
+  }else{
+    grid.classList.remove("grid-view");
+    listBtn.classList.add("active");gridBtn.classList.remove("active");
+  }
+}
 function showDash(){
   document.getElementById("loginScreen").classList.add("hidden");
   document.getElementById("navbar").classList.remove("hidden");
@@ -1492,6 +1524,8 @@ function showDash(){
   allowed.forEach(key=>{const tm=TEAMS[key];
     grid.innerHTML+=`<div class="t-card ${tm.css}" onclick="openForm('${key}')"><div class="icon">${tm.icon}</div><div><h3>${tm.name}</h3><p>${getTeamSubtitle(key)}</p></div></div>`;
   });
+  // Apply saved view preference
+  setTeamView(getTeamView());
   loadSaved();renderHistory();
   document.getElementById("rptDate").onchange=generateReport;
   // Report access control
@@ -3286,15 +3320,18 @@ document.addEventListener("input",e=>{if(e.target.tagName==="TEXTAREA"&&document
 const DUCT_TYPES=["Straight","Elbow 90","Elbow 45","Tee","Reducer","Flex Connector","Offset","End Cap","Fire Damper","Volume Damper"];
 const DUCT_GAUGES=["0.6mm","0.8mm","1.0mm","1.2mm","1.5mm"];
 const DUCT_MATERIAL=["P3 Panel","Galvanized Steel","Pre-insulated","Flexible"];
-const DUCT_STATUS=["Fabricated","Installed","Pending","In Progress"];
+const DUCT_STATUS=["Pending","10%","20%","30%","40%","50%","60%","70%","80%","90%","Fabricated","Installed"];
+const DUCT_SIZES=["200x100","200x200","250x150","250x250","300x150","300x200","300x250","300x300","400x200","400x250","400x300","400x400","500x250","500x300","500x400","500x500","600x300","600x400","600x500","600x600","800x300","800x400","800x500","800x600","1000x400","1000x500","1000x600","1200x400","1200x600","Ø100","Ø150","Ø200","Ø250","Ø300","Ø350","Ø400","Ø500"];
 function buildDuctRow(i,row){
   const typeOpts=DUCT_TYPES.map(t=>`<option value="${t}" ${row.ductType===t?"selected":""}>${t}</option>`).join("");
   const gaugeOpts=DUCT_GAUGES.map(g=>`<option value="${g}" ${row.gauge===g?"selected":""}>${g}</option>`).join("");
   const matOpts=DUCT_MATERIAL.map(m=>`<option value="${m}" ${row.ductMaterial===m?"selected":""}>${m}</option>`).join("");
   const statusOpts=DUCT_STATUS.map(s=>`<option value="${s}" ${row.ductStatus===s?"selected":""}>${s}</option>`).join("");
+  const sizeOpts=DUCT_SIZES.map(s=>`<option value="${s}" ${row.ductSize===s?"selected":""}>${s}</option>`).join("");
+  const isCustomSize=row.ductSize&&!DUCT_SIZES.includes(row.ductSize);
   return`<div class="entry-card" data-duct-row="${i}"><div class="row-head"><span class="row-num">${i+1}</span></div>
   <div class="fields"><div class="mini-field"><label>${t("ductMaterial")||"Material"}</label><select data-duct="${i}" data-key="ductMaterial"><option value="">--</option>${matOpts}</select></div>
-  <div class="mini-field"><label>${t("ductSize")||"Size (WxH mm)"}</label><input data-duct="${i}" data-key="ductSize" value="${row.ductSize||""}" placeholder="600x400"></div>
+  <div class="mini-field"><label>${t("ductSize")||"Size (WxH mm)"}</label><select data-duct="${i}" data-key="ductSize" onchange="onDropChange(this,'other_duct_size_${i}')"><option value="">--</option>${sizeOpts}<option value="Other" ${isCustomSize?"selected":""}>Other</option></select><div id="other_duct_size_${i}" class="other-input" style="display:${isCustomSize?"block":"none"}"><input data-duct="${i}" data-key="_otherDuctSize" value="${isCustomSize?row.ductSize:""}" placeholder="e.g. 700x350"></div></div>
   <div class="mini-field"><label>${t("qty")||"Qty"}</label><input data-duct="${i}" data-key="qty" value="${row.qty||""}" type="number"></div>
   <div class="mini-field"><label>${t("length")||"Length (m)"}</label><input data-duct="${i}" data-key="length" value="${row.length||""}" type="number" step="0.1"></div>
   <div class="mini-field"><label>${t("ductType")||"Type"}</label><select data-duct="${i}" data-key="ductType"><option value="">--</option>${typeOpts}</select></div>
@@ -3311,13 +3348,14 @@ function addDuctRow(){
 // Copper Piping Row
 const PIPE_SIZES=["1/4\"","3/8\"","1/2\"","5/8\"","3/4\"","7/8\"","1\"","1-1/8\"","1-3/8\"","1-5/8\"","2\"","2-1/8\""];
 const JOINT_TYPES=["Brazed","Flared","Compressed","Swaged","Soldered"];
-const PIPE_STATUS=["Completed","In Progress","Pending","Pressure Tested"];
+const PIPE_STATUS=["Pending","10%","20%","30%","40%","50%","60%","70%","80%","90%","Completed","Pressure Tested"];
 function buildCopperRow(i,row){
   const sizeOpts=PIPE_SIZES.map(s=>`<option value="${s}" ${row.pipeSize===s?"selected":""}>${s}</option>`).join("");
+  const isCustomPipe=row.pipeSize&&!PIPE_SIZES.includes(row.pipeSize);
   const jointOpts=JOINT_TYPES.map(j=>`<option value="${j}" ${row.jointType===j?"selected":""}>${j}</option>`).join("");
   const statusOpts=PIPE_STATUS.map(s=>`<option value="${s}" ${row.pipeStatus===s?"selected":""}>${s}</option>`).join("");
   return`<div class="entry-card" data-copper-row="${i}"><div class="row-head"><span class="row-num">${i+1}</span></div>
-  <div class="fields"><div class="mini-field"><label>${t("pipeSize")||"Pipe Size"}</label><select data-copper="${i}" data-key="pipeSize"><option value="">--</option>${sizeOpts}</select></div>
+  <div class="fields"><div class="mini-field"><label>${t("pipeSize")||"Pipe Size"}</label><select data-copper="${i}" data-key="pipeSize" onchange="onDropChange(this,'other_pipe_${i}')"><option value="">--</option>${sizeOpts}<option value="Other" ${isCustomPipe?"selected":""}>Other</option></select><div id="other_pipe_${i}" class="other-input" style="display:${isCustomPipe?"block":"none"}"><input data-copper="${i}" data-key="_otherPipeSize" value="${isCustomPipe?row.pipeSize:""}" placeholder="e.g. 2-5/8&quot;"></div></div>
   <div class="mini-field"><label>${t("runLength")||"Run Length (m)"}</label><input data-copper="${i}" data-key="runLength" value="${row.runLength||""}" type="number" step="0.1"></div>
   <div class="mini-field"><label>${t("joints")||"Joints"}</label><input data-copper="${i}" data-key="joints" value="${row.joints||""}" type="number"></div>
   <div class="mini-field"><label>${t("jointType")||"Joint Type"}</label><select data-copper="${i}" data-key="jointType"><option value="">--</option>${jointOpts}</select></div>
@@ -3332,12 +3370,15 @@ function addCopperRow(){
 
 // ============ AHU EQUIPMENT TRACKING ============
 const AHU_TASKS_SPECIFIC=["Unit Positioning","Mounting/Leveling","Duct Connection","Piping Connection","Electrical Connection","Filter Install","Condensate Connection","Commissioning","Vibration Check"];
-const AHU_STATUS_SPEC=["Not Started","In Progress","Completed","Punch List","Signed Off"];
+const AHU_CAPACITIES=["1 Ton","1.5 Ton","2 Ton","2.5 Ton","3 Ton","4 Ton","5 Ton","7.5 Ton","10 Ton","12.5 Ton","15 Ton","20 Ton","25 Ton","30 Ton","40 Ton","50 Ton","60 Ton","80 Ton","100 Ton"];
+const AHU_STATUS_SPEC=["Not Started","10%","20%","30%","40%","50%","60%","70%","80%","90%","Completed","Punch List","Signed Off"];
 function buildAhuRow(i,row){
   const taskOpts=AHU_TASKS_SPECIFIC.map(t=>`<option value="${t}" ${row.ahuTask===t?"selected":""}>${t}</option>`).join("");
+  const capOpts=AHU_CAPACITIES.map(c=>`<option value="${c}" ${row.ahuCapacity===c?"selected":""}>${c}</option>`).join("");
   const statusOpts=AHU_STATUS_SPEC.map(s=>`<option value="${s}" ${row.ahuStatus===s?"selected":""}>${s}</option>`).join("");
   return`<div class="entry-card" data-ahu-row="${i}"><div class="row-head"><span class="row-num">${i+1}</span></div>
   <div class="fields"><div class="mini-field"><label>AHU Tag</label><input data-ahu="${i}" data-key="ahuTag" value="${row.ahuTag||""}" placeholder="AHU-01"></div>
+  <div class="mini-field"><label>Capacity</label><select data-ahu="${i}" data-key="ahuCapacity"><option value="">--</option>${capOpts}</select></div>
   <div class="mini-field"><label>Task</label><select data-ahu="${i}" data-key="ahuTask"><option value="">--</option>${taskOpts}</select></div>
   <div class="mini-field"><label>Area</label><select data-ahu="${i}" data-key="ahuArea"><option value="">--</option>${COMMON_LOCATIONS.map(l=>`<option value="${l}" ${row.ahuArea===l?"selected":""}>${l}</option>`).join("")}</select></div>
   <div class="mini-field"><label>Status</label><select data-ahu="${i}" data-key="ahuStatus"><option value="">--</option>${statusOpts}</select></div>
@@ -3348,14 +3389,15 @@ function addAhuRow(){const cont=document.getElementById("ahuRowsCont");const idx
 // ============ INSULATION TRACKING ============
 const INS_SYSTEMS=["Duct Wrap","Pipe Insulation","Sheet/Board","Acoustic","Fire-rated"];
 const INS_THICKNESS=["13mm","19mm","25mm","32mm","38mm","50mm"];
-const INS_STATUS_SPEC=["Applied","Partially Done","Pending","Rework"];
+const INS_STATUS_SPEC=["Pending","10%","20%","30%","40%","50%","60%","70%","80%","90%","Applied","Rework"];
 function buildInsRow(i,row){
   const sysOpts=INS_SYSTEMS.map(s=>`<option value="${s}" ${row.insSystem===s?"selected":""}>${s}</option>`).join("");
   const thkOpts=INS_THICKNESS.map(t=>`<option value="${t}" ${row.insThickness===t?"selected":""}>${t}</option>`).join("");
+  const isCustomThk=row.insThickness&&!INS_THICKNESS.includes(row.insThickness);
   const statusOpts=INS_STATUS_SPEC.map(s=>`<option value="${s}" ${row.insStatus===s?"selected":""}>${s}</option>`).join("");
   return`<div class="entry-card" data-ins-row="${i}"><div class="row-head"><span class="row-num">${i+1}</span></div>
   <div class="fields"><div class="mini-field"><label>System</label><select data-ins="${i}" data-key="insSystem"><option value="">--</option>${sysOpts}</select></div>
-  <div class="mini-field"><label>Thickness</label><select data-ins="${i}" data-key="insThickness"><option value="">--</option>${thkOpts}</select></div>
+  <div class="mini-field"><label>Thickness</label><select data-ins="${i}" data-key="insThickness" onchange="onDropChange(this,'other_ins_thk_${i}')"><option value="">--</option>${thkOpts}<option value="Other" ${isCustomThk?"selected":""}>Other</option></select><div id="other_ins_thk_${i}" class="other-input" style="display:${isCustomThk?"block":"none"}"><input data-ins="${i}" data-key="_otherInsThickness" value="${isCustomThk?row.insThickness:""}" placeholder="e.g. 75mm"></div></div>
   <div class="mini-field"><label>Length (m)</label><input data-ins="${i}" data-key="insLength" value="${row.insLength||""}" type="number" step="0.1"></div>
   <div class="mini-field"><label>Area</label><select data-ins="${i}" data-key="insArea"><option value="">--</option>${COMMON_LOCATIONS.map(l=>`<option value="${l}" ${row.insArea===l?"selected":""}>${l}</option>`).join("")}</select></div>
   <div class="mini-field"><label>Status</label><select data-ins="${i}" data-key="insStatus"><option value="">--</option>${statusOpts}</select></div></div></div>`;
@@ -3376,14 +3418,18 @@ function addGenRow(){const cont=document.getElementById("genRowsCont");const idx
 
 // ============ REFRIGERANT TRACKING ============
 const REF_TYPES=["R410A","R22","R134a","R407C","R32"];
+const REF_LINE_SIZES=["1/4\"","3/8\"","1/2\"","5/8\"","3/4\"","7/8\"","1\"","1-1/8\"","1-3/8\"","1-5/8\"","2-1/8\""];
 const REF_TASKS_SPECIFIC=["Evacuation","Charging","Leak Test","Recovery","Pressure Test","Top-up"];
-const REF_STATUS_SPEC=["Pass","Fail","In Progress","Pending Retest"];
+const REF_STATUS_SPEC=["Pending","10%","20%","30%","40%","50%","60%","70%","80%","90%","Pass","Fail","Pending Retest"];
 function buildRefRow(i,row){
   const typeOpts=REF_TYPES.map(t=>`<option value="${t}" ${row.refType===t?"selected":""}>${t}</option>`).join("");
+  const lineSizeOpts=REF_LINE_SIZES.map(s=>`<option value="${s}" ${row.refLineSize===s?"selected":""}>${s}</option>`).join("");
+  const isCustomLine=row.refLineSize&&!REF_LINE_SIZES.includes(row.refLineSize);
   const taskOpts=REF_TASKS_SPECIFIC.map(t=>`<option value="${t}" ${row.refTask===t?"selected":""}>${t}</option>`).join("");
   const statusOpts=REF_STATUS_SPEC.map(s=>`<option value="${s}" ${row.refStatus===s?"selected":""}>${s}</option>`).join("");
   return`<div class="entry-card" data-ref-row="${i}"><div class="row-head"><span class="row-num">${i+1}</span></div>
   <div class="fields"><div class="mini-field"><label>Ref. Type</label><select data-ref="${i}" data-key="refType"><option value="">--</option>${typeOpts}</select></div>
+  <div class="mini-field"><label>Line Size</label><select data-ref="${i}" data-key="refLineSize" onchange="onDropChange(this,'other_ref_line_${i}')"><option value="">--</option>${lineSizeOpts}<option value="Other" ${isCustomLine?"selected":""}>Other</option></select><div id="other_ref_line_${i}" class="other-input" style="display:${isCustomLine?"block":"none"}"><input data-ref="${i}" data-key="_otherRefLineSize" value="${isCustomLine?row.refLineSize:""}" placeholder="e.g. 3/4&quot;"></div></div>
   <div class="mini-field"><label>Task</label><select data-ref="${i}" data-key="refTask"><option value="">--</option>${taskOpts}</select></div>
   <div class="mini-field"><label>System/Unit</label><input data-ref="${i}" data-key="refSystem" value="${row.refSystem||""}" placeholder="AHU-01"></div>
   <div class="mini-field"><label>Charge (kg)</label><input data-ref="${i}" data-key="refCharge" value="${row.refCharge||""}" type="number" step="0.1"></div>
@@ -3395,13 +3441,14 @@ function addRefRow(){const cont=document.getElementById("refRowsCont");const idx
 // ============ DRAINAGE/CONDENSATE TRACKING ============
 const DRAIN_SIZES=["20mm","25mm","32mm","40mm","50mm","75mm","100mm"];
 const DRAIN_TYPES=["PVC","CPVC","Copper","Cast Iron"];
-const DRAIN_STATUS_SPEC=["Installed","Leak Tested","Pending","Rework"];
+const DRAIN_STATUS_SPEC=["Pending","10%","20%","30%","40%","50%","60%","70%","80%","90%","Installed","Leak Tested","Rework"];
 function buildDrainRow(i,row){
   const sizeOpts=DRAIN_SIZES.map(s=>`<option value="${s}" ${row.drainSize===s?"selected":""}>${s}</option>`).join("");
+  const isCustomDrain=row.drainSize&&!DRAIN_SIZES.includes(row.drainSize);
   const typeOpts=DRAIN_TYPES.map(t=>`<option value="${t}" ${row.drainType===t?"selected":""}>${t}</option>`).join("");
   const statusOpts=DRAIN_STATUS_SPEC.map(s=>`<option value="${s}" ${row.drainStatus===s?"selected":""}>${s}</option>`).join("");
   return`<div class="entry-card" data-drain-row="${i}"><div class="row-head"><span class="row-num">${i+1}</span></div>
-  <div class="fields"><div class="mini-field"><label>Pipe Size</label><select data-drain="${i}" data-key="drainSize"><option value="">--</option>${sizeOpts}</select></div>
+  <div class="fields"><div class="mini-field"><label>Pipe Size</label><select data-drain="${i}" data-key="drainSize" onchange="onDropChange(this,'other_drain_${i}')"><option value="">--</option>${sizeOpts}<option value="Other" ${isCustomDrain?"selected":""}>Other</option></select><div id="other_drain_${i}" class="other-input" style="display:${isCustomDrain?"block":"none"}"><input data-drain="${i}" data-key="_otherDrainSize" value="${isCustomDrain?row.drainSize:""}" placeholder="e.g. 150mm"></div></div>
   <div class="mini-field"><label>Material</label><select data-drain="${i}" data-key="drainType"><option value="">--</option>${typeOpts}</select></div>
   <div class="mini-field"><label>Length (m)</label><input data-drain="${i}" data-key="drainLength" value="${row.drainLength||""}" type="number" step="0.1"></div>
   <div class="mini-field"><label>Slope OK?</label><select data-drain="${i}" data-key="drainSlope"><option value="">--</option><option value="Yes" ${row.drainSlope==="Yes"?"selected":""}>Yes</option><option value="No" ${row.drainSlope==="No"?"selected":""}>No</option></select></div>
@@ -3413,14 +3460,17 @@ function addDrainRow(){const cont=document.getElementById("drainRowsCont");const
 // ============ CONTROLS/ELECTRICAL TRACKING ============
 const CTRL_DEVICES=["Thermostat","Sensor","Actuator","Controller","VFD","Relay","Contactor","Switch","Damper Motor"];
 const CTRL_CABLES=["2-core","4-core","BMS Cable","Power Cable","Cat6","Shielded"];
-const CTRL_STATUS_SPEC=["Wired","Tested","Commissioned","Faulty","Pending"];
+const CTRL_CABLE_SIZES=["0.5mm²","0.75mm²","1.0mm²","1.5mm²","2.5mm²","4.0mm²","6.0mm²","10mm²","16mm²"];
+const CTRL_STATUS_SPEC=["Pending","10%","20%","30%","40%","50%","60%","70%","80%","90%","Wired","Tested","Commissioned","Faulty"];
 function buildCtrlRow(i,row){
   const devOpts=CTRL_DEVICES.map(d=>`<option value="${d}" ${row.ctrlDevice===d?"selected":""}>${d}</option>`).join("");
   const cabOpts=CTRL_CABLES.map(c=>`<option value="${c}" ${row.ctrlCable===c?"selected":""}>${c}</option>`).join("");
+  const cabSizeOpts=CTRL_CABLE_SIZES.map(s=>`<option value="${s}" ${row.ctrlCableSize===s?"selected":""}>${s}</option>`).join("");
   const statusOpts=CTRL_STATUS_SPEC.map(s=>`<option value="${s}" ${row.ctrlStatus===s?"selected":""}>${s}</option>`).join("");
   return`<div class="entry-card" data-ctrl-row="${i}"><div class="row-head"><span class="row-num">${i+1}</span></div>
   <div class="fields"><div class="mini-field"><label>Device</label><select data-ctrl="${i}" data-key="ctrlDevice"><option value="">--</option>${devOpts}</select></div>
   <div class="mini-field"><label>Cable Type</label><select data-ctrl="${i}" data-key="ctrlCable"><option value="">--</option>${cabOpts}</select></div>
+  <div class="mini-field"><label>Cable Size</label><select data-ctrl="${i}" data-key="ctrlCableSize"><option value="">--</option>${cabSizeOpts}</select></div>
   <div class="mini-field"><label>Point/Tag</label><input data-ctrl="${i}" data-key="ctrlTag" value="${row.ctrlTag||""}" placeholder="T-01"></div>
   <div class="mini-field"><label>Area</label><select data-ctrl="${i}" data-key="ctrlArea"><option value="">--</option>${COMMON_LOCATIONS.map(l=>`<option value="${l}" ${row.ctrlArea===l?"selected":""}>${l}</option>`).join("")}</select></div>
   <div class="mini-field"><label>Status</label><select data-ctrl="${i}" data-key="ctrlStatus"><option value="">--</option>${statusOpts}</select></div></div></div>`;
@@ -3429,7 +3479,7 @@ function addCtrlRow(){const cont=document.getElementById("ctrlRowsCont");const i
 
 // ============ COMMISSIONING/TESTING TRACKING ============
 const COMM_TESTS=["Airflow Balance","Temperature Check","Pressure Test","Leak Test","Vibration Test","Noise Level","Fan Performance","Coil Performance","Controls Sequence","Full System"];
-const COMM_RESULTS=["Pass","Fail","Marginal","Retest Required","N/A"];
+const COMM_RESULTS=["Pending","10%","20%","30%","40%","50%","60%","70%","80%","90%","Pass","Fail","Marginal","Retest Required","N/A"];
 function buildCommRow(i,row){
   const testOpts=COMM_TESTS.map(t=>`<option value="${t}" ${row.commTest===t?"selected":""}>${t}</option>`).join("");
   const resOpts=COMM_RESULTS.map(r=>`<option value="${r}" ${row.commResult===r?"selected":""}>${r}</option>`).join("");
@@ -4162,19 +4212,19 @@ function collectForm(teamKey){
   // Collect team-specific rows
   if(teamKey==="ducting"){
     const dCont=document.getElementById("ductRowsCont");
-    if(dCont){d.ductRows=[];dCont.querySelectorAll("[data-duct-row]").forEach((_,i)=>{const r={};["ductMaterial","ductSize","qty","length","ductType","gauge","ductStatus","location"].forEach(k=>{const el=document.querySelector(`[data-duct="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});d.ductRows.push(r)})}
+    if(dCont){d.ductRows=[];dCont.querySelectorAll("[data-duct-row]").forEach((_,i)=>{const r={};["ductMaterial","ductSize","qty","length","ductType","gauge","ductStatus","location"].forEach(k=>{const el=document.querySelector(`[data-duct="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});if(r.ductSize==="Other"){const oth=document.querySelector(`[data-duct="${i}"][data-key="_otherDuctSize"]`);if(oth&&oth.value)r.ductSize=oth.value}d.ductRows.push(r)})}
   }
   if(teamKey==="copper"){
     const cCont=document.getElementById("copperRowsCont");
-    if(cCont){d.copperRows=[];cCont.querySelectorAll("[data-copper-row]").forEach((_,i)=>{const r={};["pipeSize","runLength","joints","jointType","pipeStatus","area"].forEach(k=>{const el=document.querySelector(`[data-copper="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});d.copperRows.push(r)})}
+    if(cCont){d.copperRows=[];cCont.querySelectorAll("[data-copper-row]").forEach((_,i)=>{const r={};["pipeSize","runLength","joints","jointType","pipeStatus","area"].forEach(k=>{const el=document.querySelector(`[data-copper="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});if(r.pipeSize==="Other"){const oth=document.querySelector(`[data-copper="${i}"][data-key="_otherPipeSize"]`);if(oth&&oth.value)r.pipeSize=oth.value}d.copperRows.push(r)})}
   }
   if(teamKey==="ahu"){
     const aCont=document.getElementById("ahuRowsCont");
-    if(aCont){d.ahuRows=[];aCont.querySelectorAll("[data-ahu-row]").forEach((_,i)=>{const r={};["ahuTag","ahuTask","ahuArea","ahuStatus","ahuNotes"].forEach(k=>{const el=document.querySelector(`[data-ahu="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});d.ahuRows.push(r)})}
+    if(aCont){d.ahuRows=[];aCont.querySelectorAll("[data-ahu-row]").forEach((_,i)=>{const r={};["ahuTag","ahuCapacity","ahuTask","ahuArea","ahuStatus","ahuNotes"].forEach(k=>{const el=document.querySelector(`[data-ahu="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});d.ahuRows.push(r)})}
   }
   if(teamKey==="insulation"){
     const iCont=document.getElementById("insRowsCont");
-    if(iCont){d.insRows=[];iCont.querySelectorAll("[data-ins-row]").forEach((_,i)=>{const r={};["insSystem","insThickness","insLength","insArea","insStatus"].forEach(k=>{const el=document.querySelector(`[data-ins="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});d.insRows.push(r)})}
+    if(iCont){d.insRows=[];iCont.querySelectorAll("[data-ins-row]").forEach((_,i)=>{const r={};["insSystem","insThickness","insLength","insArea","insStatus"].forEach(k=>{const el=document.querySelector(`[data-ins="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});if(r.insThickness==="Other"){const oth=document.querySelector(`[data-ins="${i}"][data-key="_otherInsThickness"]`);if(oth&&oth.value)r.insThickness=oth.value}d.insRows.push(r)})}
   }
   if(teamKey==="general"){
     const gCont=document.getElementById("genRowsCont");
@@ -4182,15 +4232,15 @@ function collectForm(teamKey){
   }
   if(teamKey==="refrigerant"){
     const rCont=document.getElementById("refRowsCont");
-    if(rCont){d.refRows=[];rCont.querySelectorAll("[data-ref-row]").forEach((_,i)=>{const r={};["refType","refTask","refSystem","refCharge","refVacuum","refStatus"].forEach(k=>{const el=document.querySelector(`[data-ref="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});d.refRows.push(r)})}
+    if(rCont){d.refRows=[];rCont.querySelectorAll("[data-ref-row]").forEach((_,i)=>{const r={};["refType","refLineSize","refTask","refSystem","refCharge","refVacuum","refStatus"].forEach(k=>{const el=document.querySelector(`[data-ref="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});if(r.refLineSize==="Other"){const oth=document.querySelector(`[data-ref="${i}"][data-key="_otherRefLineSize"]`);if(oth&&oth.value)r.refLineSize=oth.value}d.refRows.push(r)})}
   }
   if(teamKey==="drainage"){
     const drCont=document.getElementById("drainRowsCont");
-    if(drCont){d.drainRows=[];drCont.querySelectorAll("[data-drain-row]").forEach((_,i)=>{const r={};["drainSize","drainType","drainLength","drainSlope","drainArea","drainStatus"].forEach(k=>{const el=document.querySelector(`[data-drain="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});d.drainRows.push(r)})}
+    if(drCont){d.drainRows=[];drCont.querySelectorAll("[data-drain-row]").forEach((_,i)=>{const r={};["drainSize","drainType","drainLength","drainSlope","drainArea","drainStatus"].forEach(k=>{const el=document.querySelector(`[data-drain="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});if(r.drainSize==="Other"){const oth=document.querySelector(`[data-drain="${i}"][data-key="_otherDrainSize"]`);if(oth&&oth.value)r.drainSize=oth.value}d.drainRows.push(r)})}
   }
   if(teamKey==="controls"){
     const ctCont=document.getElementById("ctrlRowsCont");
-    if(ctCont){d.ctrlRows=[];ctCont.querySelectorAll("[data-ctrl-row]").forEach((_,i)=>{const r={};["ctrlDevice","ctrlCable","ctrlTag","ctrlArea","ctrlStatus"].forEach(k=>{const el=document.querySelector(`[data-ctrl="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});d.ctrlRows.push(r)})}
+    if(ctCont){d.ctrlRows=[];ctCont.querySelectorAll("[data-ctrl-row]").forEach((_,i)=>{const r={};["ctrlDevice","ctrlCable","ctrlCableSize","ctrlTag","ctrlArea","ctrlStatus"].forEach(k=>{const el=document.querySelector(`[data-ctrl="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});d.ctrlRows.push(r)})}
   }
   if(teamKey==="commissioning"){
     const cmCont=document.getElementById("commRowsCont");
@@ -4671,8 +4721,16 @@ function renderUserList(){
     const roleOpts=roles.map(r=>`<option value="${r}" ${usr.role===r?"selected":""}>${r}</option>`).join("");
     return`<div class="user-row" id="urow_${u}"><div class="user-info" onclick="toggleUserActions('${u}')" style="cursor:pointer"><span style="font-size:11px;font-weight:700;color:white;background:var(--navy);border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;flex-shrink:0">${num}</span><div><span class="uname">${u}</span><span class="ufull">${usr.name}</span></div></div>
     <div class="user-actions"><select class="role-select" onchange="changeUserRole('${u}',this.value)">${roleOpts}</select></div></div>
-    <div class="user-action-panel" id="upanel_${u}" style="display:none;padding:8px 12px;background:#fff3f3;border-radius:0 0 10px 10px;margin-top:-6px;margin-bottom:6px;border:1.5px solid var(--danger);border-top:none;animation:fadeIn 0.2s">
-    <button class="btn full" style="background:var(--danger);color:white;font-size:13px;font-weight:700;padding:10px" onclick="removeUser('${u}')">🗑️ Remove ${u}</button>
+    <div class="user-action-panel" id="upanel_${u}" style="display:none;padding:10px 12px;background:#f0f4ff;border-radius:0 0 10px 10px;margin-top:-6px;margin-bottom:6px;border:1.5px solid var(--navy);border-top:none;animation:fadeIn 0.2s">
+    <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">✏️ Edit ${u}</div>
+    <div class="admin-add" style="margin-bottom:8px">
+      <input type="text" id="edit_name_${u}" value="${usr.name}" placeholder="Full Name" class="full" style="font-size:12px">
+      <input type="password" id="edit_pass_${u}" placeholder="New password (leave blank to keep)" class="full" style="font-size:12px">
+      <button class="btn btn-success full" style="font-size:12px;padding:8px" onclick="saveUserEdit('${u}')">💾 Save Edit</button>
+    </div>
+    <div style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px">
+      <button class="btn full" style="background:var(--danger);color:white;font-size:12px;font-weight:700;padding:8px" onclick="removeUser('${u}')">🗑️ Remove ${u}</button>
+    </div>
     <button class="btn full" style="background:var(--grey);color:white;font-size:11px;padding:6px;margin-top:4px" onclick="toggleUserActions('${u}')">Cancel</button>
     </div>`;
   }).join("");
@@ -4685,6 +4743,30 @@ function changeUserRole(username,newRole){
     const base=BASE_USERS[username];
     if(base){cu[username]={...base,role:newRole};saveCustomUsers(cu);USERS=getUsers();cloudSaveUsers();showToast(username+" → "+newRole)}
   }
+}
+function saveUserEdit(username){
+  const nameEl=document.getElementById("edit_name_"+username);
+  const passEl=document.getElementById("edit_pass_"+username);
+  if(!nameEl)return;
+  const newName=nameEl.value.trim();
+  const newPass=passEl?passEl.value:"";
+  if(!newName){showToast("Name cannot be empty");return}
+  USERS=getUsers();
+  const cu=getCustomUsers();
+  const current=USERS[username];
+  if(!current)return;
+  // Create or update override in custom users
+  cu[username]={
+    pass:newPass&&newPass.length>=4?newPass:current.pass,
+    name:newName,
+    role:current.role,
+    teams:current.teams||"all"
+  };
+  saveCustomUsers(cu);
+  USERS=getUsers();
+  cloudSaveUsers();
+  renderUserList();
+  showToast("✅ "+username+" updated!");
 }
 function addNewUser(){
   const uname=document.getElementById("newUsername").value.trim().toLowerCase();
@@ -5462,7 +5544,7 @@ if(u&&u.username){currentUser=u;LANG=localStorage.getItem("elg_lang")||"en";
 setTimeout(()=>{document.getElementById("splash").classList.add("hide");setTimeout(()=>document.getElementById("splash").style.display="none",500)},1200);
 if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
 scheduleNotification();
-document.getElementById("loginHint").innerHTML=`Enter your username and password to sign in<br><span style="font-size:9px;color:#bbb">Contact admin if you forgot your password</span>`;
+document.getElementById("loginHint").innerHTML=`Enter your username and password to sign in<br><span style="font-size:9px;color:#888">Contact admin if you forgot your password</span>`;
 </script>
 </body>
 </html>
