@@ -203,6 +203,37 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .rpt-team{border-left:4px solid var(--navy);padding:10px 12px;margin-bottom:8px;background:var(--lt-grey);border-radius:0 8px 8px 0}
 .rpt-team h4{font-size:13px;margin-bottom:4px}.rpt-team p{font-size:11px;color:#555;line-height:1.5}
 .rpt-issue{background:#fff5f5;border-left:3px solid var(--danger);padding:8px 12px;margin-bottom:6px;border-radius:0 6px 6px 0;font-size:12px}
+
+.analysis-wrap{max-width:600px;margin:0 auto;padding:0}
+.analysis-period-tabs{display:flex;gap:4px;margin-bottom:10px;padding:4px;background:white;border-radius:10px;box-shadow:var(--shadow)}
+.ap-tab{flex:1;padding:10px 6px;text-align:center;font-size:11px;font-weight:700;border:none;background:none;border-radius:8px;cursor:pointer;color:var(--grey);transition:all .2s}
+.ap-tab.active{background:linear-gradient(135deg,#0F6E56,#1D9E75);color:white;box-shadow:0 3px 10px rgba(15,110,86,.25)}
+.an-card{background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid rgba(31,78,121,.04)}
+.an-card h3{font-size:14px;color:var(--navy);margin-bottom:10px;border-bottom:2px solid var(--blue-bg);padding-bottom:6px;font-weight:700}
+.an-card h4{font-size:12px;color:var(--navy);margin:8px 0 4px;font-weight:700}
+.an-exec{background:linear-gradient(135deg,#f0faf5,white);border-left:4px solid #0F6E56}
+.an-exec h3{color:#0F6E56}
+.an-kpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0}
+.an-kpi-box{background:white;border-radius:10px;padding:10px 6px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.04);border:1px solid rgba(15,110,86,.08)}
+.an-kpi-box .kn{font-size:20px;font-weight:800;color:var(--navy);letter-spacing:-.5px}
+.an-kpi-box .kl{font-size:8px;color:var(--grey);text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+.an-team-card{border-left:5px solid var(--navy);padding:12px;margin-bottom:10px;background:var(--lt-grey);border-radius:0 var(--radius) var(--radius) 0;transition:all .2s}
+.an-team-card:hover{box-shadow:var(--shadow-lg)}
+.an-metric-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.an-metric{background:white;border-radius:6px;padding:4px 8px;font-size:10px;border:1px solid var(--border)}
+.an-metric b{color:var(--navy)}
+.an-spec-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.an-spec{background:rgba(15,110,86,.06);border-radius:4px;padding:3px 6px;font-size:9px;color:#0F6E56;font-weight:600}
+.an-blocker{background:#fff5f5;border-left:3px solid var(--danger);padding:6px 10px;margin:4px 0;border-radius:0 6px 6px 0;font-size:11px}
+.an-narrative{font-size:11px;line-height:1.6;color:#444;padding:8px 12px;background:var(--lt-grey);border-radius:8px;margin:8px 0}
+.an-trend-bar{display:flex;align-items:center;gap:6px;font-size:10px;margin:3px 0}
+.an-trend-bar .bar-fill{height:14px;border-radius:3px;min-width:2px;transition:width .4s ease}
+.an-trend-bar .bar-track{flex:1;background:#e9ecef;border-radius:3px;height:14px;overflow:hidden;position:relative}
+.an-week-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:6px;margin:8px 0}
+.an-day-box{background:white;border-radius:8px;padding:8px 6px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid var(--border)}
+.an-day-box .day-name{font-size:9px;font-weight:700;color:var(--grey);text-transform:uppercase}
+.an-day-box .day-num{font-size:16px;font-weight:800;color:var(--navy)}
+.an-day-box .day-sub{font-size:8px;color:var(--grey)}
 .settings-panel{max-width:600px;margin:0 auto;padding:16px}
 .s-card{background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
 .s-card h3{font-size:14px;color:var(--navy);margin-bottom:10px}
@@ -331,6 +362,23 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .modal-btns .m-danger{background:#dc3545;color:white;box-shadow:0 4px 12px rgba(220,53,69,.3)}
 .modal-btns .m-cancel{background:#f0f0f0;color:#555}
 .modal-btns button:active{transform:scale(.96)}
+
+/* Offline indicator */
+.offline-banner{position:fixed;top:0;left:0;right:0;z-index:9999;background:#e74c3c;color:white;text-align:center;padding:6px 12px;font-size:12px;font-weight:700;transform:translateY(-100%);transition:transform .3s ease;display:flex;align-items:center;justify-content:center;gap:6px}
+.offline-banner.show{transform:translateY(0)}
+.sync-badge{background:#e67e22;color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;display:none;margin-left:6px}
+.sync-badge.has-items{display:inline-block}
+
+/* Swipe-to-delete on history cards */
+.h-item{position:relative;overflow:hidden;touch-action:pan-y}
+.h-item-inner{position:relative;z-index:1;background:white;transition:transform .2s ease}
+.h-item-del-bg{position:absolute;right:0;top:0;bottom:0;width:80px;background:#dc3545;display:flex;align-items:center;justify-content:center;color:white;font-size:13px;font-weight:700;z-index:0}
+.h-item.swiped .h-item-inner{transform:translateX(-80px)}
+
+/* Firebase expiry warning */
+.fb-expiry-warn{background:#fff3cd;border:2px solid #ffc107;border-radius:12px;padding:12px 16px;margin:8px 0;font-size:12px;color:#856404;display:none}
+.fb-expiry-warn.critical{background:#f8d7da;border-color:#dc3545;color:#721c24}
+.fb-expiry-warn b{display:block;margin-bottom:4px;font-size:13px}
 </style>
 </head>
 <body>
@@ -358,6 +406,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
   </div>
 </div>
 <div id="navbar" class="nav hidden"><div class="brand">ELGAWA</div><div class="right"><button class="lang-toggle" onclick="cycleLang()" id="langToggleBtn" title="Switch language">🌐 EN</button><span class="uname" id="navUser"></span><button class="btn-s" onclick="doLogout()" id="logoutBtn"></button></div></div>
+<div class="offline-banner" id="offlineBanner">📡 You are offline — reports will sync when connected</div>
 <div id="dashView" class="dash hidden">
   <div class="dash-hdr"><h2 id="dashHdr"></h2><p id="dashDate"></p></div>
   <div class="tab-row">
@@ -391,12 +440,14 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
       <button class="tab-btn" onclick="switchReportTab('tools',this)" id="rptTabTools"></button>
       <button class="tab-btn" onclick="switchReportTab('attendance',this)" id="rptTabAttend"></button>
       <button class="tab-btn" onclick="switchReportTab('monthly',this)" id="rptTabMonthly" style="background:#e67e22;color:white" id="rptTabMonthlyBtn">📊 </button>
+      <button class="tab-btn" onclick="switchReportTab('analysis',this)" id="rptTabAnalysis" style="display:none">📈 </button>
     </div>
     <div id="lastUpdated" class="last-updated"></div>
     <div id="reportContent"></div>
     <div id="reportToolContent" class="hidden"></div>
     <div id="reportAttendContent" class="hidden"></div>
     <div id="reportMonthlyContent" class="hidden"></div>
+    <div id="reportAnalysisContent" class="hidden"></div>
   </div>
   <div id="tabHistory" class="hidden">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
@@ -457,7 +508,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
         <div style="position:relative"><input type="password" id="currentPw" placeholder="Current password" class="full" style="padding-right:42px"><button type="button" onclick="togglePeek('currentPw',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button></div>
         <div style="position:relative"><input type="password" id="newPw" placeholder="New password" class="full" style="padding-right:42px"><button type="button" onclick="togglePeek('newPw',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button></div>
         <div style="position:relative"><input type="password" id="confirmPw" placeholder="Confirm new password" class="full" style="padding-right:42px"><button type="button" onclick="togglePeek('confirmPw',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button></div>
-        <button class="btn btn-success full" onclick="changePassword()" id="changePwBtn">🔒 Change Password</button>
+        <button class="btn btn-success full" onclick="changePassword()" id="changePwBtn">🔒 Save Password</button>
       </div>
     </div>
     <div class="s-card" id="installFromSettings" style="display:none">
@@ -500,7 +551,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
     </div>
   </div>
   <!-- Admin Tab (admin only) -->
-  <div id="settingsAdmin" class="s-tab-content" style="display:none">
+  <div id="settingsAdmin" class="s-tab-content"><div id="fbExpiryWarn" class="fb-expiry-warn"></div>
     <div id="cloudSyncCard" class="s-card">
       <h3 id="cloudSyncTitle"></h3>
       <p id="cloudStatus" style="font-size:12px;margin-bottom:8px"></p>
@@ -930,6 +981,10 @@ const T={
   saved:{en:"Saved!",es:"¡Guardado!",nl:"Opgeslagen!"},
   savedPdf:{en:"Saved & PDF!",es:"¡Guardado y PDF!",nl:"Opgeslagen & PDF!"},
   clearConfirm:{en:"Clear all?",es:"¿Limpiar todo?",nl:"Alles wissen?"},
+  confirm:{en:"Confirm",es:"Confirmar",nl:"Bevestigen"},
+  changePwTitle:{en:"Change Password",es:"Cambiar Contraseña",nl:"Wachtwoord Wijzigen"},
+  changePwDesc:{en:"Update your login password",es:"Actualiza tu contraseña de inicio de sesión",nl:"Werk je inlogwachtwoord bij"},
+  changePwBtn:{en:"Save Password",es:"Guardar Contraseña",nl:"Wachtwoord Opslaan"},
   reportDate:{en:"Report Date",es:"Fecha del Reporte",nl:"Rapport Datum"},
   noChecksheets:{en:"No checksheets submitted for this date",es:"No hay registros para esta fecha",nl:"Geen checklists voor deze datum"},
   dailySummary:{en:"PROJECT DAILY SUMMARY",es:"RESUMEN DIARIO DEL PROYECTO",nl:"DAGELIJKS PROJECT OVERZICHT"},
@@ -1252,6 +1307,34 @@ const T={
   frequency:{en:"Frequency",es:"Frecuencia",nl:"Frequentie"},
   pctOfTotal:{en:"% of Total",es:"% del Total",nl:"% van Totaal"},
   downloadMonthlyPdf:{en:"Download Monthly Analysis PDF",es:"Descargar PDF de Análisis Mensual",nl:"Download Maandelijkse Analyse PDF"},
+  analysisTab:{en:"Analysis",es:"Analisis",nl:"Analyse"},
+  analysisTitle:{en:"Structured Analysis",es:"Analisis Estructurado",nl:"Gestructureerde Analyse"},
+  analysisDesc:{en:"Auto-generated summary analysis for your daily, weekly and monthly project reporting.",es:"Analisis de resumen autogenerado para sus informes diarios, semanales y mensuales.",nl:"Automatisch gegenereerd samenvattingsanalyse voor uw dagelijkse, wekelijkse en maandelijkse rapportage."},
+  anDaily:{en:"Daily",es:"Diario",nl:"Dagelijks"},
+  anWeekly:{en:"Weekly",es:"Semanal",nl:"Wekelijks"},
+  anMonthly:{en:"Monthly",es:"Mensual",nl:"Maandelijks"},
+  anExecSummary:{en:"Executive Summary",es:"Resumen Ejecutivo",nl:"Managementsamenvatting"},
+  anTeamAnalysis:{en:"Team Analysis",es:"Analisis por Equipo",nl:"Teamanalyse"},
+  anWorkCompletion:{en:"Work Completion",es:"Avance de Trabajo",nl:"Werkvoortgang"},
+  anManpowerUtil:{en:"Manpower Utilisation",es:"Utilizacion de Mano de Obra",nl:"Personeelsinzet"},
+  anMaterialsConsumed:{en:"Materials Consumed",es:"Materiales Consumidos",nl:"Verbruikte Materialen"},
+  anQualityScore:{en:"Quality Score",es:"Puntuacion de Calidad",nl:"Kwaliteitsscore"},
+  anBlockerSummary:{en:"Blocker Summary",es:"Resumen de Bloqueos",nl:"Blokkade-overzicht"},
+  anSpecialistMetrics:{en:"Specialist Metrics",es:"Metricas Especializadas",nl:"Specialistische Metingen"},
+  anNarrativeSummary:{en:"Narrative Summary",es:"Resumen Narrativo",nl:"Samenvatting"},
+  anSelectWeek:{en:"Select Week Starting",es:"Seleccionar Semana Desde",nl:"Selecteer Week Vanaf"},
+  anWeekOf:{en:"Week of",es:"Semana del",nl:"Week van"},
+  anDailyTrend:{en:"Daily Trend",es:"Tendencia Diaria",nl:"Dagelijkse Trend"},
+  anTeamsReporting:{en:"Teams Reporting",es:"Equipos Reportando",nl:"Teams Rapporterend"},
+  anAvgDailyHrs:{en:"Avg Daily Hrs",es:"Hrs Diarias Prom",nl:"Gem Dagelijkse Uren"},
+  anPeakDay:{en:"Peak Day",es:"Dia Pico",nl:"Piekdag"},
+  anWeeklyNarrative:{en:"Weekly Narrative",es:"Narrativa Semanal",nl:"Wekelijkse Samenvatting"},
+  anDownloadAnalysis:{en:"Download Analysis PDF",es:"Descargar PDF de Analisis",nl:"Download Analyse PDF"},
+  anNoData:{en:"No checksheet data found for this period.",es:"No se encontraron datos de hojas para este periodo.",nl:"Geen checksheet-gegevens gevonden voor deze periode."},
+  anProductivity:{en:"Productivity",es:"Productividad",nl:"Productiviteit"},
+  anEfficiency:{en:"Efficiency",es:"Eficiencia",nl:"Efficientie"},
+  anSafety:{en:"Safety",es:"Seguridad",nl:"Veiligheid"},
+  anProgress:{en:"Progress",es:"Progreso",nl:"Voortgang"},
   // Photo section
   photoAutoTag:{en:"Photos auto-tagged with team, area & task scope",es:"Fotos auto-etiquetadas con equipo, área y alcance de tarea",nl:"Foto's automatisch getagd met team, gebied & taakbereik"},
   upload:{en:"Upload",es:"Subir",nl:"Uploaden"},
@@ -1559,6 +1642,7 @@ function showDash(){
   });
   // Apply saved view preference
   setTeamView(getTeamView());
+  checkFirebaseExpiry();
   loadSaved();renderHistory();
   document.getElementById("rptDate").onchange=generateReport;
   // Report access control
@@ -1573,6 +1657,9 @@ function showDash(){
   // Monthly tab
   const monthlyTab=document.getElementById("rptTabMonthly");
   if(monthlyTab)monthlyTab.style.display=canMonthly?"inline-block":"none";
+  // Analysis tab — admin only
+  const analysisTab=document.getElementById("rptTabAnalysis");
+  if(analysisTab)analysisTab.style.display=(currentUser.username==="admin")?"inline-block":"none";
 
   // Attendance tab — admin only (Paul manages daily attendance for weekly pay)
   const canAttend=currentUser.role==="Project Lead";
@@ -1639,10 +1726,13 @@ function _renderHistoryCards(list,sheets,date){
     const subTime=s.submittedAt?new Date(s.submittedAt).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",timeZone:"America/Guyana"}):"";
     const photoCount=(s.photos||[]).length;
     const photoTag=photoCount?`<span style="font-size:10px;color:var(--navy)">\u{1F4F7} ${photoCount}</span>`:"";
-    return`<div class="h-item" style="border-left:4px solid ${tm?tm.color:'#999'}">
-      <div class="top"><span class="h-badge" style="background:${tm?tm.color:'#999'}">${tm?tm.icon:""} ${s.teamName||"?"}</span><span class="meta">${subTime||""} ${photoTag}</span></div>
-      <div class="meta" style="margin:4px 0"><b>${s.submittedBy||s.teamLead||"Unknown"}</b>${areaTag}${s.editedAt?" ["+t("edited")+"]":""}</div>
-      <div class="h-actions" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${editBtn}${ri>=0?`<button class="h-btn" onclick="downloadPDF(${ri})">\u{1F4C4} ${t("pdfBtn")}</button><button class="h-btn" onclick="sharePDF(${ri})">\u{1F4AC} ${t("whatsappBtn")}</button><button class="h-btn" onclick="viewSaved(${ri})">\u{1F441}\ufe0f ${t("view")}</button><button class="h-btn del" onclick="deleteSaved(${ri})">\u{1F5D1}\ufe0f</button>`:""}</div>
+    return`<div class="h-item" style="border-left:4px solid ${tm?tm.color:'#999'}" ontouchstart="swipeStart(event,this)" ontouchmove="swipeMove(event,this)" ontouchend="swipeEnd(event,this)">
+      ${ri>=0?`<div class="h-item-del-bg" onclick="deleteSaved(${ri})">\u{1F5D1}\ufe0f Delete</div>`:""}
+      <div class="h-item-inner" style="background:white;padding:10px">
+        <div class="top"><span class="h-badge" style="background:${tm?tm.color:'#999'}">${tm?tm.icon:""} ${s.teamName||"?"}</span><span class="meta">${subTime||""} ${photoTag}</span></div>
+        <div class="meta" style="margin:4px 0"><b>${s.submittedBy||s.teamLead||"Unknown"}</b>${areaTag}${s.editedAt?`<span style="background:#e67e22;color:white;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:4px">✏️ ${t("edited")}</span>`:""}</div>
+        <div class="h-actions" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${editBtn}${ri>=0?`<button class="h-btn" onclick="downloadPDF(${ri})">\u{1F4C4} ${t("pdfBtn")}</button><button class="h-btn" onclick="sharePDF(${ri})">\u{1F4AC} ${t("whatsappBtn")}</button><button class="h-btn" onclick="viewSaved(${ri})">\u{1F441}\ufe0f ${t("view")}</button><button class="h-btn del" onclick="deleteSaved(${ri})">\u{1F5D1}\ufe0f</button>`:""}</div>
+      </div>
     </div>`
   }).join("");
 }
@@ -1928,8 +2018,11 @@ function switchReportTab(tab,btn){
   document.getElementById("reportToolContent").classList.toggle("hidden",tab!=="tools");
   document.getElementById("reportAttendContent").classList.toggle("hidden",tab!=="attendance");
   document.getElementById("reportMonthlyContent").classList.toggle("hidden",tab!=="monthly");
+  const anCont=document.getElementById("reportAnalysisContent");
+  if(anCont)anCont.classList.toggle("hidden",tab!=="analysis");
   _currentReportTab=tab;
   if(tab==="monthly")renderMonthlyReport();
+  if(tab==="analysis")renderAnalysisReport();
 }
 function shiftReportDate(dir){
   const dp=document.getElementById("rptDate");
@@ -2637,6 +2730,742 @@ function _buildMonthlyPDF(monthVal,allSheets){
   pdf.text(`ELGAWA Monthly Report — ${monthName} | Generated ${new Date().toLocaleString()} | ${currentUser?currentUser.name:"Admin"}`,W/2,H-8,{align:"center"});
   pdf.save(`ELGAWA_Monthly_Report_${monthVal}.pdf`);
   showToast(t("monthlyPdfDownloaded"));
+}
+
+
+// ================================================================
+// STRUCTURED ANALYSIS REPORTING SYSTEM
+// ================================================================
+
+function generateTeamAnalysis(sheet){
+  const tm=TEAMS[sheet.teamKey];if(!tm)return null;
+  const work=(sheet.workRows||[]).filter(r=>r.task);
+  const mats=(sheet.matRows||[]).filter(r=>r.material);
+  const men=(sheet.manRows||[]).filter(r=>r.name);
+  const checks=(sheet.checkItems||[]);
+  const issues=(sheet.issueRows||[]).filter(r=>r.issue);
+  const tools=(sheet.toolRows||[]).filter(r=>r.toolName);
+
+  const done=work.filter(w=>w.status==="C").length;
+  const ip=work.filter(w=>w.status==="IP").length;
+  const bl=work.filter(w=>w.status==="BL").length;
+  const comp=work.length?Math.round(done/work.length*100):0;
+
+  const totalHrs=men.reduce((a,r)=>a+(parseFloat(r.hours)||0),0);
+  const totalOT=men.reduce((a,r)=>a+(parseFloat(r.ot)||0),0);
+  const ppeOk=men.filter(r=>r.ppe!=="No"&&r.ppe!=="Partial").length;
+  const ppeRate=men.length?Math.round(ppeOk/men.length*100):100;
+  const avgHrs=men.length?(totalHrs/men.length).toFixed(1):"0";
+
+  const qOk=checks.filter(c=>c.status==="done").length;
+  const qFail=checks.filter(c=>c.status==="notdone").length;
+  const qTotal=qOk+qFail;
+  const qualScore=qTotal?Math.round(qOk/qTotal*100):100;
+
+  const matSummary=mats.filter(m=>m.qtyUsed).map(m=>({name:m.material,qty:parseFloat(m.qtyUsed)||0,unit:m.unit||"",onSite:parseFloat(m.qtyOnSite)||0}));
+
+  // Team-specific metrics
+  const spec={};
+  if(sheet.teamKey==="ducting"&&sheet.ductRows){
+    const dr=sheet.ductRows.filter(r=>r.ductMaterial||r.ductSize);
+    spec.ductPieces=dr.length;
+    spec.totalLength=dr.reduce((a,r)=>a+(parseFloat(r.length)||0),0);
+    spec.materials=[...new Set(dr.map(r=>r.ductMaterial).filter(Boolean))];
+    spec.sizes=[...new Set(dr.map(r=>r.ductSize).filter(Boolean))];
+  }
+  if(sheet.teamKey==="copper"&&sheet.copperRows){
+    const cr=sheet.copperRows.filter(r=>r.pipeSize);
+    spec.runs=cr.length;
+    spec.totalRun=cr.reduce((a,r)=>a+(parseFloat(r.runLength)||0),0);
+    spec.totalJoints=cr.reduce((a,r)=>a+(parseInt(r.joints)||0),0);
+    spec.sizes=[...new Set(cr.map(r=>r.pipeSize).filter(Boolean))];
+  }
+  if(sheet.teamKey==="ahu"&&sheet.ahuRows){
+    const ar=sheet.ahuRows.filter(r=>r.ahuTag);
+    spec.units=ar.length;
+    spec.tags=ar.map(r=>r.ahuTag).filter(Boolean);
+    spec.tasks=[...new Set(ar.map(r=>r.ahuTask).filter(Boolean))];
+  }
+  if(sheet.teamKey==="insulation"&&sheet.insRows){
+    const ir=sheet.insRows.filter(r=>r.insSystem||r.insThickness);
+    spec.sections=ir.length;
+    spec.totalLength=ir.reduce((a,r)=>a+(parseFloat(r.insLength)||0),0);
+  }
+  if(sheet.teamKey==="refrigerant"&&sheet.refRows){
+    const rr=sheet.refRows.filter(r=>r.refType||r.refTask);
+    spec.tasks=rr.length;
+    spec.types=[...new Set(rr.map(r=>r.refType).filter(Boolean))];
+  }
+  if(sheet.teamKey==="drainage"&&sheet.drainRows){
+    const dr=sheet.drainRows.filter(r=>r.drainSize);
+    spec.runs=dr.length;
+    spec.totalLength=dr.reduce((a,r)=>a+(parseFloat(r.drainLength)||0),0);
+  }
+  if(sheet.teamKey==="controls"&&sheet.ctrlRows){
+    const cr=sheet.ctrlRows.filter(r=>r.ctrlDevice);
+    spec.devices=cr.length;
+    spec.deviceList=[...new Set(cr.map(r=>r.ctrlDevice).filter(Boolean))];
+  }
+  if(sheet.teamKey==="commissioning"&&sheet.commRows){
+    const cr=sheet.commRows.filter(r=>r.commTest);
+    spec.tests=cr.length;
+    spec.passed=cr.filter(r=>r.commResult==="Pass"||r.commResult==="PASS").length;
+    spec.failed=cr.filter(r=>r.commResult==="Fail"||r.commResult==="FAIL").length;
+  }
+
+  return{
+    teamKey:sheet.teamKey,teamName:tm.name,color:tm.color,icon:tm.icon,
+    lead:sheet.teamLead,location:sheet.location,floor:sheet.floor,
+    date:sheet.date,submittedAt:sheet.submittedAt,
+    work:{total:work.length,done,ip,bl,comp,tasks:work.map(w=>({task:w.task,status:w.status,area:w.area,pct:w.pctDone}))},
+    manpower:{count:men.length,totalHrs,totalOT,avgHrs,ppeRate,otPct:totalHrs?(totalOT/totalHrs*100).toFixed(1):"0"},
+    materials:matSummary,
+    quality:{score:qualScore,passed:qOk,failed:qFail,total:qTotal},
+    issues:issues.map(i=>({issue:i.issue,impact:i.impact,action:i.action})),
+    tools:{count:tools.length,damaged:tools.filter(t=>t.condition==="Damaged"||t.condition==="Lost").length},
+    spec,
+    target:sheet.target,actual:sheet.actual
+  };
+}
+
+function aggregateAnalyses(analyses){
+  if(!analyses.length)return null;
+  const totalSheets=analyses.length;
+  const byTeam={};
+  analyses.forEach(a=>{if(!byTeam[a.teamKey])byTeam[a.teamKey]=[];byTeam[a.teamKey].push(a)});
+
+  let totalWork=0,totalDone=0,totalBL=0,totalIP=0;
+  let totalMen=0,totalHrs=0,totalOT=0,ppeSum=0;
+  let totalQual=0,qualCount=0;
+  let allIssues=[],allMats={};
+
+  analyses.forEach(a=>{
+    totalWork+=a.work.total;totalDone+=a.work.done;totalBL+=a.work.bl;totalIP+=a.work.ip;
+    totalMen+=a.manpower.count;totalHrs+=a.manpower.totalHrs;totalOT+=a.manpower.totalOT;
+    ppeSum+=a.manpower.ppeRate;
+    if(a.quality.total){totalQual+=a.quality.score;qualCount++}
+    a.issues.forEach(i=>allIssues.push({...i,team:a.teamName}));
+    a.materials.forEach(m=>{
+      const k=m.name;if(!allMats[k])allMats[k]={name:m.name,qty:0,unit:m.unit};
+      allMats[k].qty+=m.qty;
+    });
+  });
+
+  const comp=totalWork?Math.round(totalDone/totalWork*100):0;
+  const avgPPE=totalSheets?Math.round(ppeSum/totalSheets):100;
+  const avgQual=qualCount?Math.round(totalQual/qualCount):100;
+  const avgHrsPerPerson=totalMen?(totalHrs/totalMen).toFixed(1):"0";
+  const highIssues=allIssues.filter(i=>i.impact==="H").length;
+
+  return{totalSheets,byTeam,
+    work:{total:totalWork,done:totalDone,ip:totalIP,bl:totalBL,comp},
+    manpower:{total:totalMen,hrs:totalHrs,ot:totalOT,avgPPE,avgHrsPerPerson},
+    quality:{avg:avgQual,count:qualCount},
+    issues:{all:allIssues,high:highIssues},
+    materials:Object.values(allMats).sort((a,b)=>b.qty-a.qty)
+  };
+}
+
+// --- Rendering ---
+
+function renderAnalysisReport(){
+  const cont=document.getElementById("reportAnalysisContent");
+  if(!cont)return;
+  const now=getGuyanaDateTime();
+  const todayStr=getGuyanaDate();
+  const curMonth=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+
+  // Get Monday of current week
+  const dayOfWeek=now.getDay();
+  const monday=new Date(now);monday.setDate(now.getDate()-(dayOfWeek===0?6:dayOfWeek-1));
+  const mondayStr=monday.toISOString().split("T")[0];
+
+  cont.innerHTML=`<div class="analysis-wrap">
+    <div class="an-card an-exec"><h3>📈 ${t("analysisTitle")}</h3>
+      <p style="font-size:11px;color:var(--grey);margin-bottom:10px">${t("analysisDesc")}</p>
+    </div>
+    <div class="analysis-period-tabs">
+      <button class="ap-tab active" onclick="switchAnalysisPeriod('daily',this)" id="apDaily">📅 ${t("anDaily")}</button>
+      <button class="ap-tab" onclick="switchAnalysisPeriod('weekly',this)" id="apWeekly">📆 ${t("anWeekly")}</button>
+      <button class="ap-tab" onclick="switchAnalysisPeriod('monthly',this)" id="apMonthly">📊 ${t("anMonthly")}</button>
+    </div>
+    <div id="analysisPeriodContent"></div>
+  </div>`;
+  // Default to daily
+  renderDailyAnalysis(todayStr);
+}
+
+let _analysisPeriod="daily";
+function switchAnalysisPeriod(period,btn){
+  document.querySelectorAll(".analysis-period-tabs .ap-tab").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  _analysisPeriod=period;
+  const now=getGuyanaDateTime();
+  if(period==="daily")renderDailyAnalysis(getGuyanaDate());
+  else if(period==="weekly"){
+    const dow=now.getDay();const mon=new Date(now);mon.setDate(now.getDate()-(dow===0?6:dow-1));
+    renderWeeklyAnalysis(mon.toISOString().split("T")[0]);
+  }else{
+    renderMonthlyAnalysisView(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`);
+  }
+}
+
+function renderDailyAnalysis(date){
+  const cont=document.getElementById("analysisPeriodContent");
+  if(!cont)return;
+  cont.innerHTML=`<div class="f-field" style="margin-bottom:8px;display:flex;align-items:center;gap:6px">
+    <button class="btn-s" onclick="_shiftAnalysisDate(-1)" style="padding:4px 8px;font-size:14px">&larr;</button>
+    <input type="date" id="analysisDate" value="${date}" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;font-weight:600" onchange="renderDailyAnalysis(this.value)">
+    <button class="btn-s" onclick="_shiftAnalysisDate(1)" style="padding:4px 8px;font-size:14px">&rarr;</button>
+    <button class="btn-s" onclick="document.getElementById('analysisDate').value=getGuyanaDate();renderDailyAnalysis(getGuyanaDate())" style="padding:4px 8px;font-size:11px;font-weight:600">Today</button>
+  </div>
+  <div id="dailyAnalysisResults"><div class="an-card" style="text-align:center;padding:20px"><div style="font-size:24px">⏳</div><p>Loading analysis...</p></div></div>`;
+
+  _loadAndAnalyze(date,date,function(analyses){
+    const res=document.getElementById("dailyAnalysisResults");
+    if(!analyses.length){res.innerHTML=`<div class="an-card"><div class="empty">${t("anNoData")}</div></div>`;return}
+    const agg=aggregateAnalyses(analyses);
+    let html=_renderExecSummary(agg,date,"daily");
+    html+=_renderTeamCards(analyses,agg);
+    html+=_renderBlockerSection(agg);
+    html+=_renderNarrative(agg,date,"daily");
+    html+=`<div style="text-align:center;margin:12px 0"><button class="btn btn-primary" onclick="downloadAnalysisPDF('daily','${date}')" style="padding:10px 24px">📄 ${t("anDownloadAnalysis")}</button></div>`;
+    res.innerHTML=html;
+  });
+}
+
+function _shiftAnalysisDate(dir){
+  const dp=document.getElementById("analysisDate");if(!dp)return;
+  const d=new Date(dp.value+"T12:00:00");d.setDate(d.getDate()+dir);
+  dp.value=d.toISOString().split("T")[0];
+  renderDailyAnalysis(dp.value);
+}
+
+function renderWeeklyAnalysis(monday){
+  const cont=document.getElementById("analysisPeriodContent");
+  if(!cont)return;
+  const sun=new Date(monday+"T12:00:00");sun.setDate(sun.getDate()+6);
+  const sundayStr=sun.toISOString().split("T")[0];
+
+  cont.innerHTML=`<div class="f-field" style="margin-bottom:8px;display:flex;align-items:center;gap:6px">
+    <button class="btn-s" onclick="_shiftAnalysisWeek(-1)" style="padding:4px 8px;font-size:14px">&larr;</button>
+    <input type="date" id="analysisWeekStart" value="${monday}" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;font-weight:600" onchange="renderWeeklyAnalysis(this.value)">
+    <button class="btn-s" onclick="_shiftAnalysisWeek(1)" style="padding:4px 8px;font-size:14px">&rarr;</button>
+  </div>
+  <p style="font-size:11px;color:var(--grey);margin-bottom:8px;text-align:center">${t("anWeekOf")} ${monday} → ${sundayStr}</p>
+  <div id="weeklyAnalysisResults"><div class="an-card" style="text-align:center;padding:20px"><div style="font-size:24px">⏳</div><p>Loading weekly analysis...</p></div></div>`;
+
+  _loadAndAnalyze(monday,sundayStr,function(analyses){
+    const res=document.getElementById("weeklyAnalysisResults");
+    if(!analyses.length){res.innerHTML=`<div class="an-card"><div class="empty">${t("anNoData")}</div></div>`;return}
+
+    const agg=aggregateAnalyses(analyses);
+    // Group by date for daily trend
+    const byDate={};
+    analyses.forEach(a=>{if(!byDate[a.date])byDate[a.date]=[];byDate[a.date].push(a)});
+    const dates=Object.keys(byDate).sort();
+
+    let html=_renderExecSummary(agg,`${monday} - ${sundayStr}`,"weekly");
+
+    // Daily trend cards
+    html+=`<div class="an-card"><h3>📊 ${t("anDailyTrend")}</h3><div class="an-week-grid">`;
+    const d=new Date(monday+"T12:00:00");
+    for(let i=0;i<7;i++){
+      const ds=d.toISOString().split("T")[0];
+      const dayName=d.toLocaleDateString("en-US",{weekday:"short"});
+      const dayAnalyses=byDate[ds]||[];
+      const dayAgg=dayAnalyses.length?aggregateAnalyses(dayAnalyses):null;
+      html+=`<div class="an-day-box" style="${dayAnalyses.length?'border-color:#0F6E56':'opacity:.5'}">
+        <div class="day-name">${dayName}</div>
+        <div class="day-num">${dayAgg?dayAgg.work.comp+'%':'—'}</div>
+        <div class="day-sub">${dayAgg?dayAgg.manpower.total+' ppl | '+dayAgg.manpower.hrs.toFixed(0)+'h':'No data'}</div>
+      </div>`;
+      d.setDate(d.getDate()+1);
+    }
+    html+=`</div></div>`;
+
+    html+=_renderTeamCards(analyses,agg);
+    html+=_renderBlockerSection(agg);
+    html+=_renderNarrative(agg,`${monday} - ${sundayStr}`,"weekly");
+    html+=`<div style="text-align:center;margin:12px 0"><button class="btn btn-primary" onclick="downloadAnalysisPDF('weekly','${monday}')" style="padding:10px 24px">📄 ${t("anDownloadAnalysis")}</button></div>`;
+    res.innerHTML=html;
+  });
+}
+
+function _shiftAnalysisWeek(dir){
+  const dp=document.getElementById("analysisWeekStart");if(!dp)return;
+  const d=new Date(dp.value+"T12:00:00");d.setDate(d.getDate()+(dir*7));
+  dp.value=d.toISOString().split("T")[0];
+  renderWeeklyAnalysis(dp.value);
+}
+
+function renderMonthlyAnalysisView(monthVal){
+  const cont=document.getElementById("analysisPeriodContent");
+  if(!cont)return;
+  cont.innerHTML=`<div class="f-field" style="margin-bottom:8px">
+    <input type="month" id="analysisMonth" value="${monthVal}" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;font-weight:600" onchange="renderMonthlyAnalysisView(this.value)">
+  </div>
+  <div id="monthlyAnalysisResults"><div class="an-card" style="text-align:center;padding:20px"><div style="font-size:24px">⏳</div><p>Loading monthly analysis...</p></div></div>`;
+
+  const[y,m]=monthVal.split("-").map(Number);
+  const firstDay=`${monthVal}-01`;
+  const lastDay=`${y}-${String(m).padStart(2,"0")}-${new Date(y,m,0).getDate()}`;
+
+  _loadAndAnalyze(firstDay,lastDay,function(analyses){
+    const res=document.getElementById("monthlyAnalysisResults");
+    if(!analyses.length){res.innerHTML=`<div class="an-card"><div class="empty">${t("anNoData")}</div></div>`;return}
+    const agg=aggregateAnalyses(analyses);
+
+    // Group by date for trend
+    const byDate={};
+    analyses.forEach(a=>{if(!byDate[a.date])byDate[a.date]=[];byDate[a.date].push(a)});
+    const dates=Object.keys(byDate).sort();
+
+    const monthName=new Date(monthVal+"-15").toLocaleDateString("en-US",{month:"long",year:"numeric"});
+
+    let html=_renderExecSummary(agg,monthName,"monthly");
+
+    // Daily activity bars
+    html+=`<div class="an-card"><h3>📊 ${t("anDailyTrend")}</h3>`;
+    const maxDayHrs=Math.max(...dates.map(d=>byDate[d].reduce((a,an)=>a+an.manpower.totalHrs,0)),1);
+    dates.forEach(dt=>{
+      const dayAn=byDate[dt];
+      const dayHrs=dayAn.reduce((a,an)=>a+an.manpower.totalHrs,0);
+      const dayComp=dayAn.reduce((a,an)=>a+an.work.done,0);
+      const dayTotal=dayAn.reduce((a,an)=>a+an.work.total,0);
+      const dayRate=dayTotal?Math.round(dayComp/dayTotal*100):0;
+      const pct=Math.round(dayHrs/maxDayHrs*100);
+      const dayName=new Date(dt+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",day:"numeric"});
+      html+=`<div class="an-trend-bar">
+        <span style="width:50px;font-weight:600;color:var(--navy)">${dayName}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:var(--navy-lt)"></div></div>
+        <span style="width:80px;text-align:right;font-weight:600">${dayHrs.toFixed(0)}h | ${dayRate}%</span>
+      </div>`;
+    });
+    html+=`</div>`;
+
+    html+=_renderTeamCards(analyses,agg);
+    html+=_renderBlockerSection(agg);
+    html+=_renderNarrative(agg,monthName,"monthly");
+    html+=`<div style="text-align:center;margin:12px 0"><button class="btn btn-primary" onclick="downloadAnalysisPDF('monthly','${monthVal}')" style="padding:10px 24px">📄 ${t("anDownloadAnalysis")}</button></div>`;
+    res.innerHTML=html;
+  });
+}
+
+function _loadAndAnalyze(startDate,endDate,callback){
+  loadSaved();
+  const localSheets=savedSheets.filter(s=>s.date&&s.date>=startDate&&s.date<=endDate);
+  const fb=getFirebaseUrl();
+
+  if(fb){
+    // Load all dates in range from cloud
+    const d=new Date(startDate+"T12:00:00");
+    const end=new Date(endDate+"T12:00:00");
+    const promises=[];
+    while(d<=end){
+      const ds=d.toISOString().split("T")[0];
+      promises.push(cloudLoadSheets(ds).then(sheets=>sheets.map(s=>({...s,date:s.date||ds}))));
+      d.setDate(d.getDate()+1);
+    }
+    Promise.all(promises).then(results=>{
+      const cloudSheets=results.flat();
+      const merged=mergeSheets(localSheets,cloudSheets);
+      const analyses=merged.filter(s=>s.submittedAt||s.savedAt).map(s=>generateTeamAnalysis(s)).filter(Boolean);
+      callback(analyses);
+    }).catch(()=>{
+      const analyses=localSheets.filter(s=>s.submittedAt||s.savedAt).map(s=>generateTeamAnalysis(s)).filter(Boolean);
+      callback(analyses);
+    });
+  }else{
+    const analyses=localSheets.filter(s=>s.submittedAt||s.savedAt).map(s=>generateTeamAnalysis(s)).filter(Boolean);
+    callback(analyses);
+  }
+}
+
+// --- Shared rendering helpers ---
+
+function _renderExecSummary(agg,period,mode){
+  const productivityScore=Math.min(100,Math.round((agg.work.comp*0.4)+(agg.quality.avg*0.3)+((100-Math.min(100,agg.issues.high*20))*0.3)));
+  const effScore=agg.manpower.total?Math.min(100,Math.round(parseFloat(agg.manpower.avgHrsPerPerson)/8*100)):0;
+  let html=`<div class="an-card an-exec"><h3>📋 ${t("anExecSummary")} — ${period}</h3>
+    <div class="an-kpi">
+      <div class="an-kpi-box"><div class="kn">${agg.work.comp}%</div><div class="kl">${t("anWorkCompletion")}</div></div>
+      <div class="an-kpi-box"><div class="kn">${agg.manpower.total}</div><div class="kl">${t("totalManpower")}</div></div>
+      <div class="an-kpi-box"><div class="kn">${agg.manpower.hrs.toFixed(0)}</div><div class="kl">${t("totalHoursLabel")}</div></div>
+    </div>
+    <div class="an-kpi">
+      <div class="an-kpi-box"><div class="kn" style="color:${agg.quality.avg>=80?'var(--success)':'var(--warn)'}">${agg.quality.avg}%</div><div class="kl">${t("anQualityScore")}</div></div>
+      <div class="an-kpi-box"><div class="kn" style="color:${agg.manpower.avgPPE>=90?'var(--success)':'var(--danger)'}">${agg.manpower.avgPPE}%</div><div class="kl">${t("anSafety")} (PPE)</div></div>
+      <div class="an-kpi-box"><div class="kn" style="color:${productivityScore>=70?'var(--success)':(productivityScore>=50?'var(--warn)':'var(--danger)')}">${productivityScore}</div><div class="kl">${t("anProductivity")}</div></div>
+    </div>
+    <div style="margin-top:8px">
+      <div style="display:flex;gap:8px;font-size:10px;justify-content:center;flex-wrap:wrap">
+        <span class="an-metric"><b>${agg.work.done}</b>/${agg.work.total} tasks done</span>
+        <span class="an-metric"><b>${agg.work.bl}</b> blocked</span>
+        <span class="an-metric"><b>${agg.manpower.ot.toFixed(1)}</b>h OT (${agg.manpower.total?(agg.manpower.ot/agg.manpower.hrs*100).toFixed(1):0}%)</span>
+        <span class="an-metric"><b>${agg.issues.all.length}</b> issues (${agg.issues.high} HIGH)</span>
+      </div>
+    </div></div>`;
+
+  // Materials consumed summary
+  if(agg.materials.length){
+    html+=`<div class="an-card"><h3>📦 ${t("anMaterialsConsumed")} (${agg.materials.length})</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">`;
+    agg.materials.slice(0,15).forEach(m=>{
+      html+=`<span class="an-spec">${m.name}: ${m.qty} ${m.unit}</span>`;
+    });
+    html+=`</div></div>`;
+  }
+  return html;
+}
+
+function _renderTeamCards(analyses,agg){
+  let html=`<div class="an-card"><h3>🏗️ ${t("anTeamAnalysis")}</h3>`;
+  Object.keys(agg.byTeam).forEach(tk=>{
+    const teamAnalyses=agg.byTeam[tk];
+    const tm=TEAMS[tk];if(!tm)return;
+    // Aggregate for this team
+    const tAgg=aggregateAnalyses(teamAnalyses);
+    const latest=teamAnalyses[teamAnalyses.length-1];
+
+    html+=`<div class="an-team-card" style="border-color:${tm.color}">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h4 style="color:${tm.color};margin:0">${tm.icon} ${tm.name}</h4>
+        <span style="font-size:20px;font-weight:800;color:${tAgg.work.comp>=80?'var(--success)':(tAgg.work.comp>=50?'var(--warn)':'var(--danger)')}">${tAgg.work.comp}%</span>
+      </div>
+      <div style="font-size:10px;color:var(--grey);margin:2px 0">${t("leadsLabel")} ${teamAnalyses.map(a=>a.lead).filter(Boolean).join(", ")} | ${latest.location||""} ${latest.floor||""}</div>
+      <div class="an-metric-row">
+        <span class="an-metric"><b>${tAgg.work.done}</b>/${tAgg.work.total} tasks</span>
+        <span class="an-metric"><b>${tAgg.manpower.total}</b> workers</span>
+        <span class="an-metric"><b>${tAgg.manpower.hrs.toFixed(1)}</b>h</span>
+        <span class="an-metric">OT <b>${tAgg.manpower.ot.toFixed(1)}</b>h</span>
+        <span class="an-metric">PPE <b>${tAgg.manpower.avgPPE}%</b></span>
+        <span class="an-metric">Quality <b>${tAgg.quality.avg}%</b></span>
+      </div>`;
+
+    // Specialist metrics
+    const hasSpec=teamAnalyses.some(a=>Object.keys(a.spec).length>0);
+    if(hasSpec){
+      html+=`<div class="an-spec-row">`;
+      if(tk==="ducting"){
+        const totalLen=teamAnalyses.reduce((a,an)=>a+(an.spec.totalLength||0),0);
+        const totalPcs=teamAnalyses.reduce((a,an)=>a+(an.spec.ductPieces||0),0);
+        const allSizes=[...new Set(teamAnalyses.flatMap(a=>a.spec.sizes||[]))];
+        if(totalPcs)html+=`<span class="an-spec">Pieces: ${totalPcs}</span>`;
+        if(totalLen)html+=`<span class="an-spec">Length: ${totalLen.toFixed(1)}m</span>`;
+        if(allSizes.length)html+=`<span class="an-spec">Sizes: ${allSizes.join(", ")}</span>`;
+      }
+      if(tk==="copper"){
+        const totalRun=teamAnalyses.reduce((a,an)=>a+(an.spec.totalRun||0),0);
+        const totalJoints=teamAnalyses.reduce((a,an)=>a+(an.spec.totalJoints||0),0);
+        if(totalRun)html+=`<span class="an-spec">Run: ${totalRun.toFixed(1)}m</span>`;
+        if(totalJoints)html+=`<span class="an-spec">Joints: ${totalJoints}</span>`;
+      }
+      if(tk==="ahu"){
+        const allTags=[...new Set(teamAnalyses.flatMap(a=>a.spec.tags||[]))];
+        if(allTags.length)html+=`<span class="an-spec">AHUs: ${allTags.join(", ")}</span>`;
+      }
+      if(tk==="insulation"){
+        const totalLen=teamAnalyses.reduce((a,an)=>a+(an.spec.totalLength||0),0);
+        if(totalLen)html+=`<span class="an-spec">Length: ${totalLen.toFixed(1)}m</span>`;
+      }
+      if(tk==="refrigerant"){
+        const types=[...new Set(teamAnalyses.flatMap(a=>a.spec.types||[]))];
+        if(types.length)html+=`<span class="an-spec">Types: ${types.join(", ")}</span>`;
+      }
+      if(tk==="drainage"){
+        const totalLen=teamAnalyses.reduce((a,an)=>a+(an.spec.totalLength||0),0);
+        if(totalLen)html+=`<span class="an-spec">Drain: ${totalLen.toFixed(1)}m</span>`;
+      }
+      if(tk==="controls"){
+        const devs=[...new Set(teamAnalyses.flatMap(a=>a.spec.deviceList||[]))];
+        if(devs.length)html+=`<span class="an-spec">Devices: ${devs.join(", ")}</span>`;
+      }
+      if(tk==="commissioning"){
+        const totalTests=teamAnalyses.reduce((a,an)=>a+(an.spec.tests||0),0);
+        const passed=teamAnalyses.reduce((a,an)=>a+(an.spec.passed||0),0);
+        if(totalTests)html+=`<span class="an-spec">Tests: ${passed}/${totalTests} passed</span>`;
+      }
+      html+=`</div>`;
+    }
+
+    // Task list
+    if(tAgg.work.total){
+      const allTasks=teamAnalyses.flatMap(a=>a.work.tasks);
+      const doneTasks=allTasks.filter(t=>t.status==="C");
+      const blTasks=allTasks.filter(t=>t.status==="BL");
+      if(doneTasks.length){
+        html+=`<div style="font-size:10px;margin-top:4px"><span style="color:var(--success);font-weight:600">✓ Done:</span> ${doneTasks.map(t=>t.task).join(", ")}</div>`;
+      }
+      if(blTasks.length){
+        html+=`<div style="font-size:10px;margin-top:2px"><span style="color:var(--danger);font-weight:600">✕ Blocked:</span> ${blTasks.map(t=>t.task+(t.area?' ('+t.area+')':'')).join(", ")}</div>`;
+      }
+    }
+
+    // Target/actual
+    if(latest.target){
+      html+=`<div style="font-size:10px;margin-top:4px;padding:4px 8px;background:white;border-radius:4px"><b>Target:</b> ${latest.target} | <b>Actual:</b> ${latest.actual||"—"}</div>`;
+    }
+
+    html+=`</div>`;
+  });
+  html+=`</div>`;
+  return html;
+}
+
+function _renderBlockerSection(agg){
+  if(!agg.issues.all.length&&!agg.work.bl)return"";
+  let html=`<div class="an-card" style="border-left:4px solid var(--danger);background:#fff5f5">
+    <h3 style="color:var(--danger)">🚨 ${t("anBlockerSummary")} (${agg.issues.all.length + agg.work.bl})</h3>`;
+  agg.issues.all.sort((a,b)=>{const o={H:0,M:1,L:2};return(o[a.impact]||3)-(o[b.impact]||3)});
+  agg.issues.all.forEach(iss=>{
+    const impClr=iss.impact==="H"?"var(--danger)":(iss.impact==="M"?"var(--warn)":"var(--grey)");
+    html+=`<div class="an-blocker"><span style="color:${impClr};font-weight:700">[${iss.impact||"?"}]</span> ${iss.issue} <span style="color:var(--grey)">— ${iss.team}</span>${iss.action?`<br><span style="font-size:10px">Action: ${iss.action}</span>`:""}</div>`;
+  });
+  html+=`</div>`;
+  return html;
+}
+
+function _renderNarrative(agg,period,mode){
+  const teamsActive=Object.keys(agg.byTeam).length;
+  const topTeam=Object.entries(agg.byTeam).sort((a,b)=>{
+    const aComp=aggregateAnalyses(a[1]).work.comp;
+    const bComp=aggregateAnalyses(b[1]).work.comp;
+    return bComp-aComp;
+  })[0];
+  const topName=topTeam?TEAMS[topTeam[0]]?.name:"—";
+  const topComp=topTeam?aggregateAnalyses(topTeam[1]).work.comp:0;
+
+  let narrative="";
+  if(mode==="daily"){
+    narrative=`For ${period}, ${teamsActive} team(s) submitted checksheets with a combined ${agg.manpower.total} workers logging ${agg.manpower.hrs.toFixed(1)} hours. `
+      +`Overall task completion stood at ${agg.work.comp}% (${agg.work.done}/${agg.work.total}). `
+      +`${topName} led with ${topComp}% completion. `
+      +`${agg.work.bl?agg.work.bl+' task(s) remain blocked requiring attention. ':''}`
+      +`${agg.issues.high?agg.issues.high+' HIGH priority issue(s) need immediate action. ':''}`
+      +`PPE compliance averaged ${agg.manpower.avgPPE}%. Quality checks averaged ${agg.quality.avg}%.`;
+  }else if(mode==="weekly"){
+    const dates=new Set();Object.values(agg.byTeam).forEach(arr=>arr.forEach(a=>{if(a.date)dates.add(a.date)}));
+    narrative=`This week (${period}), ${dates.size} working day(s) were recorded across ${teamsActive} active team(s). `
+      +`A total of ${agg.manpower.total} worker-days produced ${agg.manpower.hrs.toFixed(0)} man-hours (${agg.manpower.ot.toFixed(1)}h overtime). `
+      +`Task completion rate: ${agg.work.comp}% (${agg.work.done} of ${agg.work.total} tasks completed). `
+      +`${topName} led performance at ${topComp}%. `
+      +`${agg.issues.all.length} issue(s) were logged (${agg.issues.high} HIGH). `
+      +`PPE compliance: ${agg.manpower.avgPPE}%. Quality: ${agg.quality.avg}%.`;
+  }else{
+    const dates=new Set();Object.values(agg.byTeam).forEach(arr=>arr.forEach(a=>{if(a.date)dates.add(a.date)}));
+    narrative=`For ${period}, ${dates.size} working days were recorded with ${teamsActive} active teams. `
+      +`${agg.manpower.total} worker-days totalled ${agg.manpower.hrs.toFixed(0)} man-hours. `
+      +`Overall completion: ${agg.work.comp}% (${agg.work.done}/${agg.work.total}). `
+      +`Top performer: ${topName} at ${topComp}%. `
+      +`${agg.issues.all.length} issues logged (${agg.issues.high} HIGH priority). `
+      +`Overtime: ${agg.manpower.ot.toFixed(1)}h. PPE: ${agg.manpower.avgPPE}%. Quality: ${agg.quality.avg}%.`;
+  }
+
+  return`<div class="an-card"><h3>📝 ${t("anNarrativeSummary")}</h3><div class="an-narrative">${narrative}</div></div>`;
+}
+
+// --- Analysis PDF Export ---
+function downloadAnalysisPDF(mode,dateVal){
+  const loading=document.createElement("div");
+  loading.className="an-card";loading.style.cssText="text-align:center;padding:20px";
+  loading.innerHTML='<div style="font-size:24px">⏳</div><p>Generating PDF...</p>';
+  const container=document.getElementById(mode==="daily"?"dailyAnalysisResults":mode==="weekly"?"weeklyAnalysisResults":"monthlyAnalysisResults");
+  if(container)container.appendChild(loading);
+
+  let startDate,endDate,periodLabel;
+  if(mode==="daily"){
+    startDate=endDate=dateVal;periodLabel=dateVal;
+  }else if(mode==="weekly"){
+    startDate=dateVal;
+    const sun=new Date(dateVal+"T12:00:00");sun.setDate(sun.getDate()+6);
+    endDate=sun.toISOString().split("T")[0];
+    periodLabel=`Week of ${dateVal}`;
+  }else{
+    const[y,m]=dateVal.split("-").map(Number);
+    startDate=`${dateVal}-01`;
+    endDate=`${y}-${String(m).padStart(2,"0")}-${new Date(y,m,0).getDate()}`;
+    periodLabel=new Date(dateVal+"-15").toLocaleDateString("en-US",{month:"long",year:"numeric"});
+  }
+
+  _loadAndAnalyze(startDate,endDate,function(analyses){
+    if(loading.parentNode)loading.remove();
+    if(!analyses.length){showToast(t("anNoData"));return}
+    _buildAnalysisPDF(mode,periodLabel,analyses);
+  });
+}
+
+function _buildAnalysisPDF(mode,periodLabel,analyses){
+  const agg=aggregateAnalyses(analyses);
+  const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");
+  const W=215.9,H=279.4,M=12;let y=12;const nv=[31,78,121];const teal=[15,110,86];
+
+  // Header
+  pdf.setFontSize(16);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");
+  pdf.text("ELGAWA GUYANA INC.",W/2,y,{align:"center"});y+=5;
+  pdf.setFontSize(9);pdf.setTextColor(100);pdf.setFont(undefined,"normal");
+  pdf.text("Pasha Global Luxury Hotel — HVAC Installation Works",W/2,y,{align:"center"});y+=5;
+  pdf.setFontSize(13);pdf.setTextColor(...teal);pdf.setFont(undefined,"bold");
+  const modeLabel=mode==="daily"?"Daily":mode==="weekly"?"Weekly":"Monthly";
+  pdf.text(`${modeLabel} Structured Analysis Report`,W/2,y,{align:"center"});y+=5;
+  pdf.setFontSize(11);pdf.setTextColor(...nv);pdf.text(periodLabel.toUpperCase(),W/2,y,{align:"center"});y+=2;
+  pdf.setDrawColor(...teal);pdf.setLineWidth(.6);pdf.line(M,y,W-M,y);y+=6;
+
+  // Executive KPIs
+  const prodScore=Math.min(100,Math.round((agg.work.comp*0.4)+(agg.quality.avg*0.3)+((100-Math.min(100,agg.issues.high*20))*0.3)));
+  pdf.setFontSize(11);pdf.setTextColor(...teal);pdf.setFont(undefined,"bold");
+  pdf.text("Executive Summary",M,y);y+=5;
+  pdf.autoTable({startY:y,margin:{left:M,right:M},
+    head:[["Metric","Value","Metric","Value"]],
+    body:[
+      ["Checksheets",""+agg.totalSheets,"Total Workers",""+agg.manpower.total],
+      ["Total Man-Hours",agg.manpower.hrs.toFixed(1),"Avg Hrs/Person",agg.manpower.avgHrsPerPerson],
+      ["Tasks Completed",agg.work.done+"/"+agg.work.total,"Completion Rate",agg.work.comp+"%"],
+      ["Tasks Blocked",""+agg.work.bl,"Overtime Hours",agg.manpower.ot.toFixed(1)],
+      ["Quality Score",agg.quality.avg+"%","PPE Compliance",agg.manpower.avgPPE+"%"],
+      ["Issues Reported",""+agg.issues.all.length,"HIGH Priority",""+agg.issues.high],
+      ["Productivity Score",prodScore+"/100","Teams Active",""+Object.keys(agg.byTeam).length],
+    ],
+    headStyles:{fillColor:teal,fontSize:7},bodyStyles:{fontSize:7},theme:"grid",
+    columnStyles:{0:{fontStyle:"bold",cellWidth:38},2:{fontStyle:"bold",cellWidth:38}}
+  });
+  y=pdf.lastAutoTable.finalY+6;
+
+  // Narrative
+  const teamsActive=Object.keys(agg.byTeam).length;
+  const narrative=`During this ${mode} period, ${teamsActive} team(s) submitted ${agg.totalSheets} checksheets. `
+    +`A total of ${agg.manpower.total} workers logged ${agg.manpower.hrs.toFixed(0)} man-hours (${agg.manpower.ot.toFixed(1)}h overtime). `
+    +`Task completion: ${agg.work.comp}% (${agg.work.done}/${agg.work.total}), with ${agg.work.bl} blocked. `
+    +`Quality checks averaged ${agg.quality.avg}%. PPE compliance: ${agg.manpower.avgPPE}%. `
+    +`${agg.issues.all.length} issue(s) reported (${agg.issues.high} HIGH priority).`;
+  pdf.setFontSize(8);pdf.setTextColor(40);pdf.setFont(undefined,"normal");
+  const narLines=pdf.splitTextToSize(narrative,W-2*M);
+  pdf.text(narLines,M,y);y+=narLines.length*3.5+5;
+
+  // Team breakdown table
+  if(y>H-50){pdf.addPage();y=12}
+  pdf.setFontSize(11);pdf.setTextColor(...teal);pdf.setFont(undefined,"bold");
+  pdf.text("Team Performance Breakdown",M,y);y+=5;
+  const teamRows=Object.keys(agg.byTeam).map(tk=>{
+    const tm=TEAMS[tk];const tAgg=aggregateAnalyses(agg.byTeam[tk]);
+    return[tm?tm.name:tk,""+tAgg.manpower.total,tAgg.manpower.hrs.toFixed(1),
+      tAgg.work.done+"/"+tAgg.work.total,tAgg.work.comp+"%",tAgg.quality.avg+"%",
+      tAgg.manpower.avgPPE+"%",tAgg.manpower.ot.toFixed(1),""+tAgg.issues.all.length];
+  });
+  pdf.autoTable({startY:y,margin:{left:M,right:M},
+    head:[["Team","Workers","Hours","Tasks","Comp%","Quality","PPE","OT","Issues"]],body:teamRows,
+    headStyles:{fillColor:teal,fontSize:6},bodyStyles:{fontSize:6},theme:"grid",
+    columnStyles:{0:{fontStyle:"bold"}},
+    didParseCell:function(data){
+      if(data.section==="body"&&data.column.index===4){
+        const pct=parseInt(data.cell.raw);
+        if(pct>=80)data.cell.styles.textColor=[40,167,69];
+        else if(pct>=50)data.cell.styles.textColor=[240,173,78];
+        else data.cell.styles.textColor=[220,53,69];
+        data.cell.styles.fontStyle="bold";
+      }
+    }
+  });
+  y=pdf.lastAutoTable.finalY+6;
+
+  // Individual team details
+  Object.keys(agg.byTeam).forEach(tk=>{
+    const tm=TEAMS[tk];if(!tm)return;
+    const teamAn=agg.byTeam[tk];
+    const tAgg=aggregateAnalyses(teamAn);
+
+    if(y>H-40){pdf.addPage();y=12}
+    const tc=tm.color.replace("#","");
+    const cr=parseInt(tc.substring(0,2),16),cg=parseInt(tc.substring(2,4),16),cb=parseInt(tc.substring(4,6),16);
+    pdf.setFontSize(10);pdf.setTextColor(cr,cg,cb);pdf.setFont(undefined,"bold");
+    pdf.text(`${tm.name} — Detailed Analysis`,M,y);y+=4;
+
+    const detailRows=[
+      ["Lead(s)",teamAn.map(a=>a.lead).filter(Boolean).join(", ")],
+      ["Workers",""+tAgg.manpower.total],["Hours",tAgg.manpower.hrs.toFixed(1)+"h (OT: "+tAgg.manpower.ot.toFixed(1)+"h)"],
+      ["Tasks",tAgg.work.done+"/"+tAgg.work.total+" ("+tAgg.work.comp+"%)"],
+      ["Quality",tAgg.quality.avg+"%"],["PPE",tAgg.manpower.avgPPE+"%"]
+    ];
+
+    // Add specialist metrics
+    const specs=teamAn.filter(a=>Object.keys(a.spec).length>0);
+    if(specs.length){
+      if(tk==="ducting"){
+        const tLen=teamAn.reduce((a,an)=>a+(an.spec.totalLength||0),0);
+        const tPcs=teamAn.reduce((a,an)=>a+(an.spec.ductPieces||0),0);
+        if(tPcs)detailRows.push(["Duct Pieces",""+tPcs]);
+        if(tLen)detailRows.push(["Duct Length",tLen.toFixed(1)+"m"]);
+      }
+      if(tk==="copper"){
+        const tRun=teamAn.reduce((a,an)=>a+(an.spec.totalRun||0),0);
+        const tJ=teamAn.reduce((a,an)=>a+(an.spec.totalJoints||0),0);
+        if(tRun)detailRows.push(["Copper Run",tRun.toFixed(1)+"m"]);
+        if(tJ)detailRows.push(["Copper Joints",""+tJ]);
+      }
+      if(tk==="ahu"){
+        const tags=[...new Set(teamAn.flatMap(a=>a.spec.tags||[]))];
+        if(tags.length)detailRows.push(["AHU Tags",tags.join(", ")]);
+      }
+      if(tk==="commissioning"){
+        const tests=teamAn.reduce((a,an)=>a+(an.spec.tests||0),0);
+        const passed=teamAn.reduce((a,an)=>a+(an.spec.passed||0),0);
+        if(tests)detailRows.push(["Commissioning Tests",passed+"/"+tests+" passed"]);
+      }
+    }
+
+    // Done tasks
+    const doneTasks=teamAn.flatMap(a=>a.work.tasks.filter(t=>t.status==="C")).map(t=>t.task);
+    if(doneTasks.length)detailRows.push(["Completed Tasks",doneTasks.join(", ")]);
+    const blTasks=teamAn.flatMap(a=>a.work.tasks.filter(t=>t.status==="BL")).map(t=>t.task);
+    if(blTasks.length)detailRows.push(["Blocked Tasks",blTasks.join(", ")]);
+
+    // Materials
+    if(tAgg.materials.length){
+      detailRows.push(["Materials Used",tAgg.materials.map(m=>m.name+" ("+m.qty+" "+m.unit+")").join(", ")]);
+    }
+
+    pdf.autoTable({startY:y,margin:{left:M,right:M},
+      body:detailRows,
+      bodyStyles:{fontSize:7},theme:"grid",
+      columnStyles:{0:{fontStyle:"bold",cellWidth:32,fillColor:[245,245,245]}},
+      didParseCell:function(data){
+        if(data.section==="body"){
+          const val=data.row.cells[0]?.raw||"";
+          if(val.includes("Blocked"))data.cell.styles.textColor=[220,53,69];
+        }
+      }
+    });
+    y=pdf.lastAutoTable.finalY+5;
+  });
+
+  // Issues section
+  if(agg.issues.all.length){
+    if(y>H-30){pdf.addPage();y=12}
+    pdf.setFontSize(10);pdf.setTextColor(220,53,69);pdf.setFont(undefined,"bold");
+    pdf.text(`Issues & Blockers (${agg.issues.all.length})`,M,y);y+=4;
+    const issRows=agg.issues.all.map(i=>[i.impact||"?",i.issue,i.team,i.action||""]);
+    pdf.autoTable({startY:y,margin:{left:M,right:M},
+      head:[["Priority","Issue","Team","Action"]],body:issRows,
+      headStyles:{fillColor:[220,53,69],fontSize:7},bodyStyles:{fontSize:7},theme:"grid",
+      columnStyles:{0:{cellWidth:14}},
+      didParseCell:function(data){
+        if(data.section==="body"&&data.column.index===0){
+          if(data.cell.raw==="H")data.cell.styles.textColor=[220,53,69];
+          else if(data.cell.raw==="M")data.cell.styles.textColor=[240,173,78];
+          data.cell.styles.fontStyle="bold";
+        }
+      }
+    });
+    y=pdf.lastAutoTable.finalY+5;
+  }
+
+  // Footer
+  pdf.setFontSize(7);pdf.setTextColor(150);pdf.setFont(undefined,"normal");
+  pdf.text(`ELGAWA ${modeLabel} Analysis Report | Generated ${new Date().toLocaleString()} | ${currentUser?currentUser.name:"Admin"}`,W/2,H-8,{align:"center"});
+
+  const dateStr=mode==="daily"?periodLabel:(mode==="weekly"?periodLabel.replace("Week of ","W"):periodLabel.replace(/\s+/g,"_"));
+  pdf.save(`ELGAWA_${modeLabel}_Analysis_${dateStr}.pdf`);
+  showToast("Analysis PDF downloaded!");
 }
 
 function buildReportPDF(date,extraSheets){
@@ -4405,7 +5234,7 @@ function submitAndShare(tk){
   const valErrors=validateForm(tk);
   if(valErrors.length){
     showToast("⚠️ "+valErrors[0]);
-    alert(t("requiredFields")+"\n\n• "+valErrors.join("\n• "));
+    showModal(t("requiredFields")||"Required Fields",valErrors.map(e=>"• "+e).join("<br>"),null,{okText:"OK"});
     return;
   }
   // Check for existing submissions (same team + same date)
@@ -4470,7 +5299,7 @@ function updateAndReshare(tk){
   const valErrors=validateForm(tk);
   if(valErrors.length){
     showToast("⚠️ "+valErrors[0]);
-    alert(t("requiredFields")+"\n\n• "+valErrors.join("\n• "));
+    showModal(t("requiredFields")||"Required Fields",valErrors.map(e=>"• "+e).join("<br>"),null,{okText:"OK"});
     return;
   }
   const d=collectForm(tk);
@@ -4483,8 +5312,8 @@ function updateAndReshare(tk){
   // Replace in savedSheets
   savedSheets[_editingIndex]=d;
   saveSaved();
-  // Re-sync to cloud (POST new version — old one stays but reports use latest _id match)
-  cloudSaveSheet(d).then(ok=>{
+  // Re-sync to cloud (PUT replaces original, falls back to POST)
+  cloudUpdateSheet(d).then(ok=>{
     if(ok)showToast(t("updatedSynced"));
     else showToast(t("updatedLocally"));
   });
@@ -4554,6 +5383,24 @@ function cloudSaveSheet(data){
   return fetch(`${fb}/checksheets/${date}.json`,{method:"POST",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}})
     .then(r=>{if(!r.ok)throw new Error("sync fail");return true})
     .catch(()=>false);
+}
+function cloudUpdateSheet(data){
+  const fb=getFirebaseUrl();if(!fb)return Promise.resolve(false);
+  const date=data.date||getGuyanaDate();
+  const id=data._id;if(!id)return cloudSaveSheet(data);
+  // Find existing Firebase key by _id, then PUT to replace
+  return fetch(`${fb}/checksheets/${date}.json?orderBy="_id"&equalTo="${id}"`)
+    .then(r=>r.json())
+    .then(obj=>{
+      if(obj&&Object.keys(obj).length){
+        const fbKey=Object.keys(obj)[0];
+        return fetch(`${fb}/checksheets/${date}/${fbKey}.json`,{method:"PUT",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}});
+      }else{
+        return fetch(`${fb}/checksheets/${date}.json`,{method:"POST",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}});
+      }
+    })
+    .then(r=>{if(!r.ok)throw new Error("update fail");return true})
+    .catch(()=>cloudSaveSheet(data));
 }
 function cloudLoadSheets(date){
   const fb=getFirebaseUrl();if(!fb)return Promise.resolve([]);
@@ -4793,6 +5640,7 @@ function showSettings(){applyLang();
   renderOTEligible();
   renderReportAccessPanel();
   renderCloudSettings();
+  checkFirebaseExpiry();
 }
 function renderCloudSettings(){
   const card=document.getElementById("cloudSyncCard");
@@ -5131,7 +5979,69 @@ function removeReportAccess(type,uname){
 }
 
 function toggleNotif(){const on=localStorage.getItem("elg_notif")==="on";
-  if(!on&&"Notification" in window){Notification.requestPermission().then(p=>{if(p==="granted"){localStorage.setItem("elg_notif","on");scheduleNotification();showSettings()}})}
+  if(!on&&"Notification" in window){Notification.requestPermission().then(p=>{if(p==="granted"){localStorage.setItem("elg_notif","on");
+// Offline detection
+let _syncQueue=[];
+function updateOfflineStatus(){
+  const banner=document.getElementById("offlineBanner");
+  if(banner){if(!navigator.onLine)banner.classList.add("show");else banner.classList.remove("show")}
+}
+window.addEventListener("online",()=>{updateOfflineStatus();flushSyncQueue()});
+window.addEventListener("offline",updateOfflineStatus);
+setTimeout(updateOfflineStatus,2000);
+function flushSyncQueue(){
+  if(!navigator.onLine||!_syncQueue.length)return;
+  const items=[..._syncQueue];_syncQueue=[];
+  items.forEach(d=>{cloudSaveSheet(d).catch(()=>_syncQueue.push(d))});
+  if(items.length)showToast("☁️ "+items.length+" report(s) synced");
+}
+
+// Swipe-to-delete touch handlers
+let _swipeX0=0,_swipeActive=false;
+function swipeStart(e,el){
+  const t=e.touches[0];_swipeX0=t.clientX;_swipeActive=true;
+  // Close any other swiped items
+  document.querySelectorAll(".h-item.swiped").forEach(item=>{if(item!==el)item.classList.remove("swiped")});
+}
+function swipeMove(e,el){
+  if(!_swipeActive)return;
+  const dx=e.touches[0].clientX-_swipeX0;
+  const inner=el.querySelector(".h-item-inner");
+  if(inner&&dx<-20){inner.style.transform=`translateX(${Math.max(dx,-80)}px)`;inner.style.transition="none"}
+}
+function swipeEnd(e,el){
+  if(!_swipeActive)return;_swipeActive=false;
+  const inner=el.querySelector(".h-item-inner");
+  if(!inner)return;
+  const tx=parseFloat(inner.style.transform.replace(/[^-\d.]/g,"")||0);
+  inner.style.transition="transform .2s ease";
+  if(tx<-40){el.classList.add("swiped");inner.style.transform="translateX(-80px)"}
+  else{el.classList.remove("swiped");inner.style.transform="translateX(0)"}
+}
+// Tap anywhere to close swiped cards
+document.addEventListener("touchstart",e=>{
+  if(!e.target.closest(".h-item.swiped")&&!e.target.closest(".h-item-del-bg")){
+    document.querySelectorAll(".h-item.swiped").forEach(el=>{el.classList.remove("swiped");const inner=el.querySelector(".h-item-inner");if(inner)inner.style.transform="translateX(0)"});
+  }
+});
+
+// Firebase rules expiry check (expires 2026-05-31)
+const FB_RULES_EXPIRY=new Date("2026-05-31T23:59:59-04:00").getTime();
+function checkFirebaseExpiry(){
+  if(!currentUser||currentUser.username!=="admin")return;
+  const now=Date.now();
+  const daysLeft=Math.ceil((FB_RULES_EXPIRY-now)/(1000*60*60*24));
+  const warn=document.getElementById("fbExpiryWarn");
+  if(!warn)return;
+  if(daysLeft<=0){
+    warn.style.display="block";warn.className="fb-expiry-warn critical";
+    warn.innerHTML=`<b>⛔ Firebase Rules EXPIRED</b>Cloud sync is broken. Go to <a href="https://console.firebase.google.com" target="_blank" style="color:inherit;text-decoration:underline">Firebase Console</a> → Realtime Database → Rules → extend the expiry date or set permanent rules.`;
+  }else if(daysLeft<=14){
+    warn.style.display="block";warn.className="fb-expiry-warn"+(daysLeft<=5?" critical":"");
+    warn.innerHTML=`<b>⚠️ Firebase Rules Expire in ${daysLeft} Day${daysLeft>1?"s":""}</b>Cloud sync will stop working on May 31. Go to <a href="https://console.firebase.google.com" target="_blank" style="color:inherit;text-decoration:underline">Firebase Console</a> → Realtime Database → Rules → extend the date.`;
+  }
+}
+scheduleNotification();showSettings()}})}
   else{localStorage.setItem("elg_notif","off");showSettings()}}
 function saveNotifTime(){localStorage.setItem("elg_notif_time",document.getElementById("notifTime").value);scheduleNotification()}
 function scheduleNotification(){if(localStorage.getItem("elg_notif")!=="on")return;const tt=localStorage.getItem("elg_notif_time")||"16:30";const[h,m]=tt.split(":").map(Number);const now=new Date();let tgt=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m);if(tgt<=now)tgt.setDate(tgt.getDate()+1);clearTimeout(window._nt);window._nt=setTimeout(()=>{if("Notification" in window&&Notification.permission==="granted")new Notification("ELGAWA Checksheet",{body:t("notifBody"),icon:"icon-192.png"});scheduleNotification()},tgt-now)}
@@ -5644,7 +6554,7 @@ try{const u=localStorage.getItem("elg_user");if(u){currentUser=JSON.parse(u);
 setTimeout(()=>{document.getElementById("splash").classList.add("hide");setTimeout(()=>document.getElementById("splash").style.display="none",500)},1200);
 if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
 scheduleNotification();
-document.getElementById("loginHint").innerHTML=`Enter your username and password to sign in<br><span style="font-size:9px;color:#888">Contact admin if you forgot your password</span>`;
+document.getElementById("loginHint").innerHTML=`Enter your username and password to sign in<br><span style="font-size:9px;color:#888">Contact admin if you forgot your credentials</span>`;
 </script>
 </body>
 </html>
