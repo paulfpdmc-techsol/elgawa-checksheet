@@ -79,7 +79,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .card-expand-hdr .ce-back{background:none;border:none;font-size:24px;color:var(--navy);cursor:pointer;padding:4px 8px}
 .card-expand-hdr .ce-title{font-size:16px;font-weight:800;color:var(--navy)}
 .card-expand-hdr .ce-done{padding:8px 20px;border:none;border-radius:10px;background:var(--success);color:white;font-weight:700;font-size:13px;cursor:pointer;margin-left:auto}
-.card-expand-body{padding:16px;max-width:600px;margin:0 auto}
+.card-expand-body{padding:12px;max-width:600px;margin:0 auto}
 .submit-bar{position:sticky;bottom:0;left:0;right:0;padding:12px 16px;background:white;box-shadow:0 -4px 20px rgba(0,0,0,.1);z-index:150;display:flex;gap:8px;justify-content:center}
 .submit-bar .btn{flex:1;max-width:200px}
 .submit-bar .btn:disabled{opacity:.5;cursor:not-allowed}
@@ -148,10 +148,10 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .back-btn{background:none;border:none;color:var(--navy-lt);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:4px}
 .form-hdr{background:white;border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);text-align:center}
 .form-hdr h2{font-size:16px;margin-bottom:2px}.form-hdr .sub{font-size:11px;color:var(--grey);font-style:italic}
-.section{background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid rgba(31,78,121,.04)}
+.section{background:white;border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);border:1px solid rgba(31,78,121,.04)}
 .section h3{font-size:14px;color:var(--navy);margin-bottom:10px;padding-bottom:6px;border-bottom:3px solid var(--navy-lt);font-weight:800;letter-spacing:-.3px}
 .section .legend{font-size:10px;color:var(--grey);font-style:italic;margin-bottom:6px}
-.collapse-hdr{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:16px 18px;background:linear-gradient(135deg,white 80%,var(--blue-bg) 100%);border-radius:var(--radius);margin-bottom:2px;box-shadow:var(--shadow);border:1.5px solid rgba(31,78,121,.08);transition:all .2s}
+.collapse-hdr{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:14px 16px;background:linear-gradient(135deg,white 80%,var(--blue-bg) 100%);border-radius:var(--radius);margin-bottom:6px;box-shadow:var(--shadow);border:1.5px solid rgba(31,78,121,.08);transition:all .2s}
 .collapse-hdr:active{transform:scale(.99)}
 .collapse-hdr h3{font-size:13px;color:var(--navy);margin:0;border:none;padding:0;font-weight:700}
 .collapse-hdr .arrow{font-size:14px;color:var(--navy-lt);transition:transform .25s ease;background:var(--blue-bg);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center}
@@ -161,21 +161,24 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .collapse-body .inner{padding:10px 14px}
 .collapse-count{font-size:11px;color:var(--grey);font-weight:400;margin-left:8px}
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.f-field label{display:block;font-size:10px;font-weight:600;color:#555;margin-bottom:2px}
-.f-field input,.f-field select{width:100%;padding:14px 14px;border:2px solid var(--border);border-radius:12px;font-size:16px;background:white;min-height:48px;font-weight:500}
-.f-field input:focus,.f-field select:focus{outline:none;border-color:var(--navy-lt)}
+.f-field{margin-bottom:10px}
+.f-field label{display:block;font-size:10px;font-weight:700;color:#555;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
+.f-field input,.f-field select{width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:12px;font-size:15px;background:white;min-height:46px;font-weight:500;box-sizing:border-box}
+.f-field input:focus,.f-field select:focus{outline:none;border-color:var(--navy-lt);box-shadow:0 0 0 3px rgba(31,78,121,.08)}
 .target-grid{display:grid;grid-template-columns:1fr;gap:8px}
 .tbox label{display:block;font-size:10px;font-weight:600;color:#555;margin-bottom:2px}
 .tbox textarea{width:100%;height:50px;padding:8px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;resize:vertical;font-family:inherit}
-.entry-card{background:white;border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.03);transition:box-shadow .2s}
+.entry-card{background:white;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.03);transition:box-shadow .2s}
 .entry-card:focus-within{box-shadow:0 2px 12px rgba(31,78,121,.1);border-color:var(--navy-lt)}
-.entry-card .row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.entry-card .row-num{background:var(--navy);color:white;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
-.entry-card .fields{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.entry-card .row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.entry-card .row-num{background:var(--navy);color:white;width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.entry-card .fields{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
 .entry-card .fields.three{grid-template-columns:1fr 1fr 1fr}
 .entry-card .fields.full{grid-template-columns:1fr}
-.mini-field label{font-size:9px;font-weight:600;color:#888;display:block;margin-bottom:1px}
-.mini-field input,.mini-field select{width:100%;padding:10px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:white;min-height:40px}
+.mini-field{min-width:0}
+.mini-field label{font-size:9px;font-weight:700;color:#666;display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px}
+.mini-field input,.mini-field select{width:100%;padding:10px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:white;min-height:40px;box-sizing:border-box}
+.mini-field input:focus,.mini-field select:focus{outline:none;border-color:var(--navy-lt);box-shadow:0 0 0 2px rgba(31,78,121,.08)}
 .mat-name{font-size:12px;font-weight:600;color:#444;margin-bottom:6px;padding:4px 0;border-bottom:1px dashed #ddd}
 .ck-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0f0}
 .ck-num{color:#888;font-size:10px;width:18px;text-align:center;flex-shrink:0}
@@ -223,7 +226,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .install-banner .dismiss{background:transparent;color:rgba(255,255,255,.7);font-size:18px;padding:0 6px}
 .add-btn{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:11px;background:linear-gradient(135deg,var(--success),#20c997);color:white;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px;box-shadow:0 3px 10px rgba(40,167,69,.2);transition:all .2s}
 .add-btn:active{transform:scale(.97);box-shadow:0 1px 4px rgba(40,167,69,.2)}
-.other-input{margin-top:4px}
+.other-input{margin-top:4px}.other-input input{padding:8px;font-size:12px;min-height:34px;border:1.5px dashed var(--navy-lt);border-radius:6px;background:#f8fafc}
 .last-updated{font-size:10px;color:var(--grey);text-align:right;margin-bottom:6px;padding:0 4px}
 .import-section{background:white;border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow);border-left:4px solid var(--navy)}
 .import-section h4{font-size:13px;color:var(--navy);margin-bottom:8px}
@@ -325,7 +328,10 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
     <label id="lbl_user">Username</label>
     <input type="text" id="loginUser" autocomplete="username" autocapitalize="none">
     <label id="lbl_pass">Password</label>
-    <input type="password" id="loginPass" autocomplete="current-password">
+    <div style="position:relative">
+      <input type="password" id="loginPass" autocomplete="current-password" style="padding-right:42px">
+      <button type="button" onclick="togglePeek('loginPass',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button>
+    </div>
     <button class="primary" onclick="doLogin()" id="loginBtn">Sign In</button>
     <div id="loginErr" class="login-err"></div>
     <div class="login-hint" id="loginHint"></div>
@@ -373,6 +379,11 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
     <div id="reportMonthlyContent" class="hidden"></div>
   </div>
   <div id="tabHistory" class="hidden">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <label style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px">📅 Select Date:</label>
+      <input type="date" id="histDatePicker" style="flex:1;min-width:140px;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;background:white;min-height:42px" onchange="renderHistoryForDate(this.value)">
+      <button class="pill-btn" onclick="document.getElementById('histDatePicker').value=getGuyanaDate();renderHistoryForDate(getGuyanaDate())" style="white-space:nowrap">Today</button>
+    </div>
     <div id="histList"></div>
   </div>
   <div id="tabAttendance" class="hidden">
@@ -423,9 +434,9 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
       <h3 id="changePwTitle">Change Password</h3>
       <p style="font-size:11px;color:var(--grey);margin-bottom:8px" id="changePwDesc">Update your login password</p>
       <div class="admin-add">
-        <input type="password" id="currentPw" placeholder="Current password" class="full">
-        <input type="password" id="newPw" placeholder="New password" class="full">
-        <input type="password" id="confirmPw" placeholder="Confirm new password" class="full">
+        <div style="position:relative"><input type="password" id="currentPw" placeholder="Current password" class="full" style="padding-right:42px"><button type="button" onclick="togglePeek('currentPw',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button></div>
+        <div style="position:relative"><input type="password" id="newPw" placeholder="New password" class="full" style="padding-right:42px"><button type="button" onclick="togglePeek('newPw',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button></div>
+        <div style="position:relative"><input type="password" id="confirmPw" placeholder="Confirm new password" class="full" style="padding-right:42px"><button type="button" onclick="togglePeek('confirmPw',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button></div>
         <button class="btn btn-success full" onclick="changePassword()" id="changePwBtn">🔒 Change Password</button>
       </div>
     </div>
@@ -443,7 +454,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
       <div class="admin-add">
         <input type="text" id="newUsername" placeholder="Username" autocapitalize="none">
         <input type="text" id="newFullName" placeholder="Full Name">
-        <input type="password" id="newPassword" placeholder="Password">
+        <div style="position:relative"><input type="password" id="newPassword" placeholder="Password" style="padding-right:42px;width:100%;box-sizing:border-box"><button type="button" onclick="togglePeek('newPassword',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button></div>
         <select id="newRole"><option value="Worker" class="optWorker">Worker</option><option value="Team Lead" class="optTeamLead">Team Lead</option><option value="Supervisor" class="optSupervisor">Supervisor</option><option value="Engineer" class="optEngineer">Engineer</option></select>
         <button class="btn btn-success full" onclick="addNewUser()" id="addUserBtn"></button>
       </div>
@@ -1386,6 +1397,8 @@ function applyLang(){
 function loadSaved(){try{savedSheets=JSON.parse(localStorage.getItem("elg_sheets")||"[]")}catch(e){savedSheets=[]}}
 function saveSaved(){try{localStorage.setItem("elg_sheets",JSON.stringify(savedSheets))}catch(e){console.error("Save failed:",e);showToast(t("storageFull"))}}
 
+function togglePeek(inputId,btn){const inp=document.getElementById(inputId);if(inp.type==="password"){inp.type="text";btn.style.color="var(--navy)";btn.title="Hide password"}else{inp.type="password";btn.style.color="var(--grey)";btn.title="Show password"}}
+
 function doLogin(){
   const u=document.getElementById("loginUser").value.trim().toLowerCase(),p=document.getElementById("loginPass").value;
   const loginBtn=document.querySelector("#loginScreen .btn");
@@ -1563,60 +1576,56 @@ function showDash(){
 }
 
 function renderHistory(){
+  // Set date picker to today on first load
+  const picker=document.getElementById("histDatePicker");
+  if(picker&&!picker.value)picker.value=getGuyanaDate();
+  renderHistoryForDate(picker?picker.value:getGuyanaDate());
+}
+function renderHistoryForDate(date){
+  if(!date)return;
   const list=document.getElementById("histList");loadSaved();
   const isAdmin=currentUser&&currentUser.username==="admin";
   const fb=getFirebaseUrl();
-  // For admin: show cloud submissions from all leads
-  if(isAdmin&&fb){
-    list.innerHTML=`<div class="empty" style="font-size:11px;color:var(--grey)">Loading submissions...</div>`;
-    // Load last 7 days from cloud
-    const promises=[];
-    for(let i=0;i<7;i++){
-      const d=new Date(getGuyanaDate()+"T12:00:00");
-      d.setDate(d.getDate()-i);
-      const ds=d.toISOString().split("T")[0];
-      promises.push(cloudLoadSheets(ds).then(sheets=>sheets.map(s=>({...s,date:s.date||ds}))));
-    }
-    Promise.all(promises).then(results=>{
-      const cloudAll=results.flat();
-      // Merge with local
-      const allSheets=mergeSheets(savedSheets,cloudAll);
-      const sorted=[...allSheets].sort((a,b)=>new Date(b.submittedAt||b.savedAt||0)-new Date(a.submittedAt||a.savedAt||0));
-      if(!sorted.length){list.innerHTML=`<div class="empty">${t("noSaved")}</div>`;return}
-      list.innerHTML=sorted.map((s,idx)=>{
-        const ri=savedSheets.indexOf(s);
-        const tm=TEAMS[s.teamKey];
-        const isToday=s.date===getGuyanaDate();
-        const canEdit=isToday&&ri>=0;
-        const editBtn=canEdit?`<button class="h-btn" onclick="editSaved(${ri})" style="background:var(--navy);color:white">\u270f\ufe0f ${t("edit")}</button>`:"";
-        const areaTag=s.location?` — ${s.location}${s.floor?" "+s.floor:""}`:"";
-        const subTime=s.submittedAt?new Date(s.submittedAt).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",timeZone:"America/Guyana"}):"";
-        return`<div class="h-item"><div class="top"><span class="h-badge" style="background:${tm?tm.color:'#999'}">${s.teamName||"?"}</span><span class="meta">${s.date||""}${subTime?" @ "+subTime:""}</span></div>
-        <div class="meta"><b>${s.submittedBy||s.teamLead||"Unknown"}</b>${areaTag}${s.editedAt?" ["+t("edited")+"]":""}</div>
-        <div class="h-actions">${editBtn}${ri>=0?`<button class="h-btn" onclick="downloadPDF(${ri})">${t("pdfBtn")}</button><button class="h-btn" onclick="viewSaved(${ri})">${t("view")}</button>`:""}</div></div>`
-      }).join("");
-    }).catch(()=>{_renderLocalHistory(list)});
+  list.innerHTML=`<div class="empty" style="font-size:11px;color:var(--grey)">Loading reports...</div>`;
+  const localForDate=savedSheets.filter(s=>s.date===date);
+  if(fb){
+    cloudLoadSheets(date).then(cloudSheets=>{
+      const allSheets=mergeSheets(localForDate,cloudSheets.map(s=>({...s,date:s.date||date})));
+      _renderHistoryCards(list,allSheets,date);
+    }).catch(()=>{_renderHistoryCards(list,localForDate,date)});
   }else{
-    _renderLocalHistory(list);
+    _renderHistoryCards(list,localForDate,date);
   }
 }
-function _renderLocalHistory(list){
-  if(!savedSheets.length){list.innerHTML=`<div class="empty">${t("noSaved")}</div>`;return}
-  const sorted=[...savedSheets].sort((a,b)=>new Date(b.savedAt)-new Date(a.savedAt));
-  list.innerHTML=sorted.map(s=>{const ri=savedSheets.indexOf(s);const tm=TEAMS[s.teamKey];
-    const isToday=s.date===getGuyanaDate();
+function _renderHistoryCards(list,sheets,date){
+  const today=getGuyanaDate();
+  const isAdmin=currentUser&&currentUser.username==="admin";
+  if(!sheets.length){
+    list.innerHTML=`<div class="empty" style="padding:30px;text-align:center">
+      <div style="font-size:36px;margin-bottom:8px">\u{1F4ED}</div>
+      <div style="font-size:13px;color:var(--grey);font-weight:600">No reports for ${date}</div>
+      <div style="font-size:11px;color:#aaa;margin-top:4px">Try selecting a different date</div>
+    </div>`;return;
+  }
+  const sorted=[...sheets].sort((a,b)=>new Date(b.submittedAt||b.savedAt||0)-new Date(a.submittedAt||a.savedAt||0));
+  list.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">${sorted.length} report${sorted.length>1?"s":""} for ${date}</div>`+sorted.map(s=>{
+    const ri=savedSheets.indexOf(s);
+    const tm=TEAMS[s.teamKey];
+    const isToday=date===today;
     const isOwner=currentUser&&(s.submittedBy===currentUser.name||s.teamLead===currentUser.name||s.savedBy===currentUser.name);
-    const isAdmin=currentUser&&currentUser.username==="admin";
-    const canEdit=isToday&&(isOwner||isAdmin);
+    const canEdit=isToday&&(isOwner||isAdmin)&&ri>=0;
     const editBtn=canEdit?`<button class="h-btn" onclick="editSaved(${ri})" style="background:var(--navy);color:white">\u270f\ufe0f ${t("edit")}</button>`:"";
     const areaTag=s.location?` \u2014 ${s.location}${s.floor?" "+s.floor:""}`:"";
     const subTime=s.submittedAt?new Date(s.submittedAt).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",timeZone:"America/Guyana"}):"";
-    return`<div class="h-item"><div class="top"><span class="h-badge" style="background:${tm?tm.color:'#999'}">${s.teamName}</span><span class="meta">${s.date||""}${subTime?" @ "+subTime:""}</span></div>
-    <div class="meta">${s.teamLead||""}${areaTag}</div>
-    <div class="h-actions">${editBtn}<button class="h-btn" onclick="downloadPDF(${ri})">${t("pdfBtn")}</button><button class="h-btn" onclick="sharePDF(${ri})">${t("whatsappBtn")}</button><button class="h-btn" onclick="viewSaved(${ri})">${t("view")}</button><button class="h-btn del" onclick="deleteSaved(${ri})">${t("delete")}</button></div></div>`
+    const photoCount=(s.photos||[]).length;
+    const photoTag=photoCount?`<span style="font-size:10px;color:var(--navy)">\u{1F4F7} ${photoCount}</span>`:"";
+    return`<div class="h-item" style="border-left:4px solid ${tm?tm.color:'#999'}">
+      <div class="top"><span class="h-badge" style="background:${tm?tm.color:'#999'}">${tm?tm.icon:""} ${s.teamName||"?"}</span><span class="meta">${subTime||""} ${photoTag}</span></div>
+      <div class="meta" style="margin:4px 0"><b>${s.submittedBy||s.teamLead||"Unknown"}</b>${areaTag}${s.editedAt?" ["+t("edited")+"]":""}</div>
+      <div class="h-actions" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${editBtn}${ri>=0?`<button class="h-btn" onclick="downloadPDF(${ri})">\u{1F4C4} ${t("pdfBtn")}</button><button class="h-btn" onclick="sharePDF(${ri})">\u{1F4AC} ${t("whatsappBtn")}</button><button class="h-btn" onclick="viewSaved(${ri})">\u{1F441}\ufe0f ${t("view")}</button><button class="h-btn del" onclick="deleteSaved(${ri})">\u{1F5D1}\ufe0f</button>`:""}</div>
+    </div>`
   }).join("");
 }
-
 function deleteSaved(i){if(confirm(t("deleteConfirm"))){savedSheets.splice(i,1);saveSaved();renderHistory();showToast(t("deleted"))}}
 function viewSaved(i){openForm(savedSheets[i].teamKey,savedSheets[i])}
 // Edit mode — re-open submitted checksheet for correction
@@ -4613,23 +4622,62 @@ function buildPDFDoc(data){
     });
     pdf.setTextColor(0);y+=2;
   }
+  // ── Team-Specific Tracking Sections ──
+  const specColor=[70,130,180];
+  // Duct Fabrication
+  const dkb=(data.ductRows||[]).filter(r=>r.ductMaterial||r.ductSize||r.ductStatus);
+  if(dkb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...specColor);pdf.setFont(undefined,"bold");pdf.text("Duct Fabrication",M,y);y+=4;
+    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Material","Size","Qty","Length","Type","Gauge","Status","Location"]],body:dkb.map(r=>[r.ductMaterial||"",r.ductSize||"",r.qty||"",r.length||"",r.ductType||"",r.gauge||"",r.ductStatus||"",r.location||""]),headStyles:{fillColor:specColor,fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
+  // Copper Piping
+  const cpb=(data.copperRows||[]).filter(r=>r.pipeSize||r.pipeStatus);
+  if(cpb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...specColor);pdf.setFont(undefined,"bold");pdf.text("Copper Piping",M,y);y+=4;
+    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Pipe Size","Run Length","Joints","Joint Type","Status","Area"]],body:cpb.map(r=>[r.pipeSize||"",r.runLength||"",r.joints||"",r.jointType||"",r.pipeStatus||"",r.area||""]),headStyles:{fillColor:specColor,fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
+  // AHU Equipment
+  const ahb=(data.ahuRows||[]).filter(r=>r.ahuTag||r.ahuTask||r.ahuStatus);
+  if(ahb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...specColor);pdf.setFont(undefined,"bold");pdf.text("AHU Equipment",M,y);y+=4;
+    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Tag","Capacity","Task","Area","Status","Notes"]],body:ahb.map(r=>[r.ahuTag||"",r.ahuCapacity||"",r.ahuTask||"",r.ahuArea||"",r.ahuStatus||"",r.ahuNotes||""]),headStyles:{fillColor:specColor,fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
+  // Insulation
+  const inb=(data.insRows||[]).filter(r=>r.insSystem||r.insStatus);
+  if(inb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...specColor);pdf.setFont(undefined,"bold");pdf.text("Insulation",M,y);y+=4;
+    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["System","Thickness","Length","Area","Status"]],body:inb.map(r=>[r.insSystem||"",r.insThickness||"",r.insLength||"",r.insArea||"",r.insStatus||""]),headStyles:{fillColor:specColor,fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
+  // Refrigerant
+  const rfb=(data.refRows||[]).filter(r=>r.refType||r.refTask||r.refStatus);
+  if(rfb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...specColor);pdf.setFont(undefined,"bold");pdf.text("Refrigerant",M,y);y+=4;
+    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Type","Line Size","Task","System","Charge","Vacuum","Status"]],body:rfb.map(r=>[r.refType||"",r.refLineSize||"",r.refTask||"",r.refSystem||"",r.refCharge||"",r.refVacuum||"",r.refStatus||""]),headStyles:{fillColor:specColor,fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
+  // Drainage/Condensate
+  const drb=(data.drainRows||[]).filter(r=>r.drainSize||r.drainStatus);
+  if(drb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...specColor);pdf.setFont(undefined,"bold");pdf.text("Drainage / Condensate",M,y);y+=4;
+    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Pipe Size","Material","Length","Slope","Area","Status"]],body:drb.map(r=>[r.drainSize||"",r.drainType||"",r.drainLength||"",r.drainSlope||"",r.drainArea||"",r.drainStatus||""]),headStyles:{fillColor:specColor,fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
+  // Controls/Electrical
+  const clb=(data.ctrlRows||[]).filter(r=>r.ctrlDevice||r.ctrlStatus);
+  if(clb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...specColor);pdf.setFont(undefined,"bold");pdf.text("Controls / Electrical",M,y);y+=4;
+    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Device","Cable Type","Cable Size","Tag","Area","Status"]],body:clb.map(r=>[r.ctrlDevice||"",r.ctrlCable||"",r.ctrlCableSize||"",r.ctrlTag||"",r.ctrlArea||"",r.ctrlStatus||""]),headStyles:{fillColor:specColor,fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
+  // Commissioning/Testing
+  const cmb=(data.commRows||[]).filter(r=>r.commTest||r.commResult);
+  if(cmb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...specColor);pdf.setFont(undefined,"bold");pdf.text("Commissioning / Testing",M,y);y+=4;
+    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Test Type","System","Reading","Spec Value","Result","Notes"]],body:cmb.map(r=>[r.commTest||"",r.commSystem||"",r.commReading||"",r.commSpec||"",r.commResult||"",r.commNotes||""]),headStyles:{fillColor:specColor,fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
   if(data.notes){if(y>H-20){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("Notes",M,y);y+=4;
     pdf.setFontSize(8);pdf.setFont(undefined,"normal");pdf.setTextColor(0);pdf.text(pdf.splitTextToSize(data.notes,W-2*M),M,y);y+=10}
   // Photos in PDF
   const photos=(data.photos||[]).filter(p=>p.data);
   if(photos.length){
-    if(y>H-50){pdf.addPage();y=12}
-    pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text(`Photo Evidence (${photos.length})`,M,y);y+=5;
+    pdf.addPage();y=12;
+    pdf.setFontSize(12);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text(`Photo Evidence (${photos.length})`,M,y);y+=6;
+    const pw=85,ph=64,pgap=6;
     let px=M;
     photos.forEach((p,pi)=>{
-      if(px+40>W-M){px=M;y+=45}
-      if(y+40>H-15){pdf.addPage();y=12;px=M}
-      try{pdf.addImage(p.data,"JPEG",px,y,38,30);
-        pdf.setFontSize(5);pdf.setTextColor(100);pdf.text((p.tag||"").substring(0,30),px,y+33,{maxWidth:38});
+      if(px+pw>W-M){px=M;y+=ph+14}
+      if(y+ph+10>H-15){pdf.addPage();y=12;px=M}
+      try{
+        pdf.setDrawColor(200);pdf.setLineWidth(0.3);pdf.rect(px-1,y-1,pw+2,ph+2);
+        pdf.addImage(p.data,"JPEG",px,y,pw,ph);
+        pdf.setFontSize(7);pdf.setFont(undefined,"bold");pdf.setTextColor(50);
+        const tag=(p.tag||"Photo "+(pi+1)).substring(0,50);
+        pdf.text(tag,px,y+ph+4,{maxWidth:pw});
       }catch(e){}
-      px+=42;
+      px+=pw+pgap;
     });
-    y+=45;
+    y+=ph+14;
   }
   pdf.setFontSize(7);pdf.setTextColor(150);pdf.text(`ELGAWA | ${tm.name} | ${new Date().toLocaleString()} | ${data.savedBy||data.submittedBy||""}`,W/2,H-8,{align:"center"});
   return pdf;
