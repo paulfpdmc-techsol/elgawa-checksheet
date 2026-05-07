@@ -393,6 +393,95 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .fb-expiry-warn{background:#fff3cd;border:2px solid #ffc107;border-radius:12px;padding:12px 16px;margin:8px 0;font-size:12px;color:#856404;display:none}
 .fb-expiry-warn.critical{background:#f8d7da;border-color:#dc3545;color:#721c24}
 .fb-expiry-warn b{display:block;margin-bottom:4px;font-size:13px}
+
+/* Payment Entry System */
+.pay-subtabs{display:flex;gap:4px;margin-bottom:12px;padding:4px;background:white;border-radius:12px;box-shadow:var(--shadow)}
+.pay-subtab{flex:1;padding:8px 4px;text-align:center;cursor:pointer;background:none;border:none;color:var(--grey);border-radius:8px;font-size:11px;font-weight:700;transition:all .2s}
+.pay-subtab.active{color:white;background:linear-gradient(135deg,var(--navy),var(--navy-lt));box-shadow:0 2px 8px rgba(15,110,86,.3)}
+.pay-date-nav{display:flex;align-items:center;justify-content:space-between;background:white;border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.pay-date-nav .pay-arrow{background:none;border:none;font-size:18px;cursor:pointer;padding:4px 10px;color:var(--navy);font-weight:700}
+.pay-date-nav .pay-date-label{font-size:15px;font-weight:700;color:var(--navy)}
+.pay-date-nav .pay-date-sub{font-size:11px;color:var(--grey)}
+.pay-group-tabs{display:flex;gap:6px;margin-bottom:10px}
+.pay-group-tab{flex:1;padding:8px;text-align:center;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s}
+.pay-group-tab.active{background:var(--navy);color:white;box-shadow:0 2px 8px rgba(15,110,86,.3)}
+.pay-group-tab:not(.active){background:white;color:var(--grey);border:1px solid var(--border)}
+.pay-worker-row{display:flex;align-items:center;padding:10px 12px;border-bottom:.5px solid var(--border);transition:background .2s}
+.pay-worker-row.absent{background:rgba(220,53,69,.06)}
+.pay-worker-row .pw-dot{width:8px;height:8px;border-radius:50%;margin-right:10px;flex-shrink:0}
+.pay-worker-row .pw-dot.present{background:var(--navy-lt)}
+.pay-worker-row .pw-dot.absent{background:var(--danger)}
+.pay-worker-row .pw-name{flex:1;font-size:14px;color:#333}
+.pay-worker-row.absent .pw-name{color:var(--danger)}
+.pay-shift-btns{display:flex;gap:3px;align-items:center}
+.pay-shift-btn{min-width:30px;padding:4px 8px;border-radius:6px;border:1.5px solid transparent;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:var(--lt-grey);color:var(--grey)}
+.pay-shift-btn.active{background:#E0F5ED;color:#085041;border-color:var(--navy-lt)}
+.pay-shift-btn.absent-btn{font-size:11px}
+.pay-shift-btn.absent-btn.active{background:rgba(220,53,69,.08);color:var(--danger);border-color:var(--danger)}
+.pay-summary-bar{display:flex;justify-content:space-between;padding:8px 14px;margin-top:8px;font-size:13px}
+.pay-summary-bar .ps-label{color:var(--grey)}
+.pay-summary-bar .ps-val{font-weight:700}
+.pay-summary-bar .ps-val.teal{color:var(--navy)}
+.pay-save-btn{width:100%;margin-top:10px;padding:12px;background:var(--navy);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(15,110,86,.3)}
+.pay-save-btn:active{opacity:.85}
+/* Suriname entry */
+.sur-worker-card{background:white;border-radius:10px;padding:10px 12px;border:.5px solid var(--border);margin-bottom:8px}
+.sur-worker-card.absent{background:rgba(220,53,69,.04);border-color:rgba(220,53,69,.2)}
+.sur-worker-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.sur-worker-name{font-size:14px;font-weight:600}
+.sur-toggle-btns{display:flex;gap:3px}
+.sur-toggle-btn{padding:3px 8px;border-radius:6px;border:1.5px solid transparent;font-size:11px;font-weight:600;cursor:pointer;background:var(--lt-grey);color:var(--grey)}
+.sur-toggle-btn.present{background:#E0F5ED;color:#085041;border-color:var(--navy-lt)}
+.sur-toggle-btn.absent-active{background:rgba(220,53,69,.08);color:var(--danger);border-color:var(--danger)}
+.sur-fields{display:flex;gap:6px;flex-wrap:wrap}
+.sur-field{flex:1;min-width:80px}
+.sur-field label{font-size:10px;color:var(--grey);display:block;margin-bottom:2px}
+.sur-field .sur-val{background:var(--lt-grey);border-radius:4px;padding:5px 8px;font-size:13px;color:#333}
+.sur-field input{width:100%;padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px}
+.sur-group-field{background:white;border-radius:10px;padding:10px 14px;border:.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.sur-group-field label{font-size:13px;color:var(--grey)}
+.sur-group-field input{width:100px;padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px;text-align:right}
+/* Payment sheet */
+.paysheet-hdr{display:flex;justify-content:space-between;align-items:center;background:white;border-radius:var(--radius);padding:12px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.paysheet-title{font-size:15px;font-weight:700;color:var(--navy)}
+.paysheet-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px}
+.paysheet-badge.draft{background:#FAEEDA;color:#633806}
+.paysheet-badge.ready{background:#E0F5ED;color:#085041}
+.paysheet-table-wrap{overflow-x:auto;background:white;border-radius:10px;border:.5px solid var(--border);margin-bottom:10px}
+.paysheet-table{width:100%;font-size:11px;border-collapse:collapse;min-width:480px}
+.paysheet-table th{text-align:center;padding:6px 4px;font-weight:600;color:var(--grey);background:var(--lt-grey);font-size:10px}
+.paysheet-table th:first-child{text-align:left;padding-left:10px;width:120px}
+.paysheet-table th:last-child{text-align:right;padding-right:10px;width:60px}
+.paysheet-table th.sat-col{background:#FAEEDA;color:#854F0B}
+.paysheet-table td{text-align:center;padding:5px 4px;border-bottom:.5px solid var(--border)}
+.paysheet-table td:first-child{text-align:left;padding-left:10px;font-size:12px}
+.paysheet-table td:last-child{text-align:right;padding-right:10px;font-weight:600}
+.paysheet-table td.sat-cell{background:#FAEEDA;color:#854F0B}
+.paysheet-table td.double-shift{color:var(--navy);font-weight:600}
+.paysheet-table tr.subtotal-row{background:var(--lt-grey);font-weight:600}
+.paysheet-table tr.subtotal-row td{border-top:1px solid var(--border);padding:8px 4px}
+.paysheet-totals{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.paysheet-total-card{background:var(--lt-grey);border-radius:8px;padding:10px}
+.paysheet-total-card .ptc-label{font-size:11px;color:var(--grey)}
+.paysheet-total-card .ptc-val{font-size:15px;font-weight:700;color:#333;margin-top:2px}
+.paysheet-grand{background:white;border-radius:10px;border:.5px solid var(--border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.paysheet-grand-label{font-size:13px;color:var(--grey)}
+.paysheet-grand-val{font-size:20px;font-weight:700;color:var(--navy)}
+.paysheet-dl-btns{display:flex;gap:8px;margin-top:10px}
+.paysheet-dl-btn{flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-align:center}
+.paysheet-dl-btn.pdf{background:white;border:1px solid var(--border);color:#333}
+.paysheet-dl-btn.excel{background:var(--navy);color:white;border:none;box-shadow:0 4px 12px rgba(15,110,86,.3)}
+/* Payment roster in settings */
+.pay-roster-section{margin-top:12px}
+.pay-roster-group{margin-bottom:12px}
+.pay-roster-group h4{font-size:13px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.pay-roster-group .prg-badge{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600}
+.pay-roster-item{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--lt-grey);border-radius:6px;margin-bottom:4px;font-size:13px}
+.pay-roster-item .pri-name{flex:1}
+.pay-roster-item .pri-remove{background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:2px 6px}
+.pay-roster-add{display:flex;gap:6px;margin-top:6px}
+.pay-roster-add select{flex:1;padding:6px;font-size:12px;border:1px solid var(--border);border-radius:6px}
+.pay-roster-add button{padding:6px 12px;font-size:12px;font-weight:600;background:var(--navy);color:white;border:none;border-radius:6px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -465,6 +554,15 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
     <div id="histList"></div>
   </div>
   <div id="tabAttendance" class="hidden">
+    <!-- Payment sub-tabs (admin only) -->
+    <div id="paySubTabs" class="pay-subtabs" style="display:none">
+      <button class="pay-subtab active" onclick="switchPayTab('signin')">Sign-In</button>
+      <button class="pay-subtab" onclick="switchPayTab('payentry')">Payment</button>
+      <button class="pay-subtab" onclick="switchPayTab('suriname')">Suriname</button>
+      <button class="pay-subtab" onclick="switchPayTab('paysheet')">Pay Sheet</button>
+    </div>
+    <!-- Existing sign-in content wrapper -->
+    <div id="paySignInView">
     <div class="att-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <h3 id="attTitle">Daily Attendance</h3>
@@ -489,6 +587,56 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
       </div>
       <div style="margin-top:10px;display:flex;gap:8px">
         <button class="btn btn-primary" onclick="generateWeeklyAttPDF()" id="attWeekPdfBtn">📄 Download Weekly PDF</button>
+      </div>
+    </div>
+    </div>
+    <!-- Payment Entry View -->
+    <div id="payEntryView" style="display:none">
+      <div class="pay-date-nav">
+        <button class="pay-arrow" onclick="payDateNav(-1)">◀</button>
+        <div style="text-align:center">
+          <div class="pay-date-sub" id="payDateSub"></div>
+          <div class="pay-date-label" id="payDateLabel"></div>
+        </div>
+        <button class="pay-arrow" onclick="payDateNav(1)">▶</button>
+      </div>
+      <div class="pay-group-tabs" id="payGroupTabs"></div>
+      <div style="background:white;border-radius:10px;border:.5px solid var(--border);overflow:hidden" id="payWorkerList"></div>
+      <div class="pay-summary-bar">
+        <div><span class="ps-label">Present: </span><span class="ps-val teal" id="payPresent">0/0</span></div>
+        <div><span class="ps-label">Day total: </span><span class="ps-val" id="payDayTotal">$0</span></div>
+      </div>
+      <button class="pay-save-btn" onclick="savePayEntry()">Save today's attendance</button>
+    </div>
+    <!-- Suriname Weekly View -->
+    <div id="paySurinameView" style="display:none">
+      <div class="pay-date-nav">
+        <button class="pay-arrow" onclick="surWeekNav(-1)">◀</button>
+        <div style="text-align:center">
+          <div class="pay-date-sub">Week of</div>
+          <div class="pay-date-label" id="surWeekLabel"></div>
+        </div>
+        <button class="pay-arrow" onclick="surWeekNav(1)">▶</button>
+      </div>
+      <div id="surWorkerList"></div>
+      <div class="sur-group-field">
+        <label>Food allowance</label>
+        <input type="number" id="surFoodAllowance" value="198000" onchange="updateSurData()">
+      </div>
+      <button class="pay-save-btn" onclick="saveSurinameEntry()" style="margin-top:10px">Save Suriname week</button>
+    </div>
+    <!-- Payment Sheet View -->
+    <div id="paySheetView" style="display:none">
+      <div class="paysheet-hdr">
+        <span class="paysheet-title" id="paysheetTitle">Payment Sheet</span>
+        <span class="paysheet-badge draft" id="paysheetBadge">Draft</span>
+      </div>
+      <div id="paysheetContent"></div>
+      <div class="paysheet-totals" id="paysheetTotals"></div>
+      <div class="paysheet-grand" id="paysheetGrand"></div>
+      <div class="paysheet-dl-btns">
+        <button class="paysheet-dl-btn pdf" onclick="downloadPayPDF()">Download PDF</button>
+        <button class="paysheet-dl-btn excel" onclick="downloadPayExcel()">Download Excel</button>
       </div>
     </div>
   </div>
@@ -589,6 +737,12 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
           <button class="btn btn-success full" onclick="addReportAccess('monthly')" style="background:#e67e22" id="grantMonthlyBtn"></button>
         </div>
       </div>
+    </div>
+    <div id="payRosterCard" class="s-card">
+      <h3>💰 Payment Roster</h3>
+      <p style="font-size:11px;color:var(--grey);margin-bottom:8px">Assign workers to payment groups. Workers not assigned are excluded from payment sheets.</p>
+      <div class="pay-roster-section" id="payRosterSection"></div>
+      <button class="btn btn-primary full" onclick="savePayRoster()" style="margin-top:10px">💾 Save Payment Roster</button>
     </div>
     <button class="btn btn-success full" onclick="exportCSV()" style="margin-top:12px">📊 Export All Data (CSV)</button>
   </div>
@@ -1617,14 +1771,36 @@ function switchTab(tab,btn){
   ["tabForms","tabReports","tabHistory","tabAttendance"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add("hidden")});
   stopReportRefresh();
   if(tab==="forms")document.getElementById("tabForms").classList.remove("hidden");
-  if(tab==="reports"){document.getElementById("tabReports").classList.remove("hidden");generateReport();startReportRefresh()}
+  if(tab==="reports"){
+    document.getElementById("tabReports").classList.remove("hidden");
+    // Restore sub-tabs row and date picker (may have been hidden by analysis)
+    const rptSubTabs=document.querySelector("#tabReports .tab-row");
+    if(rptSubTabs)rptSubTabs.style.display="";
+    const rptDateRow=document.querySelector("#tabReports .f-field");
+    if(rptDateRow)rptDateRow.style.display="";
+    const lu=document.getElementById("lastUpdated");if(lu)lu.style.display="";
+    // Reset to main report sub-tab
+    const mainBtn=document.getElementById("rptTabMain");
+    if(mainBtn)switchReportTab("main",mainBtn);
+    generateReport();startReportRefresh();
+  }
   if(tab==="history"){document.getElementById("tabHistory").classList.remove("hidden");renderHistory()}
   if(tab==="attendance"){document.getElementById("tabAttendance").classList.remove("hidden");_attData=null;_attDate=null;renderAttendanceTab()}
   if(tab==="analysis"){
     document.getElementById("tabReports").classList.remove("hidden");
-    // Switch to analysis sub-tab within reports
-    const anBtn=document.getElementById("rptTabAnalysis");
-    if(anBtn){switchReportTab("analysis",anBtn)}
+    // Hide the report sub-tabs row and date picker — analysis has its own UI
+    const rptSubTabs=document.querySelector("#tabReports .tab-row");
+    if(rptSubTabs)rptSubTabs.style.display="none";
+    const rptDateRow=document.querySelector("#tabReports .f-field");
+    if(rptDateRow)rptDateRow.style.display="none";
+    const lu=document.getElementById("lastUpdated");if(lu)lu.style.display="none";
+    // Hide all report content, show only analysis
+    ["reportContent","reportToolContent","reportAttendContent","reportMonthlyContent"].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.classList.add("hidden");
+    });
+    const anCont=document.getElementById("reportAnalysisContent");
+    if(anCont)anCont.classList.remove("hidden");
+    renderAnalysisReport();
   }
   if(tab==="settings"){showSettings();return}
   // Persist active tab
@@ -6487,7 +6663,7 @@ function renderWeeklyRegister(refDate){
       const satMovers=weekData[5].data.movers||[];
       const satFound=satMovers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);
       if(satFound){worked++;dailyTotals[5]++}
-      html+='<td style="background:'+(satFound?'#ffeeba':'')+'">'+(satFound?'✓':'')+'</td>';
+      html+='<td style="background:'+(satFound?'#ffeeba':'')+'\">'+(satFound?'✓':'')+'</td>';
       html+='<td><b>'+worked+'</b>/6</td></tr>';
     });
 
@@ -6504,89 +6680,62 @@ function renderWeeklyRegister(refDate){
 }
 
 function generateWeeklyAttPDF(){
-  if(!window._weekAttData)return;
-  const{workDates,satDate,weekData,roster,mon,allMovers}=window._weekAttData;
+  const d=window._weekAttData;if(!d)return;
   const{jsPDF}=window.jspdf;
-  const pdf=new jsPDF("l","mm","letter");
-  const W=279.4,M=10;
-  let y=12;
+  const pdf=new jsPDF("l","mm","a4");
+  const W=pdf.internal.pageSize.getWidth();const M=14;let y=20;
 
-  pdf.setFontSize(16);pdf.setFont(undefined,"bold");pdf.setTextColor(15,110,86);
-  pdf.text("ELGAWA GUYANA INC.",M,y);y+=6;
-  pdf.setFontSize(12);pdf.setFont(undefined,"bold");
-  pdf.text(t("weeklyRegister"),M,y);y+=5;
-  pdf.setFontSize(10);pdf.setFont(undefined,"normal");pdf.setTextColor(100);
-  pdf.text(t("attWeekOf")+" "+mon+" — Pasha Global Hotel HVAC Project",M,y);y+=8;
+  pdf.setFontSize(16);pdf.setTextColor(15,110,86);
+  pdf.text("ELGAWA Guyana Inc.",M,y);y+=6;
+  pdf.setFontSize(10);pdf.setTextColor(100);
+  pdf.text("Weekly Attendance & Pay Register — Week of "+d.mon,M,y);y+=4;
+  pdf.text("Generated: "+new Date().toLocaleDateString(),M,y);y+=8;
 
-  const dayNames=["Mon","Tue","Wed","Thu","Fri"];
-  const head=[[t("worker"),...workDates.map((dt,i)=>dayNames[i]+"\n"+dt.slice(5)),t("satPending")+"\n"+satDate.slice(5),t("daysWorked")]];
+  const head=[["Worker","Mon\n"+d.workDates[0].slice(5),"Tue\n"+d.workDates[1].slice(5),"Wed\n"+d.workDates[2].slice(5),"Thu\n"+d.workDates[3].slice(5),"Fri\n"+d.workDates[4].slice(5),"Sat\n"+d.satDate.slice(5),"Days"]];
   const body=[];
 
-  roster.forEach(name=>{
+  d.roster.forEach(name=>{
     const row=[name];let worked=0;
-    workDates.forEach((dt,i)=>{
-      const w=weekData[i].data.workers&&weekData[i].data.workers[name];
-      const p=w&&w.present;if(p)worked++;
+    d.workDates.forEach((dt,i)=>{
+      const w=d.weekData[i].data.workers&&d.weekData[i].data.workers[name];
+      const p=w&&w.present;
+      if(p)worked++;
       row.push(p?"✓":"—");
     });
-    const satW=weekData[5].data.workers&&weekData[5].data.workers[name];
+    const satW=d.weekData[5].data.workers&&d.weekData[5].data.workers[name];
     const satP=satW&&satW.present;if(satP)worked++;
-    row.push(satP?"\u2713":"\u2014");
+    row.push(satP?"✓":"—");
     row.push(worked+"/6");
     body.push(row);
   });
 
-  // Movers
-  allMovers.forEach(name=>{
-    const row=["[Mover] "+name];let worked=0;
-    workDates.forEach((dt,i)=>{
-      const movers=weekData[i].data.movers||[];
+  d.allMovers.forEach(name=>{
+    const row=["📦 "+name];let worked=0;
+    d.workDates.forEach((dt,i)=>{
+      const movers=d.weekData[i].data.movers||[];
       const found=movers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);
-      if(found)worked++;row.push(found?"\u2713":"");
+      if(found)worked++;
+      row.push(found?"✓":"");
     });
-    const satMovers=weekData[5].data.movers||[];
+    const satMovers=d.weekData[5].data.movers||[];
     const satFound=satMovers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);
-    if(satFound)worked++;row.push(satFound?"\u2713":"");
-    row.push(worked+"/6");body.push(row);
+    if(satFound)worked++;
+    row.push(satFound?"✓":"");
+    row.push(worked+"/6");
+    body.push(row);
   });
 
-  pdf.autoTable({startY:y,head:head,body:body,margin:{left:M,right:M},
-    styles:{fontSize:7,cellPadding:2},
-    headStyles:{fillColor:[15,110,86],textColor:255,fontSize:7},
-    columnStyles:{0:{cellWidth:50},6:{fillColor:[255,243,205]}},
-    didParseCell:function(data){
-      if(data.section==='body'&&data.column.index>0&&data.column.index<=5){
-        if(data.cell.raw==="\u2713")data.cell.styles.fillColor=[212,237,218];
-        else if(data.cell.raw==="\u2014")data.cell.styles.fillColor=[248,215,218];
-      }
-      if(data.section==='body'&&data.column.index===6){
-        data.cell.styles.fillColor=[255,243,205];
-        if(data.cell.raw==="\u2713")data.cell.styles.fillColor=[255,224,130];
-      }
-    }
-  });
+  pdf.autoTable({head:head,body:body,startY:y,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid"});
+  y=pdf.lastAutoTable.finalY+10;
 
-  // Saturday pending notes
-  let fY=pdf.lastAutoTable.finalY+8;
-  const satNotes=document.getElementById("satNotesInput")?document.getElementById("satNotesInput").value:"";
-  if(satNotes){
-    pdf.setFontSize(11);pdf.setFont(undefined,"bold");pdf.setTextColor(230,126,34);
-    pdf.text(t("satNotes")+":",M,fY);fY+=5;
-    pdf.setFontSize(9);pdf.setFont(undefined,"normal");pdf.setTextColor(60);
-    const lines=pdf.splitTextToSize(satNotes,W-2*M);
-    pdf.text(lines,M,fY);fY+=lines.length*4+5;
-  }else{fY+=5}
-
-  // Signature lines
-  pdf.setFontSize(10);pdf.setTextColor(0);pdf.setFont(undefined,"normal");
-  pdf.text("Prepared by: _______________________",M,fY);
-  pdf.text("Date: _____________",M+100,fY);
-  fY+=8;
+  const fY=y+10;
+  pdf.setDrawColor(200);pdf.line(M,fY-2,W-M,fY-2);
+  pdf.setFontSize(9);pdf.setTextColor(80);
   pdf.text("Verified by: _______________________",M,fY);
   pdf.text("Approved by: _______________________",M+100,fY);
   pdf.text("Finance: _______________________",M+200,fY);
 
-  pdf.save("Weekly_Pay_Register_"+mon+".pdf");
+  pdf.save("Weekly_Pay_Register_"+d.mon+".pdf");
 }
 
 // Auto-calculate OT triggers totals recalc
@@ -6617,13 +6766,318 @@ try{const u=localStorage.getItem("elg_user");if(u){currentUser=JSON.parse(u);
     if(match){currentUser.username=match;try{localStorage.setItem("elg_user",JSON.stringify(currentUser))}catch(e){}}
   }
   showDash();
-  // Restore last active tab on refresh
-  try{const savedTab=localStorage.getItem("elg_active_tab");if(savedTab&&savedTab!=="forms")switchTab(savedTab)}catch(e){}
+  // Restore last active tab on refresh (slight delay to ensure DOM ready)
+  setTimeout(()=>{
+    try{
+      const savedTab=localStorage.getItem("elg_active_tab");
+      console.log("Restoring tab:",savedTab);
+      if(savedTab&&savedTab!=="forms")switchTab(savedTab);
+    }catch(e){console.error("Tab restore error:",e)}
+  },100);
 }}catch(e){}
 setTimeout(()=>{document.getElementById("splash").classList.add("hide");setTimeout(()=>document.getElementById("splash").style.display="none",500)},1200);
 if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
 scheduleNotification();
 document.getElementById("loginHint").innerHTML='Enter your username and password to sign in<br><span style="font-size:9px;color:#888">Contact admin if you forgot your credentials</span>';
+
+
+// ==================== PAYMENT SYSTEM ====================
+const DEFAULT_PAY_ROSTER = {
+  "Luis Miguel":{group:"installation",rate:7000},
+  "John Peter Jaspe":{group:"installation",rate:7000},
+  "Yosvani Pavon Fuentes":{group:"installation",rate:7000},
+  "Yajandri Martinez":{group:"installation",rate:7000},
+  "Yoanis Osorio":{group:"installation",rate:7000},
+  "Jose N. Queipo":{group:"installation",rate:7000},
+  "Yoandi Osorio":{group:"installation",rate:7000},
+  "Frank Gonzalez Quintana":{group:"installation",rate:7000},
+  "Alfredo Vinas":{group:"installation",rate:7000},
+  "Gregorio Enrique":{group:"ducting",rate:7000},
+  "Jose Rojas":{group:"ducting",rate:7000},
+  "Juan Lopez":{group:"ducting",rate:7000},
+  "Jose Wilfredo Arevalo":{group:"ducting",rate:7000},
+  "Guan Marquez":{group:"ducting",rate:7000},
+  "Julio Caraballo":{group:"ducting",rate:7000},
+  "Jose Gonzalez":{group:"ducting",rate:7000},
+  "Daymith Garcia":{group:"ducting",rate:7000},
+  "Marlon Cedeno":{group:"ducting",rate:7000},
+  "Wilfredo Delgado":{group:"ducting",rate:7000},
+  "Reinaldo Anasco":{group:"ducting",rate:7000},
+  "Wilfred Arevalo":{group:"ducting",rate:7000},
+  "Romario Barron":{group:"suriname",rate:6000},
+  "Johnny Tjon":{group:"suriname",rate:6000},
+  "Kenneth Soerowidjojo":{group:"suriname",rate:6000},
+  "Sayad Jayat":{group:"suriname",rate:6000},
+  "Rajiv Poeran":{group:"suriname",rate:6000},
+  "Shaheed Laismohamedkhan":{group:"suriname",rate:6000},
+  "Ashishkumar Moti":{group:"suriname",rate:6000},
+  "Ronny Rodjan":{group:"suriname",rate:6000}
+};
+const PAY_GROUPS={installation:{label:"Installation Crew",rate:7000,color:"var(--navy)"},ducting:{label:"Ducting / Movers",rate:7000,color:"var(--ducting)"},suriname:{label:"Suriname Team",rate:6000,color:"#E67E22"}};
+
+function getPayRoster(){try{const s=localStorage.getItem("elg_pay_roster");if(s)return JSON.parse(s)}catch(e){}return{...DEFAULT_PAY_ROSTER}}
+function savePayRosterData(r){try{localStorage.setItem("elg_pay_roster",JSON.stringify(r))}catch(e){}const fb=getFirebaseUrl();if(fb)fetch(fb+"/payrollConfig/roster.json",{method:"PUT",body:JSON.stringify(r),headers:{"Content-Type":"application/json"}}).catch(()=>{})}
+function getPayGroupWorkers(group){const roster=getPayRoster();return Object.entries(roster).filter(([_,v])=>v.group===group).map(([name,v])=>({name,rate:v.rate})).sort((a,b)=>a.name.localeCompare(b.name))}
+
+// Payment sub-tabs
+let _payActiveTab="signin";
+function switchPayTab(tab){
+  _payActiveTab=tab;
+  document.querySelectorAll("#paySubTabs .pay-subtab").forEach((b,i)=>{
+    const tabs=["signin","payentry","suriname","paysheet"];
+    b.classList.toggle("active",tabs[i]===tab);
+  });
+  document.getElementById("paySignInView").style.display=tab==="signin"?"block":"none";
+  document.getElementById("payEntryView").style.display=tab==="payentry"?"block":"none";
+  document.getElementById("paySurinameView").style.display=tab==="suriname"?"block":"none";
+  document.getElementById("paySheetView").style.display=tab==="paysheet"?"block":"none";
+  if(tab==="payentry")renderPayEntry();
+  if(tab==="suriname")renderSurinameEntry();
+  if(tab==="paysheet")renderPaySheet();
+}
+
+// Daily Payment Entry
+let _payDate=null;let _payGroup="installation";let _payData={};
+
+function getPayDate(){if(!_payDate)_payDate=getGuyanaDate();return _payDate}
+function payDateNav(dir){
+  const d=new Date(_payDate||getGuyanaDate());d.setDate(d.getDate()+dir);
+  const today=new Date(getGuyanaDate());if(d>today)return;
+  _payDate=d.toISOString().slice(0,10);renderPayEntry();
+}
+function getISOWeek(dateStr){const d=new Date(dateStr);d.setHours(0,0,0,0);d.setDate(d.getDate()+3-(d.getDay()+6)%7);const w1=new Date(d.getFullYear(),0,4);return d.getFullYear()+"-W"+String(1+Math.round(((d-w1)/86400000-3+(w1.getDay()+6)%7)/7)).padStart(2,"0")}
+function getWeekMondayFromDate(dateStr){const d=new Date(dateStr);const day=d.getDay();const diff=d.getDate()-day+(day===0?-6:1);const m=new Date(d);m.setDate(diff);return m.toISOString().slice(0,10)}
+function getWeekRange(dateStr){const mon=new Date(getWeekMondayFromDate(dateStr));const sat=new Date(mon);sat.setDate(mon.getDate()+5);const f=d=>{const m=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return m[d.getMonth()]+" "+d.getDate()};return f(mon)+" – "+f(sat)+", "+sat.getFullYear()}
+
+function renderPayEntry(){
+  const date=getPayDate();const d=new Date(date);
+  const days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  document.getElementById("payDateSub").textContent=days[d.getDay()];
+  const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  document.getElementById("payDateLabel").textContent=months[d.getMonth()]+" "+d.getDate()+", "+d.getFullYear();
+  const tabsEl=document.getElementById("payGroupTabs");
+  tabsEl.innerHTML=["installation","ducting"].map(g=>'<button class="pay-group-tab '+(g===_payGroup?"active":"")+'" onclick="_payGroup=\''+g+'\';renderPayEntry()" style="'+(g===_payGroup?"background:"+PAY_GROUPS[g].color:"")+'">'+PAY_GROUPS[g].label+'</button>').join("");
+  const weekKey=getISOWeek(date);
+  loadPayDayData(weekKey,date).then(data=>{_payData=data||{};renderPayWorkerList()});
+}
+function renderPayWorkerList(){
+  const workers=getPayGroupWorkers(_payGroup);const container=document.getElementById("payWorkerList");
+  let present=0,total=0,html="";
+  workers.forEach(w=>{
+    const shifts=_payData[w.name]!==undefined?_payData[w.name]:1;
+    const isAbsent=shifts===0;const fee=shifts*w.rate;
+    if(!isAbsent)present++;total+=fee;
+    html+='<div class="pay-worker-row '+(isAbsent?"absent":"")+'">';
+    html+='<div class="pw-dot '+(isAbsent?"absent":"present")+'"></div>';
+    html+='<span class="pw-name">'+w.name+'</span>';
+    html+='<div class="pay-shift-btns">';
+    [1,2,3].forEach(s=>{html+='<button class="pay-shift-btn '+(shifts===s?"active":"")+'" onclick="setPayShift(\''+w.name.replace(/'/g,"\\'")+'\','+s+')">'+s+'</button>'});
+    html+='<button class="pay-shift-btn absent-btn '+(isAbsent?"active":"")+'" onclick="setPayShift(\''+w.name.replace(/'/g,"\\'")+'\',0)">✕</button>';
+    html+='</div></div>';
+  });
+  container.innerHTML=html;
+  document.getElementById("payPresent").textContent=present+"/"+workers.length;
+  document.getElementById("payDayTotal").textContent="$"+total.toLocaleString();
+}
+function setPayShift(name,shifts){_payData[name]=shifts;renderPayWorkerList()}
+function savePayEntry(){
+  const date=getPayDate();const weekKey=getISOWeek(date);
+  try{const local=JSON.parse(localStorage.getItem("elg_payroll")||"{}");if(!local[weekKey])local[weekKey]={};local[weekKey][date]=_payData;localStorage.setItem("elg_payroll",JSON.stringify(local))}catch(e){}
+  const fb=getFirebaseUrl();
+  if(fb){fetch(fb+"/payroll/"+weekKey+"/"+date+".json",{method:"PUT",body:JSON.stringify(_payData),headers:{"Content-Type":"application/json"}}).then(()=>showToast("✅ Attendance saved for "+date)).catch(()=>showToast("⚠️ Saved locally, cloud sync failed"))}
+  else{showToast("✅ Saved locally")}
+}
+function loadPayDayData(weekKey,date){
+  const fb=getFirebaseUrl();
+  if(fb){return fetch(fb+"/payroll/"+weekKey+"/"+date+".json").then(r=>r.json()).then(d=>{if(d){try{const l=JSON.parse(localStorage.getItem("elg_payroll")||"{}");if(!l[weekKey])l[weekKey]={};l[weekKey][date]=d;localStorage.setItem("elg_payroll",JSON.stringify(l))}catch(e){}return d}try{return JSON.parse(localStorage.getItem("elg_payroll")||"{}")[weekKey]?.[date]||null}catch(e){return null}}).catch(()=>{try{return JSON.parse(localStorage.getItem("elg_payroll")||"{}")[weekKey]?.[date]||null}catch(e){return null}})}
+  try{return Promise.resolve(JSON.parse(localStorage.getItem("elg_payroll")||"{}")[weekKey]?.[date]||null)}catch(e){return Promise.resolve(null)}
+}
+
+// Suriname Weekly Entry
+let _surWeekStart=null;let _surData={workers:{},foodAllowance:198000};
+function getSurWeekStart(){if(!_surWeekStart)_surWeekStart=getWeekMondayFromDate(getGuyanaDate());return _surWeekStart}
+function surWeekNav(dir){const d=new Date(_surWeekStart||getWeekMondayFromDate(getGuyanaDate()));d.setDate(d.getDate()+(dir*7));_surWeekStart=d.toISOString().slice(0,10);renderSurinameEntry()}
+function renderSurinameEntry(){
+  const weekStart=getSurWeekStart();const weekKey=getISOWeek(weekStart);
+  document.getElementById("surWeekLabel").textContent=getWeekRange(weekStart);
+  loadSurinameData(weekKey).then(data=>{_surData=data||{workers:{},foodAllowance:198000};renderSurinameWorkers();document.getElementById("surFoodAllowance").value=_surData.foodAllowance||198000});
+}
+function renderSurinameWorkers(){
+  const workers=getPayGroupWorkers("suriname");const container=document.getElementById("surWorkerList");let html="";
+  workers.forEach(w=>{
+    const wd=_surData.workers[w.name]||{present:true,saturday:6000,travel:0};const isAbsent=wd.present===false;
+    html+='<div class="sur-worker-card '+(isAbsent?"absent":"")+'">';
+    html+='<div class="sur-worker-hdr"><span class="sur-worker-name" style="'+(isAbsent?"color:var(--danger)":"")+'">'+w.name+'</span>';
+    html+='<div class="sur-toggle-btns">';
+    html+='<button class="sur-toggle-btn '+(!isAbsent?"present":"")+'" onclick="setSurPresent(\''+w.name.replace(/'/g,"\\'")+'\',true)">Present</button>';
+    html+='<button class="sur-toggle-btn '+(isAbsent?"absent-active":"")+'" onclick="setSurPresent(\''+w.name.replace(/'/g,"\\'")+'\',false)">Absent</button>';
+    html+='</div></div>';
+    if(!isAbsent){
+      const weekly=5*w.rate;
+      html+='<div class="sur-fields">';
+      html+='<div class="sur-field"><label>Weekly ('+w.rate.toLocaleString()+'/day)</label><div class="sur-val">$'+weekly.toLocaleString()+'</div></div>';
+      html+='<div class="sur-field"><label>Saturday</label><input type="number" value="'+(wd.saturday||0)+'" onchange="updateSurWorker(\''+w.name.replace(/'/g,"\\'")+'\',\'saturday\',this.value)"></div>';
+      html+='<div class="sur-field"><label>Travel</label><input type="number" value="'+(wd.travel||0)+'" onchange="updateSurWorker(\''+w.name.replace(/'/g,"\\'")+'\',\'travel\',this.value)"></div>';
+      html+='</div>';
+    }else{html+='<span style="font-size:12px;color:var(--grey)">Not included in payment</span>'}
+    html+='</div>';
+  });
+  container.innerHTML=html;
+}
+function setSurPresent(name,present){if(!_surData.workers[name])_surData.workers[name]={present:true,saturday:6000,travel:0};_surData.workers[name].present=present;renderSurinameWorkers()}
+function updateSurWorker(name,field,val){if(!_surData.workers[name])_surData.workers[name]={present:true,saturday:6000,travel:0};_surData.workers[name][field]=parseInt(val)||0}
+function updateSurData(){_surData.foodAllowance=parseInt(document.getElementById("surFoodAllowance").value)||0}
+function saveSurinameEntry(){
+  updateSurData();const weekStart=getSurWeekStart();const weekKey=getISOWeek(weekStart);
+  try{const l=JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}");l[weekKey]=_surData;localStorage.setItem("elg_payroll_sur",JSON.stringify(l))}catch(e){}
+  const fb=getFirebaseUrl();
+  if(fb){fetch(fb+"/payroll/"+weekKey+"/suriname.json",{method:"PUT",body:JSON.stringify(_surData),headers:{"Content-Type":"application/json"}}).then(()=>showToast("✅ Suriname data saved")).catch(()=>showToast("⚠️ Saved locally, cloud sync failed"))}
+  else{showToast("✅ Saved locally")}
+}
+function loadSurinameData(weekKey){
+  const fb=getFirebaseUrl();
+  if(fb){return fetch(fb+"/payroll/"+weekKey+"/suriname.json").then(r=>r.json()).then(d=>{if(d){try{const l=JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}");l[weekKey]=d;localStorage.setItem("elg_payroll_sur",JSON.stringify(l))}catch(e){}return d}try{return JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}")[weekKey]||null}catch(e){return null}}).catch(()=>{try{return JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}")[weekKey]||null}catch(e){return null}})}
+  try{return Promise.resolve(JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}")[weekKey]||null)}catch(e){return Promise.resolve(null)}
+}
+
+// Payment Sheet
+function renderPaySheet(){
+  const date=getGuyanaDate();const weekKey=getISOWeek(date);const weekStart=getWeekMondayFromDate(date);const range=getWeekRange(date);
+  document.getElementById("paysheetTitle").textContent="Payment Sheet — "+range;
+  const days=[];for(let i=0;i<6;i++){const d=new Date(weekStart);d.setDate(d.getDate()+i);days.push(d.toISOString().slice(0,10))}
+  const dayLabels=["Mon","Tue","Wed","Thu","Fri","Sat"];
+  const promises=days.map(d=>loadPayDayData(weekKey,d));promises.push(loadSurinameData(weekKey));
+  Promise.all(promises).then(results=>{
+    const dayData=results.slice(0,6);const surData=results[6]||{workers:{},foodAllowance:198000};
+    const filledDays=dayData.filter(d=>d&&Object.keys(d).length>0).length;
+    const badge=document.getElementById("paysheetBadge");
+    const today=new Date(getGuyanaDate());const dow=today.getDay();
+    if(filledDays>=Math.min(dow===0?6:dow,6)){badge.textContent="Ready";badge.className="paysheet-badge ready"}
+    else{badge.textContent="Draft ("+filledDays+"/6 days)";badge.className="paysheet-badge draft"}
+    let installTotal=0,ductTotal=0,surTotal=0,content="";
+    ["installation","ducting"].forEach(group=>{
+      const workers=getPayGroupWorkers(group);const gLabel=PAY_GROUPS[group].label;
+      content+='<div class="paysheet-table-wrap"><table class="paysheet-table"><thead><tr><th>'+gLabel+'</th>';
+      dayLabels.forEach((dl,i)=>{content+='<th class="'+(i===5?"sat-col":"")+'">'+dl+'</th>'});
+      content+='<th>Total</th></tr></thead><tbody>';
+      let groupTotal=0;
+      workers.forEach(w=>{
+        let rowTotal=0;content+='<tr><td>'+w.name+'</td>';
+        days.forEach((day,i)=>{
+          const dd=dayData[i];const shifts=dd?.[w.name]!==undefined?dd[w.name]:null;const fee=shifts?shifts*w.rate:0;rowTotal+=fee;
+          if(!shifts){content+='<td class="'+(i===5?"sat-cell":"")+'">—</td>'}
+          else{const feeK=fee>=1000?(fee/1000)+"k":fee;const cls=(shifts>1?"double-shift ":"")+(i===5?"sat-cell":"");content+='<td class="'+cls+'">'+feeK+'</td>'}
+        });
+        content+='<td>'+rowTotal.toLocaleString()+'</td></tr>';groupTotal+=rowTotal;
+      });
+      content+='<tr class="subtotal-row"><td>Subtotal</td><td colspan="5" style="text-align:center;font-size:10px;color:var(--grey)">'+workers.length+' workers</td><td class="sat-cell" style="font-size:10px;color:#854F0B">sep.</td><td style="text-align:right;padding-right:10px">'+groupTotal.toLocaleString()+'</td></tr>';
+      content+='</tbody></table></div>';
+      if(group==="installation")installTotal=groupTotal;else ductTotal=groupTotal;
+    });
+    // Suriname
+    const surWorkers=getPayGroupWorkers("suriname");
+    content+='<div class="paysheet-table-wrap"><table class="paysheet-table"><thead><tr><th>Suriname Team</th><th>Weekly</th><th class="sat-col">Sat</th><th>Travel</th><th>Total</th></tr></thead><tbody>';
+    let surGroupTotal=0;
+    surWorkers.forEach(w=>{
+      const wd=surData.workers?.[w.name]||{present:true,saturday:6000,travel:0};
+      if(wd.present===false){content+='<tr style="color:var(--grey)"><td>'+w.name+'</td><td colspan="3" style="text-align:center">Absent</td><td>0</td></tr>';return}
+      const weekly=5*w.rate;const sat=wd.saturday||0;const travel=wd.travel||0;const tot=weekly+sat+travel;surGroupTotal+=tot;
+      content+='<tr><td>'+w.name+'</td><td style="text-align:center">'+weekly.toLocaleString()+'</td><td class="sat-cell" style="text-align:center">'+(sat>0?sat.toLocaleString():"—")+'</td><td style="text-align:center">'+(travel>0?travel.toLocaleString():"—")+'</td><td style="text-align:right;padding-right:10px;font-weight:600">'+tot.toLocaleString()+'</td></tr>';
+    });
+    const food=surData.foodAllowance||0;surGroupTotal+=food;
+    content+='<tr><td>Food allowance</td><td colspan="3"></td><td style="text-align:right;padding-right:10px;font-weight:600">'+food.toLocaleString()+'</td></tr>';
+    content+='<tr class="subtotal-row"><td>Subtotal</td><td colspan="3"></td><td style="text-align:right;padding-right:10px">'+surGroupTotal.toLocaleString()+'</td></tr></tbody></table></div>';
+    surTotal=surGroupTotal;
+    document.getElementById("paysheetContent").innerHTML=content;
+    document.getElementById("paysheetTotals").innerHTML='<div class="paysheet-total-card"><div class="ptc-label">Installation crew</div><div class="ptc-val">'+installTotal.toLocaleString()+'</div></div><div class="paysheet-total-card"><div class="ptc-label">Ducting / movers</div><div class="ptc-val">'+ductTotal.toLocaleString()+'</div></div><div class="paysheet-total-card"><div class="ptc-label">Suriname team</div><div class="ptc-val">'+surTotal.toLocaleString()+'</div></div>';
+    const grand=installTotal+ductTotal+surTotal;
+    document.getElementById("paysheetGrand").innerHTML='<div><div class="paysheet-grand-label">Grand total</div><div class="paysheet-grand-val">'+grand.toLocaleString()+'</div></div>';
+    window._paySheetData={installTotal,ductTotal,surTotal,grand,days,dayLabels,dayData,surData,range};
+  });
+}
+
+// Payment Roster Settings
+function renderPayRoster(){
+  const roster=getPayRoster();const section=document.getElementById("payRosterSection");if(!section)return;
+  const allWorkers=getWorkerRoster();let html="";
+  ["installation","ducting","suriname"].forEach(group=>{
+    const g=PAY_GROUPS[group];const workers=Object.entries(roster).filter(([_,v])=>v.group===group).map(([name])=>name).sort();
+    const rateLabel=group==="suriname"?"$6,000/day":"$7,000/day";
+    html+='<div class="pay-roster-group"><h4>'+g.label+' <span class="prg-badge" style="background:'+g.color+';color:white">'+rateLabel+'</span></h4>';
+    workers.forEach(name=>{html+='<div class="pay-roster-item"><span class="pri-name">'+name+'</span><button class="pri-remove" onclick="removeFromPayRoster(\''+name.replace(/'/g,"\\'")+'\')">✕</button></div>'});
+    const available=allWorkers.filter(w=>!roster[w]);
+    html+='<div class="pay-roster-add"><select id="payRosterAdd_'+group+'"><option value="">Add worker...</option>';
+    available.forEach(w=>{html+='<option value="'+w+'">'+w+'</option>'});
+    html+='</select><button onclick="addToPayRoster(\''+group+'\')">+ Add</button></div></div>';
+  });
+  section.innerHTML=html;
+}
+function addToPayRoster(group){const sel=document.getElementById("payRosterAdd_"+group);const name=sel.value;if(!name)return;const roster=getPayRoster();roster[name]={group:group,rate:PAY_GROUPS[group].rate};savePayRosterData(roster);renderPayRoster()}
+function removeFromPayRoster(name){const roster=getPayRoster();delete roster[name];savePayRosterData(roster);renderPayRoster()}
+function savePayRoster(){showToast("✅ Payment roster saved")}
+
+// PDF Download
+function downloadPayPDF(){
+  const d=window._paySheetData;if(!d)return;
+  const{jsPDF}=window.jspdf;const pdf=new jsPDF("l","mm","a4");const M=14;let y=20;
+  pdf.setFontSize(16);pdf.setTextColor(15,110,86);pdf.text("ELGAWA Guyana Inc. — Weekly Payment Sheet",M,y);y+=6;
+  pdf.setFontSize(10);pdf.setTextColor(100);pdf.text(d.range,M,y);y+=10;
+  const makeRows=(group)=>{const workers=getPayGroupWorkers(group);return workers.map(w=>{const row=[w.name];let total=0;d.days.forEach((day,i)=>{const dd=d.dayData[i];const shifts=dd?.[w.name]!==undefined?dd[w.name]:0;const fee=shifts*w.rate;total+=fee;row.push(shifts===0?"—":fee.toLocaleString())});row.push(total.toLocaleString());return row})};
+  pdf.setFontSize(11);pdf.setTextColor(15,110,86);pdf.text("Installation Crew",M,y);y+=2;
+  pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Name",...d.dayLabels,"Total"]],body:makeRows("installation"),theme:"grid",headStyles:{fillColor:[15,110,86],fontSize:8},bodyStyles:{fontSize:8},columnStyles:{0:{cellWidth:45},7:{fontStyle:"bold"}}});
+  y=pdf.lastAutoTable.finalY+8;
+  pdf.setFontSize(11);pdf.setTextColor(46,117,182);pdf.text("Ducting / Movers",M,y);y+=2;
+  pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Name",...d.dayLabels,"Total"]],body:makeRows("ducting"),theme:"grid",headStyles:{fillColor:[46,117,182],fontSize:8},bodyStyles:{fontSize:8},columnStyles:{0:{cellWidth:45},7:{fontStyle:"bold"}}});
+  y=pdf.lastAutoTable.finalY+8;
+  const surWorkers=getPayGroupWorkers("suriname");const surRows=[];
+  surWorkers.forEach(w=>{const wd=d.surData?.workers?.[w.name]||{present:true,saturday:6000,travel:0};if(wd.present===false){surRows.push([w.name,"Absent","—","—","0"]);return}const weekly=5*w.rate;const sat=wd.saturday||0;const travel=wd.travel||0;surRows.push([w.name,weekly.toLocaleString(),sat>0?sat.toLocaleString():"—",travel>0?travel.toLocaleString():"—",(weekly+sat+travel).toLocaleString()])});
+  surRows.push(["Food Allowance","","","",( d.surData?.foodAllowance||0).toLocaleString()]);
+  if(y>170){pdf.addPage();y=20}
+  pdf.setFontSize(11);pdf.setTextColor(230,126,34);pdf.text("Suriname Team",M,y);y+=2;
+  pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Name","Weekly","Saturday","Travel","Total"]],body:surRows,theme:"grid",headStyles:{fillColor:[230,126,34],fontSize:8},bodyStyles:{fontSize:8},columnStyles:{0:{cellWidth:45},4:{fontStyle:"bold"}}});
+  y=pdf.lastAutoTable.finalY+10;
+  if(y>180){pdf.addPage();y=20}
+  pdf.setFontSize(12);pdf.setTextColor(0);pdf.text("Summary",M,y);y+=6;pdf.setFontSize(10);
+  pdf.text("Installation Crew: $"+d.installTotal.toLocaleString(),M,y);y+=5;
+  pdf.text("Ducting / Movers: $"+d.ductTotal.toLocaleString(),M,y);y+=5;
+  pdf.text("Suriname Team: $"+d.surTotal.toLocaleString(),M,y);y+=5;
+  pdf.setFontSize(13);pdf.setTextColor(15,110,86);pdf.text("Grand Total: $"+d.grand.toLocaleString(),M,y);y+=10;
+  pdf.setFontSize(9);pdf.setTextColor(100);
+  pdf.text("Prepared by: _______________________",M,y);pdf.text("Date: _____________",M+80,y);y+=7;
+  pdf.text("Approved by: _______________________",M,y);pdf.text("Finance: _______________________",M+80,y);
+  pdf.save("Payment_Sheet_"+getWeekMondayFromDate(getGuyanaDate())+".pdf");showToast("✅ PDF downloaded");
+}
+
+// Excel (CSV) Download
+function downloadPayExcel(){
+  const d=window._paySheetData;if(!d)return;
+  let csv="ELGAWA Guyana Inc. — Weekly Payment Sheet\n"+d.range+"\n\n";
+  csv+="INSTALLATION CREW\nName,"+d.dayLabels.join(",")+",Total\n";
+  getPayGroupWorkers("installation").forEach(w=>{let row=w.name,total=0;d.days.forEach((day,i)=>{const dd=d.dayData[i];const shifts=dd?.[w.name]!==undefined?dd[w.name]:0;const fee=shifts*w.rate;total+=fee;row+=","+(shifts===0?"0":fee)});row+=","+total;csv+=row+"\n"});
+  csv+=",,,,,,,"+d.installTotal+"\n\n";
+  csv+="DUCTING / MOVERS\nName,"+d.dayLabels.join(",")+",Total\n";
+  getPayGroupWorkers("ducting").forEach(w=>{let row=w.name,total=0;d.days.forEach((day,i)=>{const dd=d.dayData[i];const shifts=dd?.[w.name]!==undefined?dd[w.name]:0;const fee=shifts*w.rate;total+=fee;row+=","+(shifts===0?"0":fee)});row+=","+total;csv+=row+"\n"});
+  csv+=",,,,,,,"+d.ductTotal+"\n\n";
+  csv+="SURINAME TEAM\nName,Weekly,Saturday,Travel,Total\n";
+  getPayGroupWorkers("suriname").forEach(w=>{const wd=d.surData?.workers?.[w.name]||{present:true,saturday:6000,travel:0};if(wd.present===false){csv+=w.name+",Absent,0,0,0\n";return}const weekly=5*w.rate;const sat=wd.saturday||0;const travel=wd.travel||0;csv+=w.name+","+weekly+","+sat+","+travel+","+(weekly+sat+travel)+"\n"});
+  csv+="Food Allowance,,,,"+( d.surData?.foodAllowance||0)+"\n,,,,"+ d.surTotal+"\n\nGRAND TOTAL,,,,"+ d.grand+"\n";
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const link=document.createElement("a");link.href=URL.createObjectURL(blob);
+  link.download="Payment_Sheet_"+getWeekMondayFromDate(getGuyanaDate())+".csv";link.click();showToast("✅ Excel (CSV) downloaded");
+}
+
+// Wire up payment sub-tabs when attendance tab opens
+const _origRenderAttendanceTab=renderAttendanceTab;
+renderAttendanceTab=function(){
+  const isAdmin=currentUser&&currentUser.username==="admin";
+  const subTabs=document.getElementById("paySubTabs");
+  if(subTabs)subTabs.style.display=isAdmin?"flex":"none";
+  if(isAdmin){switchPayTab(_payActiveTab);if(_payActiveTab==="signin")_origRenderAttendanceTab()}
+  else{_origRenderAttendanceTab()}
+};
+// Render payment roster when settings admin tab is shown
+const _origSwitchSettingsTab=typeof switchSettingsTab==="function"?switchSettingsTab:null;
+if(_origSwitchSettingsTab){const _w=switchSettingsTab;switchSettingsTab=function(tab){_w(tab);if(tab==="admin")setTimeout(renderPayRoster,50)}}
+
 </script>
 </body>
 </html>
