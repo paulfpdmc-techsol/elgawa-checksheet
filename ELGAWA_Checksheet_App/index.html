@@ -311,6 +311,26 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .mover-input{flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px}
 .mover-remove{background:var(--danger);color:white;border:none;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px}
 .att-week-grid .totals-row{background:var(--blue-bg);font-weight:700}
+
+/* OK/Cancel floating bar for form card sections */
+.card-action-bar{position:fixed;bottom:0;left:0;right:0;z-index:160;display:flex;gap:10px;padding:12px 16px;background:white;border-top:2px solid var(--border);box-shadow:0 -4px 20px rgba(0,0,0,.12);animation:slideUp .25s ease}
+.card-action-bar .btn-ok{flex:1;padding:14px;border:none;border-radius:12px;background:var(--navy);color:white;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(31,78,121,.3)}
+.card-action-bar .btn-cancel{flex:1;padding:14px;border:2px solid var(--border);border-radius:12px;background:white;color:var(--grey);font-size:15px;font-weight:600;cursor:pointer}
+.card-action-bar .btn-ok:active{transform:scale(.97)}.card-action-bar .btn-cancel:active{transform:scale(.97)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+/* Styled confirm modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+.modal-overlay.show{opacity:1}
+.modal-box{background:white;border-radius:18px;padding:24px;max-width:320px;width:90%;text-align:center;transform:scale(.85);transition:transform .2s;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-overlay.show .modal-box{transform:scale(1)}
+.modal-box h3{margin:0 0 8px;font-size:17px;color:var(--navy)}
+.modal-box p{margin:0 0 18px;font-size:13px;color:#555;line-height:1.5}
+.modal-btns{display:flex;gap:10px}
+.modal-btns button{flex:1;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none}
+.modal-btns .m-ok{background:var(--navy);color:white;box-shadow:0 4px 12px rgba(31,78,121,.3)}
+.modal-btns .m-danger{background:#dc3545;color:white;box-shadow:0 4px 12px rgba(220,53,69,.3)}
+.modal-btns .m-cancel{background:#f0f0f0;color:#555}
+.modal-btns button:active{transform:scale(.96)}
 </style>
 </head>
 <body>
@@ -1626,7 +1646,7 @@ function _renderHistoryCards(list,sheets,date){
     </div>`
   }).join("");
 }
-function deleteSaved(i){if(confirm(t("deleteConfirm"))){savedSheets.splice(i,1);saveSaved();renderHistory();showToast(t("deleted"))}}
+function deleteSaved(i){showModal(t("confirm")||"Confirm",t("deleteConfirm")||"Delete this report?",()=>{savedSheets.splice(i,1);saveSaved();renderHistory();showToast(t("deleted"))},{danger:true,okText:t("delete")||"Delete"})}
 function viewSaved(i){openForm(savedSheets[i].teamKey,savedSheets[i])}
 // Edit mode — re-open submitted checksheet for correction
 let _editingIndex=-1; // tracks which savedSheet index we're editing (-1 = new)
@@ -3950,18 +3970,61 @@ function openCardSection(sectionId,idx){
       const body=hidden.querySelector(`#cb_${sectionId}`);
       if(hdr&&body){hdr.classList.add("open");body.classList.add("open");setTimeout(()=>{hdr.scrollIntoView({behavior:"smooth",block:"start"})},100)}
     }
-    // Add a floating "Back to Overview" button
-    let backBtn=document.getElementById("backToOverview");
-    if(!backBtn){
-      backBtn=document.createElement("button");
-      backBtn.id="backToOverview";
-      backBtn.className="btn btn-outline";
-      backBtn.style.cssText="position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:150;padding:12px 24px;border-radius:30px;background:var(--navy);color:white;box-shadow:0 4px 20px rgba(0,0,0,.25);font-weight:700;font-size:14px;border:none";
-      backBtn.textContent="← Back to Overview";
-      backBtn.onclick=closeCardSection;
-      document.body.appendChild(backBtn);
+    // Add OK/Cancel action bar at bottom
+    let actionBar=document.getElementById("cardActionBar");
+    if(!actionBar){
+      // Snapshot current field values so Cancel can restore them
+      _cardSnapshot=snapshotFormFields();
+      actionBar=document.createElement("div");
+      actionBar.id="cardActionBar";
+      actionBar.className="card-action-bar";
+      actionBar.innerHTML=`<button class="btn-cancel" onclick="cancelCardSection()">Cancel</button><button class="btn-ok" onclick="confirmCardSection()">OK</button>`;
+      document.body.appendChild(actionBar);
     }
   }
+}
+
+
+let _cardSnapshot=null;
+function snapshotFormFields(){
+  const snap={};
+  document.querySelectorAll("#formContentHidden input, #formContentHidden select, #formContentHidden textarea").forEach((el,i)=>{
+    const key=el.id||el.getAttribute("data-key")||("_idx_"+i);
+    const uid=key+"__"+i;
+    snap[uid]={el:el,val:el.type==="checkbox"?el.checked:el.value};
+  });
+  return snap;
+}
+function restoreFormFields(snap){
+  if(!snap)return;
+  Object.values(snap).forEach(s=>{
+    if(s.el&&s.el.parentNode){
+      if(s.el.type==="checkbox")s.el.checked=s.val;
+      else s.el.value=s.val;
+    }
+  });
+}
+function confirmCardSection(){closeCardSection()}
+function cancelCardSection(){
+  if(_cardSnapshot)restoreFormFields(_cardSnapshot);
+  _cardSnapshot=null;
+  closeCardSection();
+}
+
+// Styled confirm modal (replaces browser confirm())
+function showModal(title,msg,onOk,opts){
+  opts=opts||{};
+  const overlay=document.createElement("div");
+  overlay.className="modal-overlay";
+  const danger=opts.danger?"m-danger":"m-ok";
+  const okText=opts.okText||"OK";
+  const cancelText=opts.cancelText||"Cancel";
+  overlay.innerHTML=`<div class="modal-box"><h3>${title}</h3><p>${msg}</p><div class="modal-btns"><button class="m-cancel" id="_mCancel">${cancelText}</button><button class="${danger}" id="_mOk">${okText}</button></div></div>`;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(()=>overlay.classList.add("show"));
+  overlay.querySelector("#_mOk").onclick=()=>{overlay.remove();if(onOk)onOk()};
+  overlay.querySelector("#_mCancel").onclick=()=>{overlay.remove();if(opts.onCancel)opts.onCancel()};
+  overlay.addEventListener("click",e=>{if(e.target===overlay){overlay.remove();if(opts.onCancel)opts.onCancel()}});
 }
 
 function closeCardSection(){
@@ -3974,9 +4037,9 @@ function closeCardSection(){
     // Remove highlights
     hidden.querySelectorAll(".section").forEach(s=>{s.style.border="";s.style.boxShadow=""});
   }
-  // Remove back button
-  const backBtn=document.getElementById("backToOverview");
-  if(backBtn)backBtn.remove();
+  // Remove action bar
+  const actionBar=document.getElementById("cardActionBar");
+  if(actionBar)actionBar.remove();
   // Refresh card statuses
   if(_formTeamKey)renderCardFlow(_formTeamKey);
   window.scrollTo(0,0);
@@ -4349,14 +4412,15 @@ function submitAndShare(tk){
   const dateVal=document.getElementById("f_date").value;
   const existing=getExistingSubmissions(tk,dateVal);
   if(existing.length){
-    const details=existing.map((s,i)=>`  ${i+1}. ${s.location||"?"} ${s.floor||""} — by ${s.submittedBy||s.teamLead||"?"}`).join("\n");
-    const choice=confirm(
-      `${existing.length} ${t("dupTitle")} ${dateVal}:\n\n${details}\n\n`
-      +`${t("dupCorrection")}\n`
-      +`${t("dupNewArea")}`
-    );
-    if(!choice)return;
+    const details=existing.map((s,i)=>`${i+1}. ${s.location||"?"} ${s.floor||""} — ${s.submittedBy||s.teamLead||"?"}`).join("<br>");
+    showModal(t("dupTitle")||"Duplicate Submission",
+      `${existing.length} report(s) for ${dateVal}:<br><br>${details}<br><br>${t("dupCorrection")||"OK = correction"}<br>${t("dupNewArea")||""}`,
+      ()=>{_doFinalSubmit(tk)},{okText:t("submit")||"Submit"});
+    return;
   }
+  _doFinalSubmit(tk);
+}
+function _doFinalSubmit(tk){
   _submitting=true;
   const submitBtn=document.querySelector(".btn-submit");
   if(submitBtn){submitBtn.disabled=true;submitBtn.textContent=t("submitting");}
@@ -4682,7 +4746,7 @@ function buildPDFDoc(data){
   pdf.setFontSize(7);pdf.setTextColor(150);pdf.text(`ELGAWA | ${tm.name} | ${new Date().toLocaleString()} | ${data.savedBy||data.submittedBy||""}`,W/2,H-8,{align:"center"});
   return pdf;
 }
-function clearForm(){if(confirm(t("clearConfirm"))){document.querySelectorAll("#formView input:not([type=date]),#formView textarea").forEach(el=>{if(el.type!=="date"&&!el.readOnly)el.value=""});document.querySelectorAll("#formView select").forEach(el=>el.selectedIndex=0);document.querySelectorAll(".other-input").forEach(el=>el.style.display="none");if(_formTeamKey)clearDraft(_formTeamKey)}}
+function clearForm(){showModal(t("confirm")||"Confirm",t("clearConfirm")||"Clear all form data?",()=>{document.querySelectorAll("#formView input:not([type=date]),#formView textarea").forEach(el=>{if(el.type!=="date"&&!el.readOnly)el.value=""});document.querySelectorAll("#formView select").forEach(el=>el.selectedIndex=0);document.querySelectorAll(".other-input").forEach(el=>el.style.display="none");if(_formTeamKey)clearDraft(_formTeamKey)},{danger:true,okText:t("clear")||"Clear"})}
 function downloadPDF(i){generatePDF(savedSheets[i])}
 function sharePDF(i){generatePDF(savedSheets[i],true)}
 
@@ -4845,14 +4909,13 @@ function toggleUserActions(uname){
 }
 function removeUser(uname){
   if(uname==="admin"){showToast("Cannot remove admin account");return}
-  if(!confirm(t("removeUserConfirm")+" "+uname+"?"))return;
-  // Remove from custom users if present
-  const cu=getCustomUsers();delete cu[uname];saveCustomUsers(cu);
-  // If base user, add to disabled list
-  if(BASE_USERS[uname]){const dis=getDisabledUsers();if(!dis.includes(uname))dis.push(uname);saveDisabledUsers(dis)}
-  USERS=getUsers();
-  cloudSaveUsers();
-  renderUserList();showToast(t("userRemoved"));
+  showModal(t("confirm")||"Confirm",(t("removeUserConfirm")||"Remove user")+" "+uname+"?",()=>{
+    const cu=getCustomUsers();delete cu[uname];saveCustomUsers(cu);
+    if(BASE_USERS[uname]){const dis=getDisabledUsers();if(!dis.includes(uname))dis.push(uname);saveDisabledUsers(dis)}
+    USERS=getUsers();
+    cloudSaveUsers();
+    renderUserList();showToast(t("userRemoved"));
+  },{danger:true,okText:t("remove")||"Remove"});
 }
 function saveUserChanges(){
   USERS=getUsers();
@@ -4890,12 +4953,13 @@ function addWorkerToRoster(){
   showToast(t("workerAdded"));
 }
 function removeWorker(name){
-  if(!confirm(t("removeWorkerConfirm").replace("%s",name)))return;
-  let custom=getCustomWorkers();
-  custom=custom.filter(n=>n!==name);
-  saveCustomWorkers(custom);
-  renderWorkerRoster();
-  showToast(t("workerRemoved"));
+  showModal(t("confirm")||"Confirm",(t("removeWorkerConfirm")||"Remove worker %s?").replace("%s",name),()=>{
+    let custom=getCustomWorkers();
+    custom=custom.filter(n=>n!==name);
+    saveCustomWorkers(custom);
+    renderWorkerRoster();
+    showToast(t("workerRemoved"));
+  },{danger:true,okText:t("remove")||"Remove"});
 }
 // OT Eligible management
 function renderOTEligible(){
@@ -4929,20 +4993,22 @@ function addOTEligible(){
   showToast(name+" "+t("addedToOT"));
 }
 function removeOTEligible(name){
-  if(!confirm(t("removeOTConfirm").replace("%s",name)))return;
-  let custom=getCustomOT();
-  custom=custom.filter(n=>n!==name);
-  saveCustomOT(custom);
-  renderOTEligible();
-  showToast(name+" "+t("removedFromOT"));
+  showModal(t("confirm")||"Confirm",(t("removeOTConfirm")||"Remove %s from OT list?").replace("%s",name),()=>{
+    let custom=getCustomOT();
+    custom=custom.filter(n=>n!==name);
+    saveCustomOT(custom);
+    renderOTEligible();
+    showToast(name+" "+t("removedFromOT"));
+  },{danger:true,okText:t("remove")||"Remove"});
 }
 function removeBaseOT(name){
-  if(!confirm(t("removeOTConfirm").replace("%s",name)+"\n\n"+t("rememberedOnDevice")))return;
-  let removed=[];try{removed=JSON.parse(localStorage.getItem("elg_ot_removed")||"[]")}catch(e){}
-  if(!removed.includes(name))removed.push(name);
-  try{localStorage.setItem("elg_ot_removed",JSON.stringify(removed))}catch(e){}
-  renderOTEligible();
-  showToast(name+" "+t("removedFromOT"));
+  showModal(t("confirm")||"Confirm",(t("removeOTConfirm")||"Remove %s from OT list?").replace("%s",name)+"<br><small style='color:#888'>"+( t("rememberedOnDevice")||"This will be remembered on this device")+"</small>",()=>{
+    let removed=[];try{removed=JSON.parse(localStorage.getItem("elg_ot_removed")||"[]")}catch(e){}
+    if(!removed.includes(name))removed.push(name);
+    try{localStorage.setItem("elg_ot_removed",JSON.stringify(removed))}catch(e){}
+    renderOTEligible();
+    showToast(name+" "+t("removedFromOT"));
+  },{danger:true,okText:t("remove")||"Remove"});
 }
 
 // ================================================================
@@ -5048,20 +5114,20 @@ function addReportAccess(type){
 function removeReportAccess(type,uname){
   if(uname==="admin"){showToast(t("cannotRevokeAdmin"));return}
   const uObj=BASE_USERS[uname]||getCustomUsers()[uname]||{};
-  if(!confirm(t("revokeAccessConfirm").replace("%t",type).replace("%n",uObj.name||uname)))return;
-  // Remove from custom list
-  let custom=[];try{custom.push(...JSON.parse(localStorage.getItem("elg_report_access_"+type)||"[]"))}catch(e){}
-  custom=custom.filter(u=>u!==uname);
-  saveReportAccess(type,custom);
-  // If it was a base default, add to removed list
-  const base=type==="daily"?BASE_DAILY_ACCESS:BASE_MONTHLY_ACCESS;
-  if(base.includes(uname)){
-    const removed=getReportAccessRemoved(type);
-    if(!removed.includes(uname))removed.push(uname);
-    saveReportAccessRemoved(type,removed);
-  }
-  renderReportAccessPanel();
-  showToast((uObj.name||uname)+" "+t("accessRevoked"));
+  const _nm=uObj.name||uname;
+  showModal(t("confirm")||"Confirm",(t("revokeAccessConfirm")||"Revoke %t access for %n?").replace("%t",type).replace("%n",_nm),()=>{
+    let custom=[];try{custom.push(...JSON.parse(localStorage.getItem("elg_report_access_"+type)||"[]"))}catch(e){}
+    custom=custom.filter(u=>u!==uname);
+    saveReportAccess(type,custom);
+    const base=type==="daily"?BASE_DAILY_ACCESS:BASE_MONTHLY_ACCESS;
+    if(base.includes(uname)){
+      const removed=getReportAccessRemoved(type);
+      if(!removed.includes(uname))removed.push(uname);
+      saveReportAccessRemoved(type,removed);
+    }
+    renderReportAccessPanel();
+    showToast(_nm+" "+t("accessRevoked"));
+  },{danger:true,okText:t("revoke")||"Revoke"});
 }
 
 function toggleNotif(){const on=localStorage.getItem("elg_notif")==="on";
@@ -5311,7 +5377,9 @@ function saveAttendanceNow(){
 }
 
 function verifyAttendance(){
-  if(!confirm(t("attConfirmVerify")))return;
+  showModal(t("confirm")||"Confirm",t("attConfirmVerify")||"Verify this attendance record?",()=>{_doVerifyAttendance()});
+}
+function _doVerifyAttendance(){
   const data=_getCurrentAttData();
   data.verified=true;
   data.verifiedBy=currentUser.name;
@@ -5556,34 +5624,18 @@ function dismissInstall(){document.querySelector(".install-banner").style.displa
 (function(){
   const isDismissed=sessionStorage.getItem("elg_install_dismissed");
   const isStandalone=window.matchMedia("(display-mode:standalone)").matches||window.navigator.standalone;
-  if(isStandalone){document.querySelector(".install-banner").style.display="none";return}
-  if(!isDismissed){
-    const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent);
-    const b=document.querySelector(".install-banner");
-    if(b){
-      if(isIOS){
-        b.style.display="flex";
-        const btn=document.getElementById("installBtn");
-        if(btn){btn.textContent="📲 Tap Share ➜ Add to Home Screen";btn.onclick=function(){dismissInstall()}}
-      }else{
-        // Android/Chrome — show banner with instructions even before beforeinstallprompt fires
-        b.style.display="flex";
-        const btn=document.getElementById("installBtn");
-        if(btn&&!deferredPrompt){btn.textContent="📲 Use browser menu ➜ Install";btn.onclick=function(){dismissInstall()}}
-      }
-    }
-  }
-  // Also show install button in Settings if not standalone
-  setTimeout(function(){
-    const isf=document.getElementById("installFromSettings");
-    if(isf&&!isStandalone)isf.style.display="block";
-  },1000);
-})()
-// Check stored login
-try{const u=JSON.parse(localStorage.getItem("elg_user"));
-if(u&&u.username){currentUser=u;LANG=localStorage.getItem("elg_lang")||"en";
-  // Fix: ensure username is correct after any name changes
-  if(!u.username||u.username==="undefined"){
+  if(isStandalone||isDismissed)return;
+  const banner=document.querySelector(".install-banner");
+  if(banner)banner.style.display="flex";
+})();
+
+try{LANG=localStorage.getItem("elg_lang")||"en"}catch(e){}
+applyLang();
+document.querySelectorAll(".lang-btn").forEach(b=>b.classList.toggle("active",b.textContent.includes(LANG==="en"?"Eng":LANG==="es"?"Esp":"Ned")));
+document.getElementById("loginPass").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
+document.getElementById("loginUser").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("loginPass").focus()});
+try{const u=localStorage.getItem("elg_user");if(u){currentUser=JSON.parse(u);
+  if(!currentUser.username){
     const USERS=getUsers();
     const match=Object.keys(USERS).find(k=>USERS[k].name===currentUser.name);
     if(match){currentUser.username=match;try{localStorage.setItem("elg_user",JSON.stringify(currentUser))}catch(e){}}
