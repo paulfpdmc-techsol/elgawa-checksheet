@@ -1785,7 +1785,7 @@ function switchTab(tab,btn){
     generateReport();startReportRefresh();
   }
   if(tab==="history"){document.getElementById("tabHistory").classList.remove("hidden");renderHistory()}
-  if(tab==="attendance"){document.getElementById("tabAttendance").classList.remove("hidden");_attData=null;_attDate=null;renderAttendanceTab()}
+  if(tab==="attendance"){document.getElementById("tabAttendance").classList.remove("hidden");_attData=null;_attDate=null;var _isAdm=currentUser&&currentUser.username==="admin";var _pst=document.getElementById("paySubTabs");if(_pst)_pst.style.display=_isAdm?"flex":"none";if(_isAdm&&typeof switchPayTab==="function"){var _pt=typeof _payActiveTab!=="undefined"?_payActiveTab:"signin";switchPayTab(_pt);if(_pt==="signin")renderAttendanceTab()}else{renderAttendanceTab()}}
   if(tab==="analysis"){
     document.getElementById("tabReports").classList.remove("hidden");
     // Hide the report sub-tabs row and date picker — analysis has its own UI
