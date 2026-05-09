@@ -718,7 +718,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
     <div class="s-card">
       <h3 id="changePwTitle">Change Password</h3>
       <p style="font-size:11px;color:var(--grey);margin-bottom:8px" id="changePwDesc">Update your login password</p>
-      <div class="admin-add">
+      <div class="admin-add" style="grid-template-columns:1fr">
         <div style="position:relative"><input type="password" id="currentPw" placeholder="Current password" class="full" style="padding-right:42px"><button type="button" onclick="togglePeek('currentPw',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button></div>
         <div style="position:relative"><input type="password" id="newPw" placeholder="New password" class="full" style="padding-right:42px"><button type="button" onclick="togglePeek('newPw',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button></div>
         <div style="position:relative"><input type="password" id="confirmPw" placeholder="Confirm new password" class="full" style="padding-right:42px"><button type="button" onclick="togglePeek('confirmPw',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button></div>
@@ -1916,7 +1916,7 @@ function showDash(){
   });
   // Apply saved view preference
   setTeamView(getTeamView());
-  checkFirebaseExpiry();
+  try{checkFirebaseExpiry()}catch(e){}
   loadSaved();renderHistory();
   document.getElementById("rptDate").onchange=generateReport;
   // Report access control
