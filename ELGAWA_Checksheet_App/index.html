@@ -483,6 +483,36 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .pay-roster-add{display:flex;gap:6px;margin-top:6px}
 .pay-roster-add select{flex:1;padding:6px;font-size:12px;border:1px solid var(--border);border-radius:6px}
 .pay-roster-add button{padding:6px 12px;font-size:12px;font-weight:600;background:var(--navy);color:white;border:none;border-radius:6px;cursor:pointer}
+
+.hub-subtabs{display:flex;gap:4px;margin-bottom:12px;padding:4px;background:white;border-radius:12px;box-shadow:var(--shadow)}
+.hub-subtab{flex:1;padding:8px 2px;text-align:center;cursor:pointer;background:none;border:none;color:var(--grey);border-radius:8px;font-size:10px;font-weight:700;transition:all .2s}
+.hub-subtab.active{color:white;background:linear-gradient(135deg,#8B5CF6,#A78BFA);box-shadow:0 2px 8px rgba(139,92,246,.3)}
+.hub-section{max-width:600px;margin:0 auto;padding:16px;padding-bottom:90px}
+.hub-overview-card{background:white;border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.hub-overview-card h3{font-size:14px;color:#8B5CF6;margin-bottom:10px;font-weight:800}
+.hub-stat-row{display:flex;gap:8px;margin-bottom:10px}
+.hub-stat{flex:1;background:var(--blue-bg);border-radius:10px;padding:10px;text-align:center}
+.hub-stat .hs-val{font-size:22px;font-weight:800;color:var(--navy)}
+.hub-stat .hs-lbl{font-size:10px;color:var(--grey);text-transform:uppercase;font-weight:700;letter-spacing:.3px}
+.hub-unreg{background:#fff8e1;border-radius:10px;padding:10px;margin-top:8px}
+.hub-unreg h4{font-size:12px;color:#e67e22;margin-bottom:8px;font-weight:700}
+.hub-unreg-row{display:flex;align-items:center;justify-content:space-between;padding:8px 4px;border-bottom:1px solid #ffeeba}
+.hub-unreg-row:last-child{border-bottom:none}
+.hub-unreg-name{font-size:13px;font-weight:600}
+.hub-confirm-btns{display:flex;gap:6px}
+.hub-confirm-btn{padding:4px 12px;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer}
+.hub-confirm-btn.present{background:#d4edda;color:#155724}
+.hub-confirm-btn.absent{background:#f8d7da;color:#721c24}
+.hub-lead-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.hub-lead-row:last-child{border-bottom:none}
+.hub-lead-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.hub-lead-dot.in{background:#28a745}
+.hub-lead-dot.out{background:#dc3545}
+.hub-lead-name{font-size:13px;font-weight:600;flex:1}
+.hub-lead-time{font-size:11px;color:var(--grey)}
+.hub-report-card{background:white;border-radius:var(--radius);padding:12px;margin-bottom:8px;box-shadow:var(--shadow);border-left:4px solid var(--navy)}
+.hub-report-card h4{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.hub-report-meta{font-size:11px;color:var(--grey)}
 </style>
 </head>
 <body>
@@ -642,6 +672,34 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
     </div>
   </div>
 </div>
+<div id="hubView" class="hub-section hidden">
+  <div class="hub-subtabs" id="hubSubTabs">
+    <button class="hub-subtab active" onclick="switchHubTab('overview')">Overview</button>
+    <button class="hub-subtab" onclick="switchHubTab('attendance')">Attend</button>
+    <button class="hub-subtab" onclick="switchHubTab('pay')">Pay</button>
+    <button class="hub-subtab" onclick="switchHubTab('analysis')">Analysis</button>
+    <button class="hub-subtab" onclick="switchHubTab('reports')">Reports</button>
+  </div>
+  <div id="hubOverviewView">
+    <div class="hub-overview-card">
+      <h3>Today's Snapshot</h3>
+      <div class="hub-stat-row" id="hubStats"></div>
+    </div>
+    <div class="hub-overview-card">
+      <h3>Team Lead Status</h3>
+      <div id="hubLeadStatus"></div>
+    </div>
+    <div class="hub-overview-card">
+      <h3>Unregistered Workers</h3>
+      <p style="font-size:11px;color:var(--grey);margin-bottom:8px">Workers not captured by any team submission today</p>
+      <div id="hubUnregWorkers"></div>
+    </div>
+  </div>
+  <div id="hubAttendanceView" style="display:none"></div>
+  <div id="hubPayView" style="display:none"></div>
+  <div id="hubAnalysisView" style="display:none"></div>
+  <div id="hubReportsView" style="display:none"></div>
+</div>
 <div id="settingsView" class="settings-panel hidden">
   <div class="back-row"><button class="back-btn" onclick="showDash()" id="backBtn1"></button></div>
   <div class="settings-tabs" id="settingsTabs">
@@ -756,6 +814,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
   <button class="bnav-item" onclick="switchTab('reports')" id="navBtnReports"><span class="bnav-icon">📊</span><span class="bnav-label">Reports</span></button>
   <button class="bnav-item" onclick="switchTab('history')" id="navBtnHistory"><span class="bnav-icon">📂</span><span class="bnav-label">History</span></button>
   <span class="bnav-divider" id="navDivider" style="display:none"></span>
+    <button class="bnav-item admin-item" onclick="switchTab('hub')" id="navBtnHub" style="display:none"><span class="bnav-icon">🏠</span><span class="bnav-label">My Hub</span></button>
   <button class="bnav-item admin-item" onclick="switchTab('attendance')" id="navBtnAttendance" style="display:none"><span class="bnav-icon">📋</span><span class="bnav-label">Attend</span></button>
   <button class="bnav-item admin-item" onclick="switchTab('analysis')" id="navBtnAnalysis" style="display:none"><span class="bnav-icon">📈</span><span class="bnav-label">Analysis</span></button>
   <button class="bnav-item" onclick="showSettings()" id="navBtnSettings"><span class="bnav-icon">⚙️</span><span class="bnav-label">Settings</span></button>
@@ -1764,13 +1823,14 @@ function stopReportRefresh(){if(_reportRefreshTimer){clearInterval(_reportRefres
 function switchTab(tab,btn){
   // Update bottom nav active state
   document.querySelectorAll(".bottom-nav .bnav-item").forEach(b=>b.classList.remove("active"));
-  const navMap={forms:"navBtnForms",reports:"navBtnReports",history:"navBtnHistory",attendance:"navBtnAttendance",analysis:"navBtnAnalysis"};
+  const navMap={forms:"navBtnForms",reports:"navBtnReports",history:"navBtnHistory",attendance:"navBtnAttendance",analysis:"navBtnAnalysis",hub:"navBtnHub"};
   const activeBtn=document.getElementById(navMap[tab]);
   if(activeBtn)activeBtn.classList.add("active");
   // Also handle legacy tab-btn if passed
   if(btn&&btn.classList)btn.classList.add("active");
   ["tabForms","tabReports","tabHistory","tabAttendance"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add("hidden")});
   document.getElementById("settingsView").classList.add("hidden");
+  document.getElementById("hubView").classList.add("hidden");
   document.getElementById("dashView").classList.remove("hidden");
   stopReportRefresh();
   if(tab==="forms")document.getElementById("tabForms").classList.remove("hidden");
@@ -1805,6 +1865,7 @@ function switchTab(tab,btn){
     if(anCont)anCont.classList.remove("hidden");
     renderAnalysisReport();
   }
+  if(tab==="hub"){document.getElementById("hubView").classList.remove("hidden");switchHubTab(typeof _hubActiveTab!=="undefined"?_hubActiveTab:"overview")}
   if(tab==="settings"){showSettings();return}
   // Persist active tab
   try{localStorage.setItem("elg_active_tab",tab)}catch(e){}
@@ -1878,6 +1939,8 @@ function showDash(){
   const navAnalysisBtn=document.getElementById("navBtnAnalysis");
   if(navAnalysisBtn)navAnalysisBtn.style.display=isAdmin?"flex":"none";
   // Attendance in bottom nav — admin only
+  const navHubBtn=document.getElementById("navBtnHub");
+  if(navHubBtn)navHubBtn.style.display=isAdmin?"flex":"none";
   const navAttendBtn=document.getElementById("navBtnAttendance");
   if(navAttendBtn)navAttendBtn.style.display=isAdmin?"flex":"none";
   // Show divider between regular and admin tabs
@@ -5487,6 +5550,7 @@ function _doFinalSubmit(tk){
   savedSheets.push(d);saveSaved();
   clearDraft(tk); // Clear local auto-save after successful submit
   // Cloud sync
+  autoRegisterAttendance(d);
   cloudSaveSheet(d).then(ok=>{
     if(ok)showToast(t("synced"));
   }).finally(()=>{_submitting=false;if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=t("submitShare");}});
@@ -5858,6 +5922,7 @@ function switchSettingsTab(tab){
 }
 function showSettings(){applyLang();
   ["dashView","formView","reportView"].forEach(id=>document.getElementById(id).classList.add("hidden"));
+  document.getElementById("hubView").classList.add("hidden");
   document.getElementById("settingsView").classList.remove("hidden");
   // Update bottom nav active state
   document.querySelectorAll(".bottom-nav .bnav-item").forEach(b=>b.classList.remove("active"));
@@ -6866,7 +6931,27 @@ function renderPayEntry(){
   const tabsEl=document.getElementById("payGroupTabs");
   tabsEl.innerHTML=["installation","ducting"].map(g=>'<button class="pay-group-tab '+(g===_payGroup?"active":"")+'" onclick="_payGroup=\''+g+'\';renderPayEntry()" style="'+(g===_payGroup?"background:"+PAY_GROUPS[g].color:"")+'">'+PAY_GROUPS[g].label+'</button>').join("");
   const weekKey=getISOWeek(date);
-  loadPayDayData(weekKey,date).then(data=>{_payData=data||{};renderPayWorkerList()});
+  loadPayDayData(weekKey,date).then(data=>{
+    _payData=data||{};
+    // Auto-populate from attendance if no pay data saved yet for this day
+    const attLocal=loadAttendance(date);
+    const applyAttendance=(att)=>{
+      if(!att||!att.workers)return;
+      const roster=getPayRoster();
+      Object.entries(att.workers).forEach(([name,info])=>{
+        if(roster[name]&&_payData[name]===undefined){
+          _payData[name]=info.present?1:0;
+        }
+      });
+    };
+    if(attLocal&&attLocal.workers&&Object.keys(attLocal.workers).length>0){
+      applyAttendance(attLocal);renderPayWorkerList();
+    }else{
+      cloudLoadAttendance(date).then(cloudAtt=>{
+        applyAttendance(cloudAtt);renderPayWorkerList();
+      }).catch(()=>renderPayWorkerList());
+    }
+  });
 }
 function renderPayWorkerList(){
   const workers=getPayGroupWorkers(_payGroup);const container=document.getElementById("payWorkerList");
@@ -6954,9 +7039,24 @@ function renderPaySheet(){
   document.getElementById("paysheetTitle").textContent="Payment Sheet — "+range;
   const days=[];for(let i=0;i<6;i++){const d=new Date(weekStart);d.setDate(d.getDate()+i);days.push(d.toISOString().slice(0,10))}
   const dayLabels=["Mon","Tue","Wed","Thu","Fri","Sat"];
-  const promises=days.map(d=>loadPayDayData(weekKey,d));promises.push(loadSurinameData(weekKey));
-  Promise.all(promises).then(results=>{
+  const payPromises=days.map(d=>loadPayDayData(weekKey,d));
+  const attPromises=days.map(d=>cloudLoadAttendance(d).then(cloud=>{if(cloud)return cloud;return loadAttendance(d)}).catch(()=>loadAttendance(d)));
+  payPromises.push(loadSurinameData(weekKey));
+  Promise.all([Promise.all(payPromises),Promise.all(attPromises)]).then(([results,attResults])=>{
     const dayData=results.slice(0,6);const surData=results[6]||{workers:{},foodAllowance:198000};
+    // Merge attendance into pay data: if no pay entry for a worker, use attendance
+    const roster=getPayRoster();
+    dayData.forEach((dd,i)=>{
+      if(!dayData[i])dayData[i]={};
+      const att=attResults[i];
+      if(att&&att.workers){
+        Object.entries(att.workers).forEach(([name,info])=>{
+          if(roster[name]&&dayData[i][name]===undefined){
+            dayData[i][name]=info.present?1:0;
+          }
+        });
+      }
+    });
     const filledDays=dayData.filter(d=>d&&Object.keys(d).length>0).length;
     const badge=document.getElementById("paysheetBadge");
     const today=new Date(getGuyanaDate());const dow=today.getDay();
@@ -7073,18 +7173,209 @@ function downloadPayExcel(){
   link.download="Payment_Sheet_"+getWeekMondayFromDate(getGuyanaDate())+".csv";link.click();showToast("✅ Excel (CSV) downloaded");
 }
 
+
+// ═══ MY HUB ═══
+let _hubActiveTab="overview";
+
+function switchHubTab(tab){
+  _hubActiveTab=tab;
+  document.querySelectorAll("#hubSubTabs .hub-subtab").forEach((b,i)=>{
+    const tabs=["overview","attendance","pay","analysis","reports"];
+    b.classList.toggle("active",tabs[i]===tab);
+  });
+  ["hubOverviewView","hubAttendanceView","hubPayView","hubAnalysisView","hubReportsView"].forEach(id=>{
+    document.getElementById(id).style.display="none";
+  });
+  const viewMap={overview:"hubOverviewView",attendance:"hubAttendanceView",pay:"hubPayView",analysis:"hubAnalysisView",reports:"hubReportsView"};
+  document.getElementById(viewMap[tab]).style.display="block";
+
+  if(tab==="overview")renderHubOverview();
+  if(tab==="attendance")renderHubAttendance();
+  if(tab==="pay")renderHubPay();
+  if(tab==="analysis")renderHubAnalysis();
+  if(tab==="reports")renderHubReports();
+}
+
+function renderHubOverview(){
+  const date=getGuyanaDate();
+  const fb=getFirebaseUrl();
+  const statsEl=document.getElementById("hubStats");
+  const leadEl=document.getElementById("hubLeadStatus");
+  const unregEl=document.getElementById("hubUnregWorkers");
+
+  statsEl.innerHTML='<div style="text-align:center;width:100%;color:var(--grey)">Loading...</div>';
+
+  // Load today's attendance
+  const attPromise=fb?cloudLoadAttendance(date).then(d=>d||loadAttendance(date)||{workers:{}}):Promise.resolve(loadAttendance(date)||{workers:{}});
+
+  // Load today's submitted sheets from cloud
+  const sheetsPromise=fb?fetch(fb+"/sheets.json").then(r=>r.json()).then(d=>d||{}).catch(()=>({})):Promise.resolve({});
+
+  Promise.all([attPromise,sheetsPromise]).then(([attData,allSheets])=>{
+    // Count attendance
+    const roster=getWorkerRoster();
+    const workers=attData.workers||{};
+    let presentCount=0;
+    roster.forEach(name=>{if(workers[name]&&workers[name].present)presentCount++});
+
+    // Count today's sheets
+    const todaySheets=Object.values(allSheets).filter(s=>s.date===date);
+    const teamsSubmitted=new Set(todaySheets.map(s=>s.teamKey));
+
+    // Team lead status
+    const USERS=getUsers();
+    const leads=Object.entries(USERS).filter(([k,u])=>u.role&&(u.role.includes("Lead")||u.role.includes("Supervisor"))&&k!=="admin");
+    let leadsIn=0;
+    let leadHtml="";
+    leads.forEach(([username,user])=>{
+      const submitted=todaySheets.find(s=>s.teamLead===user.name||s.submittedBy===username);
+      const inAtt=workers[user.name]&&workers[user.name].present;
+      const isIn=submitted||inAtt;
+      if(isIn)leadsIn++;
+      const timeStr=inAtt&&workers[user.name].timeIn?workers[user.name].timeIn:(submitted?new Date(parseInt(submitted._id.split("").slice(0,8).join(""),36)||Date.now()).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"--:--");
+      leadHtml+='<div class="hub-lead-row"><div class="hub-lead-dot '+(isIn?"in":"out")+'"></div><div class="hub-lead-name">'+user.name+'</div><div class="hub-lead-time">'+(isIn?"In "+timeStr:"Not yet")+'</div></div>';
+    });
+    if(!leadHtml)leadHtml='<div style="color:var(--grey);font-size:12px;padding:8px">No team leads found</div>';
+    leadEl.innerHTML=leadHtml;
+
+    // Stats
+    statsEl.innerHTML='<div class="hub-stat"><div class="hs-val">'+teamsSubmitted.size+'</div><div class="hs-lbl">Teams In</div></div>'
+      +'<div class="hub-stat"><div class="hs-val">'+leadsIn+'/'+leads.length+'</div><div class="hs-lbl">Leads In</div></div>'
+      +'<div class="hub-stat"><div class="hs-val">'+presentCount+'</div><div class="hs-lbl">Workers</div></div>'
+      +'<div class="hub-stat"><div class="hs-val">'+todaySheets.length+'</div><div class="hs-lbl">Reports</div></div>';
+
+    // Unregistered workers — anyone on roster not marked present
+    const unregistered=roster.filter(name=>!workers[name]||!workers[name].present);
+    if(unregistered.length===0){
+      unregEl.innerHTML='<div style="text-align:center;padding:12px;color:#28a745;font-weight:700">All workers accounted for today</div>';
+    }else{
+      let uHtml='<div class="hub-unreg">';
+      uHtml+='<h4>'+unregistered.length+' worker(s) not yet registered</h4>';
+      unregistered.forEach(name=>{
+        uHtml+='<div class="hub-unreg-row"><span class="hub-unreg-name">'+name+'</span><div class="hub-confirm-btns">'
+          +'<button class="hub-confirm-btn present" onclick="hubConfirmWorker(''+name.replace(/'/g,"\'")+'',true)">Present</button>'
+          +'<button class="hub-confirm-btn absent" onclick="hubConfirmWorker(''+name.replace(/'/g,"\'")+'',false)">Absent</button>'
+          +'</div></div>';
+      });
+      uHtml+='</div>';
+      unregEl.innerHTML=uHtml;
+    }
+  });
+}
+
+function hubConfirmWorker(name,present){
+  const date=getGuyanaDate();
+  const data=loadAttendance(date)||{workers:{},verified:false};
+  if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:""};
+  data.workers[name].present=present;
+  if(present){
+    const now=new Date();
+    data.workers[name].timeIn=now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0");
+    data.workers[name].confirmedByAdmin=true;
+  }
+  saveAttendanceLocal(date,data);
+  cloudSaveAttendance(date,data);
+  showToast(present?"Marked "+name+" present":"Marked "+name+" absent");
+  renderHubOverview();
+}
+
+function renderHubAttendance(){
+  const container=document.getElementById("hubAttendanceView");
+  container.innerHTML='<div class="att-card"><h3>Attendance Register</h3><p style="font-size:11px;color:var(--grey);margin-bottom:8px">View is in the Attendance tab</p><button class="btn btn-primary" onclick="switchTab('attendance')">Open Attendance Tab</button></div>';
+}
+
+function renderHubPay(){
+  const container=document.getElementById("hubPayView");
+  container.innerHTML='<div class="att-card"><h3>Payment System</h3><p style="font-size:11px;color:var(--grey);margin-bottom:8px">Access daily entry, Suriname weekly, and payment sheet</p><button class="btn btn-primary" onclick="switchTab('attendance');setTimeout(()=>switchPayTab('payentry'),100)">Open Payment Entry</button><button class="btn" onclick="switchTab('attendance');setTimeout(()=>switchPayTab('paysheet'),100)" style="margin-top:8px;background:#8B5CF6;color:white">Open Pay Sheet</button></div>';
+}
+
+function renderHubAnalysis(){
+  const container=document.getElementById("hubAnalysisView");
+  container.innerHTML='<div class="att-card"><h3>Analysis Reports</h3><p style="font-size:11px;color:var(--grey);margin-bottom:8px">Daily, weekly, and monthly team analysis</p><button class="btn btn-primary" onclick="switchTab('analysis')">Open Analysis Tab</button></div>';
+}
+
+function renderHubReports(){
+  const date=getGuyanaDate();
+  const container=document.getElementById("hubReportsView");
+  container.innerHTML='<div style="text-align:center;padding:20px;color:var(--grey)">Loading reports...</div>';
+  const fb=getFirebaseUrl();
+  if(!fb){container.innerHTML='<div style="text-align:center;padding:20px;color:var(--grey)">No Firebase connection</div>';return}
+
+  fetch(fb+"/sheets.json").then(r=>r.json()).then(allSheets=>{
+    if(!allSheets){container.innerHTML='<div style="text-align:center;padding:20px;color:var(--grey)">No reports found</div>';return}
+    const todaySheets=Object.values(allSheets).filter(s=>s.date===date);
+    if(todaySheets.length===0){container.innerHTML='<div style="text-align:center;padding:20px;color:var(--grey)">No reports submitted today</div>';return}
+
+    let html='<div style="margin-bottom:8px;font-size:12px;color:var(--grey);font-weight:700">'+todaySheets.length+' report(s) for '+date+'</div>';
+    todaySheets.forEach(s=>{
+      const tm=TEAMS[s.teamKey]||{name:s.teamKey,icon:""};
+      const workers=(s.manRows||[]).filter(r=>r.name).length;
+      const tasks=(s.workRows||[]).filter(r=>r.task).length;
+      const blocked=(s.workRows||[]).filter(r=>r.status==="BL").length;
+      html+='<div class="hub-report-card" style="border-left-color:'+(tm.color||"var(--navy)")+'">'
+        +'<h4>'+tm.icon+' '+tm.name+'</h4>'
+        +'<div class="hub-report-meta">Lead: '+(s.teamLead||"?")
+        +' | Workers: '+workers
+        +' | Tasks: '+tasks
+        +(blocked?' | <span style="color:#dc3545">Blocked: '+blocked+'</span>':'')
+        +'</div></div>';
+    });
+    container.innerHTML=html;
+  }).catch(()=>{container.innerHTML='<div style="text-align:center;padding:20px;color:var(--grey)">Failed to load reports</div>'});
+}
+
+// ═══ AUTO-ATTENDANCE ON CHECKSHEET SUBMIT ═══
+function autoRegisterAttendance(sheetData){
+  if(!sheetData||!sheetData.date)return;
+  const date=sheetData.date;
+  const data=loadAttendance(date)||{workers:{},verified:false};
+  const now=new Date();
+  const timeStr=now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0");
+
+  // 1. Mark the team lead as present
+  if(sheetData.teamLead){
+    const leadName=sheetData.teamLead;
+    if(!data.workers[leadName])data.workers[leadName]={present:false,timeIn:"",timeOut:""};
+    if(!data.workers[leadName].present){
+      data.workers[leadName].present=true;
+      data.workers[leadName].timeIn=timeStr;
+      data.workers[leadName].autoRegistered=true;
+    }
+  }
+
+  // 2. Mark workers from manpower section as present
+  if(sheetData.manRows){
+    sheetData.manRows.forEach(row=>{
+      if(row.name&&row.name.trim()){
+        const wName=row.name.trim();
+        if(!data.workers[wName])data.workers[wName]={present:false,timeIn:"",timeOut:""};
+        if(!data.workers[wName].present){
+          data.workers[wName].present=true;
+          data.workers[wName].timeIn=row.timeIn||timeStr;
+          if(row.timeOut)data.workers[wName].timeOut=row.timeOut;
+          data.workers[wName].autoRegistered=true;
+        }
+      }
+    });
+  }
+
+  // Save locally and to cloud
+  saveAttendanceLocal(date,data);
+  cloudSaveAttendance(date,data);
+}
+
 // Wire up payment sub-tabs when attendance tab opens
 const _origRenderAttendanceTab=renderAttendanceTab;
 renderAttendanceTab=function(){
   const isAdmin=currentUser&&currentUser.username==="admin";
   const subTabs=document.getElementById("paySubTabs");
   if(subTabs){if(isAdmin)subTabs.classList.remove("pay-hidden");else subTabs.classList.add("pay-hidden")}
-  if(isAdmin){switchPayTab(_payActiveTab);if(_payActiveTab==="signin")_origRenderAttendanceTab()}
-  else{_origRenderAttendanceTab()}
+  _origRenderAttendanceTab.apply(this,arguments);
+  if(isAdmin&&typeof switchPayTab==="function"){
+    var pt=typeof _payActiveTab!=="undefined"?_payActiveTab:"signin";
+    switchPayTab(pt);
+  }
 };
-// Render payment roster when settings admin tab is shown
-const _origSwitchSettingsTab=typeof switchSettingsTab==="function"?switchSettingsTab:null;
-if(_origSwitchSettingsTab){const _w=switchSettingsTab;switchSettingsTab=function(tab){_w(tab);if(tab==="admin")setTimeout(renderPayRoster,50)}}
 
 </script>
 </body>

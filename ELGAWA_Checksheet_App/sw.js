@@ -1,4 +1,4 @@
-const CACHE_NAME = "elgawa-checksheet-v69";
+const CACHE_NAME = "elgawa-checksheet-v71";
 const ASSETS = ["./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 // Install — cache all assets
