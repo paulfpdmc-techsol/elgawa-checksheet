@@ -728,6 +728,19 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
   <div id="hubReportsView" style="display:none"></div>
   <div id="hubPersonnelView" style="display:none"></div>
 </div>
+<div id="workerSignInView" class="hidden" style="max-width:500px;margin:0 auto;padding:16px">
+  <div style="text-align:center;margin-bottom:16px">
+    <div style="font-size:48px;margin-bottom:8px">🏗️</div>
+    <h2 style="color:var(--navy);margin:0" id="workerGreeting">Good Morning</h2>
+    <p style="color:var(--grey);font-size:13px;margin:4px 0" id="workerDateLabel"></p>
+  </div>
+  <div id="workerSignStatus" style="margin-bottom:16px"></div>
+  <div id="workerSignActions" style="margin-bottom:20px"></div>
+  <div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:16px">
+    <h3 style="color:var(--navy);font-size:14px;margin-bottom:12px">📋 My Recent History</h3>
+    <div id="workerHistory" style="font-size:12px"></div>
+  </div>
+</div>
 <div id="settingsView" class="settings-panel hidden">
   <div class="back-row"><button class="back-btn" onclick="showDash()" id="backBtn1"></button></div>
   <div class="settings-tabs" id="settingsTabs">
@@ -913,7 +926,14 @@ function saveDisabledUsers(list){try{localStorage.setItem("elg_disabled_users",J
 function getUsers(){const all={...BASE_USERS,...getCustomUsers()};const disabled=getDisabledUsers();disabled.forEach(u=>{delete all[u]});return all}
 let USERS=getUsers();
 function getGuyanaDate(){return new Date().toLocaleDateString("en-CA",{timeZone:"America/Guyana"})}
-function getGuyanaDateTime(){return new Date(new Date().toLocaleString("en-US",{timeZone:"America/Guyana"}))}
+function getGuyanaDateTime(){
+  // Safe timezone conversion that works across all browsers
+  const now=new Date();
+  const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Guyana",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).formatToParts(now);
+  const p={};parts.forEach(x=>{if(x.type!=="literal")p[x.type]=x.value});
+  return new Date(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute,+p.second);
+}
+function escHtml(s){if(!s)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 
 const COMMON_TASKS=["Installation","Fabrication","Routing/Layout","Hanger/Support Install","Connection/Joining","Pressure Testing","Insulation Work","Labeling/Marking","Material Movement","Cleanup/Debris Removal","Rework/Correction","Inspection/QC","Punch List Item","Demolition/Removal","Survey/Measurement","Commissioning","Other"];
 const TASK_TRANS={
@@ -1973,6 +1993,20 @@ function showDash(){
   document.querySelector(".btn-s").textContent=t("signOut");
   const ib=document.querySelector(".install-banner span");
   if(ib)ib.textContent=t("installApp");
+
+  // ═══ WORKER ROLE DETECTION ═══
+  const wsv=document.getElementById("workerSignInView");
+  if(currentUser&&currentUser.role==="Worker"){
+    // Hide main app sections for workers
+    document.getElementById("dashView").classList.add("hidden");
+    ["navBtnForms","navBtnReports","navBtnHistory","navBtnHub","navDivider"].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.style.display="none";
+    });
+    if(wsv){wsv.classList.remove("hidden");renderWorkerSignIn()}
+  }else{
+    if(wsv)wsv.classList.add("hidden");
+    stopWorkerRefresh();
+  }
 }
 
 function renderHistory(){
@@ -2440,7 +2474,7 @@ function renderAttendanceReport(date,daySheets){
 function downloadToolReport(date){
   loadSaved();
   const fb=getFirebaseUrl();
-  if(fb){cloudLoadSheets(date).then(cloud=>{_buildToolPDF(date,mergeSheets(savedSheets.filter(s=>s.date===date),cloud))})}
+  if(fb){cloudLoadSheets(date).then(cloud=>{_buildToolPDF(date,mergeSheets(savedSheets.filter(s=>s.date===date),cloud))}).catch(()=>{showToast("⚠️ Cloud unavailable, using local data");_buildToolPDF(date,savedSheets.filter(s=>s.date===date))})}
   else{_buildToolPDF(date,savedSheets.filter(s=>s.date===date))}
 }
 function _buildToolPDF(date,daySheets){
@@ -2455,19 +2489,6 @@ function _buildToolPDF(date,daySheets){
   const alerts=allTools.filter(t=>t.condition==="Damaged"||t.condition==="Lost"||t.returnStatus==="Not Returned");
   if(alerts.length){
     pdf.setFontSize(11);pdf.setTextColor(220,53,69);pdf.setFont(undefined,"bold");pdf.text(`${t("pdfToolAlerts")} (${alerts.length})`,M,y);y+=5;
-    // Add movers to PDF
-    allMoverNames.forEach(name=>{
-      const row=["📦 "+name];
-      let worked=0;
-      dates.forEach((dt,i)=>{
-        const movers=weekData[i].data.movers||[];
-        const found=movers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);
-        if(found)worked++;
-        row.push(found?"✓":"");
-      });
-      row.push(worked+"/7");
-      body.push(row);
-    });
     pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Tool","Code","Issue","Assigned","Location","Team"]],
       body:alerts.map(tl=>{const r=[];if(tl.condition==="Damaged"||tl.condition==="Lost")r.push(tl.condition);if(tl.returnStatus==="Not Returned")r.push("Not Returned");return[tl.toolName,tl.toolCode||"",r.join(", "),tl.assignedTo||"",tl.toolLocation||"",tl.team]}),
       headStyles:{fillColor:[220,53,69],fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});
@@ -2484,7 +2505,7 @@ function _buildToolPDF(date,daySheets){
 function downloadAttendanceReport(date){
   loadSaved();
   const fb=getFirebaseUrl();
-  if(fb){cloudLoadSheets(date).then(cloud=>{_buildAttendancePDF(date,mergeSheets(savedSheets.filter(s=>s.date===date),cloud))})}
+  if(fb){cloudLoadSheets(date).then(cloud=>{_buildAttendancePDF(date,mergeSheets(savedSheets.filter(s=>s.date===date),cloud))}).catch(()=>{showToast("⚠️ Cloud unavailable, using local data");_buildAttendancePDF(date,savedSheets.filter(s=>s.date===date))})}
   else{_buildAttendancePDF(date,savedSheets.filter(s=>s.date===date))}
 }
 function _buildAttendancePDF(date,daySheets){
@@ -3496,7 +3517,7 @@ function _renderAnalysisCharts(id1,id2,id3,agg){
   const c1=document.getElementById(id1);
   if(c1){
     const ctx=c1.getContext("2d");
-    const data=[agg.work.done,agg.work.total-agg.work.done-agg.work.bl,agg.work.bl];
+    const data=[agg.work.done,Math.max(0,agg.work.total-agg.work.done-agg.work.bl),agg.work.bl];
     const colors=["#0F6E56","#F0AD4E","#DC3545"];
     const labels=["Completed","In Progress","Blocked"];
     _drawDoughnut(ctx,c1.width,c1.height,data,colors,labels);
@@ -6053,7 +6074,7 @@ function submitAndShare(tk){
 function _doFinalSubmit(tk){
   _submitting=true;
   const submitBtn=document.querySelector(".btn-submit");
-  if(submitBtn){submitBtn.disabled=true;submitBtn.textContent=t("submitting");}
+  if(submitBtn){submitBtn.disabled=true;submitBtn.innerHTML='<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px"></span>'+t("submitting");}
   const d=collectForm(tk);
   autoCorrectSheet(d);
   d._id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -6063,6 +6084,8 @@ function _doFinalSubmit(tk){
   autoRegisterAttendance(d);
   cloudSaveSheet(d).then(ok=>{
     if(ok)showToast(t("synced"));
+  }).catch(()=>{
+    _syncQueue.push(d);showToast("📡 Saved locally — will sync when online");
   }).finally(()=>{_submitting=false;if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=t("submitShare");}});
   const tm=TEAMS[d.teamKey];
   const fn=`Checksheet_${tm.name.replace(/\s/g,"_")}_${d.date||"undated"}.pdf`;
@@ -6429,9 +6452,14 @@ function switchSettingsTab(tab){
   document.querySelectorAll(".s-tab").forEach(el=>el.classList.remove("active"));
   const panel=document.getElementById("settings"+tab.charAt(0).toUpperCase()+tab.slice(1));
   if(panel)panel.style.display="block";
-  if(event&&event.target){const btn=event.target.closest(".s-tab");if(btn){document.querySelectorAll(".s-tab").forEach(t=>t.classList.remove("active"));btn.classList.add("active")}}
+  // Activate the correct tab button by matching onclick text
+  document.querySelectorAll(".s-tab").forEach(btn=>{
+    const oc=btn.getAttribute("onclick")||"";
+    if(oc.includes("'"+tab+"'"))btn.classList.add("active");
+  });
 }
 function showSettings(){applyLang();
+  var _wsv=document.getElementById("workerSignInView");if(_wsv)_wsv.classList.add("hidden");stopWorkerRefresh();
   ["dashView","formView","reportView"].forEach(id=>document.getElementById(id).classList.add("hidden"));
   document.getElementById("hubView").classList.add("hidden");
   var _hstw=document.getElementById("hubSubTabsWrap");if(_hstw)_hstw.classList.add("hidden");
@@ -6803,7 +6831,9 @@ function removeReportAccess(type,uname){
 }
 
 function toggleNotif(){const on=localStorage.getItem("elg_notif")==="on";
-  if(!on&&"Notification" in window){Notification.requestPermission().then(p=>{if(p==="granted"){localStorage.setItem("elg_notif","on");
+  if(!on&&"Notification" in window){Notification.requestPermission().then(p=>{if(p==="granted"){localStorage.setItem("elg_notif","on");scheduleNotification();showSettings()}})}
+  else{localStorage.setItem("elg_notif","off");showSettings()}}
+
 // Offline detection
 let _syncQueue=[];
 function updateOfflineStatus(){
@@ -6865,8 +6895,6 @@ function checkFirebaseExpiry(){
     warn.innerHTML=`<b>⚠️ Firebase Rules Expire in ${daysLeft} Day${daysLeft>1?"s":""}</b>Cloud sync will stop working on May 31. Go to <a href="https://console.firebase.google.com" target="_blank" style="color:inherit;text-decoration:underline">Firebase Console</a> → Realtime Database → Rules → extend the date.`;
   }
 }
-scheduleNotification();showSettings()}})}
-  else{localStorage.setItem("elg_notif","off");showSettings()}}
 function saveNotifTime(){localStorage.setItem("elg_notif_time",document.getElementById("notifTime").value);scheduleNotification()}
 function scheduleNotification(){if(localStorage.getItem("elg_notif")!=="on")return;const tt=localStorage.getItem("elg_notif_time")||"16:30";const[h,m]=tt.split(":").map(Number);const now=new Date();let tgt=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m);if(tgt<=now)tgt.setDate(tgt.getDate()+1);clearTimeout(window._nt);window._nt=setTimeout(()=>{if("Notification" in window&&Notification.permission==="granted")new Notification("ELGAWA Checksheet",{body:t("notifBody"),icon:"icon-192.png"});scheduleNotification()},tgt-now)}
 function showToast(m){const el=document.getElementById("toast");el.textContent=m;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2500)}
@@ -6991,6 +7019,17 @@ function renderAttendanceTab(){
   
   // Render weekly register
   renderWeeklyRegister(date);
+  // Render self-attendance dashboard for admin
+  if(currentUser&&currentUser.username==="admin"){
+    let selfDash=document.getElementById("selfAttDashboard");
+    if(!selfDash){
+      selfDash=document.createElement("div");
+      selfDash.id="selfAttDashboard";
+      const attList=document.getElementById("attList");
+      if(attList&&attList.parentElement)attList.parentElement.appendChild(selfDash);
+    }
+    renderSelfAttendanceDashboard(selfDash,date);
+  }
 }
 
 function _renderAttendanceUI(date,roster,data,container,actions,summary){
@@ -8412,6 +8451,354 @@ renderAttendanceTab=function(){
     switchPayTab(pt);
   }
 };
+
+
+// ═══════════════════════════════════════════════════════
+// WORKER SELF SIGN-IN SYSTEM
+// ═══════════════════════════════════════════════════════
+var _workerRefreshInterval=null;
+
+function getGuyanaTimeNow(){
+  return new Date(new Date().toLocaleString("en-US",{timeZone:"America/Guyana"}));
+}
+
+function formatTime12(t){
+  if(!t)return"--:--";
+  const [h,m]=t.split(":").map(Number);
+  const ampm=h>=12?"PM":"AM";
+  const h12=h%12||12;
+  return h12+":"+(m<10?"0"+m:m)+" "+ampm;
+}
+
+function calcMinsBetween(t1,t2){
+  if(!t1||!t2)return 0;
+  const [h1,m1]=t1.split(":").map(Number);
+  const [h2,m2]=t2.split(":").map(Number);
+  return(h2*60+m2)-(h1*60+m1);
+}
+
+function formatDuration(mins){
+  if(mins<=0)return"0m";
+  const h=Math.floor(mins/60);const m=mins%60;
+  return h>0?(h+"h "+(m>0?m+"m":"")):(m+"m");
+}
+
+// ═══ FIREBASE SELF-ATTENDANCE PATHS ═══
+function saveSelfAttendance(date,username,data){
+  try{localStorage.setItem("elg_self_"+date+"_"+username,JSON.stringify(data))}catch(e){}
+  const fb=getFirebaseUrl();
+  if(fb){
+    fetch(fb+"/selfAttendance/"+date+"/"+username+".json",{method:"PUT",body:JSON.stringify(data)}).catch(()=>{});
+  }
+}
+
+function loadSelfAttendance(date,username){
+  return new Promise(resolve=>{
+    const fb=getFirebaseUrl();
+    if(fb){
+      fetch(fb+"/selfAttendance/"+date+"/"+username+".json").then(r=>r.json()).then(d=>{
+        if(d){try{localStorage.setItem("elg_self_"+date+"_"+username,JSON.stringify(d))}catch(e){}}
+        resolve(d||null);
+      }).catch(()=>{
+        try{const l=localStorage.getItem("elg_self_"+date+"_"+username);resolve(l?JSON.parse(l):null)}catch(e){resolve(null)}
+      });
+    }else{
+      try{const l=localStorage.getItem("elg_self_"+date+"_"+username);resolve(l?JSON.parse(l):null)}catch(e){resolve(null)}
+    }
+  });
+}
+
+function loadAllSelfAttendance(date){
+  return new Promise(resolve=>{
+    const fb=getFirebaseUrl();
+    if(fb){
+      fetch(fb+"/selfAttendance/"+date+".json").then(r=>r.json()).then(d=>{
+        resolve(d||{});
+      }).catch(()=>resolve({}));
+    }else{resolve({})}
+  });
+}
+
+// ═══ WORKER SIGN-IN VIEW ═══
+function renderWorkerSignIn(){
+  const now=getGuyanaTimeNow();
+  const hour=now.getHours();
+  const greeting=hour<12?"Good Morning":hour<17?"Good Afternoon":"Good Evening";
+  document.getElementById("workerGreeting").textContent=greeting+", "+currentUser.name;
+  document.getElementById("workerDateLabel").textContent=now.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  const date=getGuyanaDate();
+  const username=currentUser.username;
+  loadSelfAttendance(date,username).then(data=>{
+    renderWorkerStatus(data,date);
+    renderWorkerHistory();
+  });
+  startWorkerRefresh();
+}
+
+function renderWorkerStatus(data,date){
+  const statusEl=document.getElementById("workerSignStatus");
+  const actionsEl=document.getElementById("workerSignActions");
+  const now=getGuyanaTimeNow();
+  const timeStr=("0"+now.getHours()).slice(-2)+":"+("0"+now.getMinutes()).slice(-2);
+
+  if(!data||!data.signIn){
+    // Not signed in
+    statusEl.innerHTML='<div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:20px;text-align:center">'
+      +'<div style="font-size:36px;margin-bottom:8px">⏳</div>'
+      +'<h3 style="color:var(--grey);margin:0">Not Signed In</h3>'
+      +'<p style="font-size:12px;color:var(--grey);margin:4px 0">Tap below to start your day</p>'
+      +'</div>';
+    actionsEl.innerHTML='<button onclick="workerSignIn()" style="width:100%;padding:16px;font-size:18px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,var(--teal),#0d9488);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(29,158,117,0.3)">✅ Sign In</button>';
+  }else if(data.signIn&&!data.signOut){
+    // Signed in, working
+    const minsElapsed=calcMinsBetween(data.signIn,timeStr);
+    statusEl.innerHTML='<div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:20px;text-align:center;border-left:5px solid var(--teal)">'
+      +'<div style="font-size:36px;margin-bottom:8px">🟢</div>'
+      +'<h3 style="color:var(--teal);margin:0">On Site</h3>'
+      +'<p style="font-size:14px;margin:8px 0"><strong>Signed in:</strong> '+formatTime12(data.signIn)+'</p>'
+      +'<p style="font-size:12px;color:var(--grey)">Working for '+formatDuration(minsElapsed)+'</p>'
+      +(data.confirmed?'<p style="font-size:11px;color:var(--teal);margin-top:4px">✅ Confirmed by Admin</p>':'')
+      +'</div>';
+    actionsEl.innerHTML='<button onclick="workerSignOut()" style="width:100%;padding:16px;font-size:18px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#e11d48,#fb7185);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(225,29,72,0.3)">🔴 Sign Out</button>';
+  }else{
+    // Day complete
+    const totalMins=calcMinsBetween(data.signIn,data.signOut);
+    statusEl.innerHTML='<div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:20px;text-align:center;border-left:5px solid #3b82f6">'
+      +'<div style="font-size:36px;margin-bottom:8px">✅</div>'
+      +'<h3 style="color:#3b82f6;margin:0">Day Complete</h3>'
+      +'<div style="display:flex;justify-content:center;gap:24px;margin:12px 0">'
+      +'<div><div style="font-size:11px;color:var(--grey)">In</div><div style="font-weight:600">'+formatTime12(data.signIn)+'</div></div>'
+      +'<div><div style="font-size:11px;color:var(--grey)">Out</div><div style="font-weight:600">'+formatTime12(data.signOut)+'</div></div>'
+      +'<div><div style="font-size:11px;color:var(--grey)">Total</div><div style="font-weight:600">'+formatDuration(totalMins)+'</div></div>'
+      +'</div>'
+      +(data.confirmed?'<p style="font-size:11px;color:var(--teal);margin-top:4px">✅ Confirmed by Admin</p>':'')
+      +'</div>';
+    actionsEl.innerHTML='<p style="text-align:center;font-size:12px;color:var(--grey)">Your attendance has been recorded. See you tomorrow!</p>';
+  }
+}
+
+function workerSignIn(){
+  const now=getGuyanaTimeNow();
+  const date=getGuyanaDate();
+  const username=currentUser.username;
+  const timeStr=("0"+now.getHours()).slice(-2)+":"+("0"+now.getMinutes()).slice(-2);
+  const data={signIn:timeStr,signOut:null,source:"self",confirmed:false,name:currentUser.name,timestamp:Date.now()};
+  saveSelfAttendance(date,username,data);
+  renderWorkerStatus(data,date);
+}
+
+function workerSignOut(){
+  const now=getGuyanaTimeNow();
+  const date=getGuyanaDate();
+  const username=currentUser.username;
+  const timeStr=("0"+now.getHours()).slice(-2)+":"+("0"+now.getMinutes()).slice(-2);
+  loadSelfAttendance(date,username).then(data=>{
+    if(!data)return;
+    data.signOut=timeStr;
+    data.totalMins=calcMinsBetween(data.signIn,data.signOut);
+    saveSelfAttendance(date,username,data);
+    renderWorkerStatus(data,date);
+  });
+}
+
+function renderWorkerHistory(){
+  const el=document.getElementById("workerHistory");
+  if(!el)return;
+  const username=currentUser.username;
+  const today=new Date(getGuyanaDate());
+  let html='';
+  let promises=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(today);d.setDate(d.getDate()-i);
+    const ds=d.toISOString().slice(0,10);
+    promises.push(loadSelfAttendance(ds,username).then(data=>({date:ds,data})));
+  }
+  Promise.all(promises).then(results=>{
+    results.forEach(r=>{
+      const dayLabel=new Date(r.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+      if(r.data&&r.data.signIn){
+        const totalMins=r.data.signOut?calcMinsBetween(r.data.signIn,r.data.signOut):0;
+        const status=r.data.signOut?'<span style="color:var(--teal)">✅ '+formatDuration(totalMins)+'</span>':'<span style="color:#f59e0b">🟡 In progress</span>';
+        const confirmed=r.data.confirmed?'<span style="font-size:10px;color:var(--teal)"> ✓</span>':'';
+        html+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0">'
+          +'<span>'+dayLabel+'</span>'
+          +'<span>'+formatTime12(r.data.signIn)+' — '+(r.data.signOut?formatTime12(r.data.signOut):'...')+'</span>'
+          +'<span>'+status+confirmed+'</span></div>';
+      }else{
+        html+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;color:#ccc">'
+          +'<span>'+dayLabel+'</span><span>—</span><span>No record</span></div>';
+      }
+    });
+    el.innerHTML=html||'<p style="color:var(--grey)">No history yet</p>';
+  });
+}
+
+// ═══ AUTO-REFRESH FOR WORKER VIEW ═══
+function startWorkerRefresh(){
+  stopWorkerRefresh();
+  _workerRefreshInterval=setInterval(()=>{
+    if(currentUser&&currentUser.role==="Worker"){
+      const date=getGuyanaDate();
+      loadSelfAttendance(date,currentUser.username).then(data=>renderWorkerStatus(data,date));
+    }
+  },60000);
+}
+
+function stopWorkerRefresh(){
+  if(_workerRefreshInterval){clearInterval(_workerRefreshInterval);_workerRefreshInterval=null}
+}
+
+// ═══════════════════════════════════════════════════════
+// ADMIN SELF-ATTENDANCE DASHBOARD
+// ═══════════════════════════════════════════════════════
+function renderSelfAttendanceDashboard(container,date){
+  if(!container)return;
+  loadAllSelfAttendance(date).then(allData=>{
+    // Also load team-lead attendance data for comparison
+    const teamLeadData=loadAttendance(date)||{workers:{},verified:false};
+    const fb=getFirebaseUrl();
+    const loadTL=fb?cloudLoadAttendance(date).then(d=>d||teamLeadData).catch(()=>teamLeadData):Promise.resolve(teamLeadData);
+    
+    loadTL.then(tlData=>{
+      const roster=getWorkerRoster();
+      let html='<div style="margin-top:16px;background:white;border-radius:12px;box-shadow:var(--shadow);padding:16px">';
+      html+='<h3 style="color:var(--navy);font-size:14px;margin-bottom:4px">📱 Self Sign-In Records</h3>';
+      html+='<p style="font-size:11px;color:var(--grey);margin-bottom:12px">Worker self-reported attendance vs team lead records</p>';
+      
+      // Count stats
+      let selfCount=Object.keys(allData).length;
+      let confirmedCount=Object.values(allData).filter(d=>d.confirmed).length;
+      let pendingCount=selfCount-confirmedCount;
+      
+      html+='<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">';
+      html+='<div style="flex:1;min-width:80px;text-align:center;background:#f0f9ff;border-radius:8px;padding:8px"><div style="font-size:18px;font-weight:700;color:#0369a1">'+selfCount+'</div><div style="font-size:10px;color:var(--grey)">Self Sign-Ins</div></div>';
+      html+='<div style="flex:1;min-width:80px;text-align:center;background:#e6f7f2;border-radius:8px;padding:8px"><div style="font-size:18px;font-weight:700;color:var(--teal)">'+confirmedCount+'</div><div style="font-size:10px;color:var(--grey)">Confirmed</div></div>';
+      html+='<div style="flex:1;min-width:80px;text-align:center;background:#fff7ed;border-radius:8px;padding:8px"><div style="font-size:18px;font-weight:700;color:#f59e0b">'+pendingCount+'</div><div style="font-size:10px;color:var(--grey)">Pending</div></div>';
+      html+='</div>';
+      
+      if(selfCount===0){
+        html+='<p style="text-align:center;color:var(--grey);padding:16px;font-size:12px">No self sign-ins for this date</p>';
+      }else{
+        // Table header
+        html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px 60px;gap:4px;padding:6px 4px;background:#f7f7f7;border-radius:6px;font-weight:600;color:var(--grey);margin-bottom:4px">'
+          +'<span>Worker</span><span>In</span><span>Out</span><span>Hours</span><span>Status</span><span>Action</span></div>';
+        
+        Object.entries(allData).forEach(([username,d])=>{
+          const name=d.name||username;
+          const totalMins=d.signOut?calcMinsBetween(d.signIn,d.signOut):0;
+          const hrs=d.signOut?formatDuration(totalMins):'...';
+          
+          // Check if team lead also marked this worker
+          const tlWorker=tlData&&tlData.workers?tlData.workers[name]:null;
+          const tlPresent=tlWorker&&tlWorker.present;
+          
+          let statusBadge,statusColor;
+          if(d.confirmed){
+            statusBadge='✅ OK';statusColor='var(--teal)';
+          }else if(tlPresent){
+            statusBadge='📋 TL✓';statusColor='#3b82f6';
+          }else{
+            statusBadge='⏳ Pend';statusColor='#f59e0b';
+          }
+          
+          html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px 60px;gap:4px;padding:8px 4px;border-bottom:1px solid #f0f0f0;align-items:center">';
+          html+='<span style="font-weight:500">'+name+'</span>';
+          html+='<span>'+formatTime12(d.signIn)+'</span>';
+          html+='<span>'+(d.signOut?formatTime12(d.signOut):'...')+'</span>';
+          html+='<span>'+hrs+'</span>';
+          html+='<span style="color:'+statusColor+';font-weight:600;font-size:10px">'+statusBadge+'</span>';
+          html+='<span style="display:flex;gap:2px">';
+          if(!d.confirmed){
+            html+='<button onclick="confirmSelfAttendance(\''+date+'\',\''+username+'\')" style="border:none;background:var(--teal);color:white;border-radius:4px;padding:2px 5px;font-size:10px;cursor:pointer" title="Confirm">✓</button>';
+          }
+          html+='<button onclick="editSelfAttendance(\''+date+'\',\''+username+'\',\''+(d.signIn||"")+'\',\''+(d.signOut||"")+'\')" style="border:none;background:#3b82f6;color:white;border-radius:4px;padding:2px 5px;font-size:10px;cursor:pointer" title="Edit">✏️</button>';
+          html+='</span></div>';
+        });
+      }
+      
+      // Team-lead confirmed section
+      html+='<div style="margin-top:16px;padding-top:12px;border-top:2px solid #e5e7eb">';
+      html+='<h4 style="color:var(--navy);font-size:13px;margin-bottom:8px">📋 Team Lead Records <span style="font-size:10px;color:var(--teal);font-weight:400">(Confirmed)</span></h4>';
+      if(tlData&&tlData.workers&&Object.keys(tlData.workers).length>0){
+        let tlPresent=0;
+        html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px;gap:4px;padding:6px 4px;background:#e6f7f2;border-radius:6px;font-weight:600;color:var(--grey);margin-bottom:4px">'
+          +'<span>Worker</span><span>In</span><span>Out</span><span>Shift</span><span>Status</span></div>';
+        Object.entries(tlData.workers).forEach(([wname,w])=>{
+          if(!w.present)return;
+          tlPresent++;
+          const shift=w.shift==="night"?"🌙 Night":"☀️ Day";
+          html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px;gap:4px;padding:6px 4px;border-bottom:1px solid #f0f0f0">';
+          html+='<span>'+wname+'</span>';
+          html+='<span>'+(w.timeIn?formatTime12(w.timeIn):'—')+'</span>';
+          html+='<span>'+(w.timeOut?formatTime12(w.timeOut):'—')+'</span>';
+          html+='<span style="font-size:10px">'+shift+'</span>';
+          html+='<span style="color:var(--teal);font-weight:600;font-size:10px">✅ Actual</span></div>';
+        });
+        if(tlPresent===0)html+='<p style="text-align:center;color:var(--grey);font-size:11px;padding:8px">No workers marked present by team leads</p>';
+      }else{
+        html+='<p style="text-align:center;color:var(--grey);font-size:11px;padding:8px">No team lead attendance data for this date</p>';
+      }
+      html+='</div>';
+      
+      html+='</div>';
+      container.innerHTML=html;
+    });
+  });
+}
+
+function confirmSelfAttendance(date,username){
+  loadSelfAttendance(date,username).then(data=>{
+    if(!data)return;
+    data.confirmed=true;
+    data.confirmedBy=currentUser.username;
+    data.confirmedAt=Date.now();
+    saveSelfAttendance(date,username,data);
+    // Re-render dashboard
+    const attDate=document.getElementById("attDate");
+    const d=attDate?attDate.value:date;
+    const dashCont=document.getElementById("selfAttDashboard");
+    if(dashCont)renderSelfAttendanceDashboard(dashCont,d);
+  });
+}
+
+function editSelfAttendance(date,username,curIn,curOut){
+  // Build modal
+  const modal=document.createElement("div");
+  modal.className="modal-overlay";
+  modal.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999";
+  modal.innerHTML='<div style="background:white;border-radius:16px;padding:24px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2)">'
+    +'<h3 style="margin:0 0 4px;color:var(--navy)">✏️ Edit Time</h3>'
+    +'<p style="font-size:12px;color:var(--grey);margin:0 0 16px">'+username+' — '+date+'</p>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">Time In</label>'
+    +'<input type="time" id="editSelfIn" value="'+curIn+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box"></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">Time Out</label>'
+    +'<input type="time" id="editSelfOut" value="'+curOut+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box"></div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px">Cancel</button>'
+    +'<button onclick="saveSelfAttEdit(\''+date+'\',\''+username+'\')" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--teal);color:white;cursor:pointer;font-weight:600;font-size:13px">Save</button>'
+    +'</div></div>';
+  document.body.appendChild(modal);
+}
+
+function saveSelfAttEdit(date,username){
+  const inVal=document.getElementById("editSelfIn").value;
+  const outVal=document.getElementById("editSelfOut").value;
+  loadSelfAttendance(date,username).then(data=>{
+    if(!data)data={source:"admin-created",name:username,timestamp:Date.now()};
+    data.signIn=inVal;
+    data.signOut=outVal||null;
+    if(outVal)data.totalMins=calcMinsBetween(inVal,outVal);
+    data.editedBy=currentUser.username;
+    data.editedAt=Date.now();
+    saveSelfAttendance(date,username,data);
+    // Close modal
+    var m=document.querySelector(".modal-overlay");if(m)m.remove();
+    // Re-render
+    var dashCont=document.getElementById("selfAttDashboard");
+    var attDate=document.getElementById("attDate");
+    if(dashCont)renderSelfAttendanceDashboard(dashCont,attDate?attDate.value:date);
+  });
+}
 
 </script>
 </body>
