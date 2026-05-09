@@ -6849,7 +6849,17 @@ try{const u=localStorage.getItem("elg_user");if(u){currentUser=JSON.parse(u);
   },100);
 }}catch(e){}
 setTimeout(()=>{document.getElementById("splash").classList.add("hide");setTimeout(()=>document.getElementById("splash").style.display="none",500)},1200);
-if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("./sw.js").then(reg=>{
+    reg.addEventListener("updatefound",()=>{
+      const nw=reg.installing;
+      if(nw){nw.addEventListener("statechange",()=>{
+        if(nw.state==="activated"){window.location.reload()}
+      })}
+    });
+    reg.update().catch(()=>{});
+  }).catch(()=>{});
+}
 scheduleNotification();
 document.getElementById("loginHint").innerHTML='Enter your username and password to sign in<br><span style="font-size:9px;color:#888">Contact admin if you forgot your credentials</span>';
 
