@@ -73,7 +73,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .flow-card .fc-badge{min-width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:var(--lt-grey);color:var(--grey);flex-shrink:0;margin-right:20px}
 .flow-card.done .fc-badge{background:var(--success);color:white}
 .flow-card.started .fc-badge{background:var(--warn);color:white}
-.card-expand{position:fixed;inset:0;background:white;z-index:200;overflow-y:auto;animation:slideUp .25s ease;padding-bottom:80px}
+.card-expand{position:fixed;inset:0;background:white;z-index:200;overflow-y:auto;animation:slideUp .25s ease;padding-bottom:90px}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .card-expand-hdr{position:sticky;top:0;background:white;z-index:201;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);border-bottom:3px solid var(--navy-lt)}
 .card-expand-hdr .ce-back{background:none;border:none;font-size:24px;color:var(--navy);cursor:pointer;padding:4px 8px}
@@ -91,7 +91,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .nav .btn-s{border-color:rgba(255,255,255,.4);background:transparent;color:white;font-weight:400}
 .lang-toggle{padding:4px 10px;border:1.5px solid rgba(255,255,255,.6);background:rgba(255,255,255,.15);color:white;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .2s;letter-spacing:1px}
 .lang-toggle:active{background:rgba(255,255,255,.25)}
-.dash{max-width:600px;margin:0 auto;padding:16px;padding-bottom:80px}
+.dash{max-width:600px;margin:0 auto;padding:16px;padding-bottom:90px}
 .dash-hdr{text-align:center;margin-bottom:16px}
 .dash-hdr h2{color:var(--navy);font-size:18px}.dash-hdr p{color:var(--grey);font-size:12px;margin-top:2px}
 /* Bottom navigation bar */
@@ -157,7 +157,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .s-tab-icon{display:block;font-size:16px;margin-bottom:2px}
 .empty{text-align:center;padding:24px;color:#888;font-size:12px}
-.form-wrap{max-width:600px;margin:0 auto;padding:12px;padding-bottom:80px}
+.form-wrap{max-width:600px;margin:0 auto;padding:12px;padding-bottom:90px}
 .back-row{margin-bottom:8px}
 .back-btn{background:none;border:none;color:var(--navy-lt);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:4px}
 .form-hdr{background:white;border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);text-align:center}
@@ -208,7 +208,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .btn-primary{background:var(--navy);color:white}.btn-success{background:var(--success);color:white}
 .btn-outline{background:white;color:var(--navy);border:2px solid var(--navy)}
 .btn-whatsapp{background:#25D366;color:white}
-.report-wrap{max-width:600px;margin:0 auto;padding:12px}
+.report-wrap{max-width:600px;margin:0 auto;padding:12px;padding-bottom:90px}
 .rpt-card{background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid rgba(15,110,86,.04);transition:box-shadow .2s}
 .rpt-card h3{font-size:14px;color:var(--navy);margin-bottom:10px;border-bottom:2px solid var(--blue-bg);padding-bottom:6px;font-weight:700}
 .rpt-stat{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
@@ -248,7 +248,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .an-day-box .day-name{font-size:9px;font-weight:700;color:var(--grey);text-transform:uppercase}
 .an-day-box .day-num{font-size:16px;font-weight:800;color:var(--navy)}
 .an-day-box .day-sub{font-size:8px;color:var(--grey)}
-.settings-panel{max-width:600px;margin:0 auto;padding:16px}
+.settings-panel{max-width:600px;margin:0 auto;padding:16px;padding-bottom:90px}
 .s-card{background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
 .s-card h3{font-size:14px;color:var(--navy);margin-bottom:10px}
 .s-card .lang-opts{display:flex;gap:8px;flex-wrap:wrap}
@@ -396,6 +396,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 
 /* Payment Entry System */
 .pay-subtabs{display:flex;gap:4px;margin-bottom:12px;padding:4px;background:white;border-radius:12px;box-shadow:var(--shadow)}
+.pay-hidden{display:none!important}
 .pay-subtab{flex:1;padding:8px 4px;text-align:center;cursor:pointer;background:none;border:none;color:var(--grey);border-radius:8px;font-size:11px;font-weight:700;transition:all .2s}
 .pay-subtab.active{color:white;background:linear-gradient(135deg,var(--navy),var(--navy-lt));box-shadow:0 2px 8px rgba(15,110,86,.3)}
 .pay-date-nav{display:flex;align-items:center;justify-content:space-between;background:white;border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
@@ -555,7 +556,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
   </div>
   <div id="tabAttendance" class="hidden">
     <!-- Payment sub-tabs (admin only) -->
-    <div id="paySubTabs" class="pay-subtabs" style="display:none">
+    <div id="paySubTabs" class="pay-subtabs pay-hidden">
       <button class="pay-subtab active" onclick="switchPayTab('signin')">Sign-In</button>
       <button class="pay-subtab" onclick="switchPayTab('payentry')">Payment</button>
       <button class="pay-subtab" onclick="switchPayTab('suriname')">Suriname</button>
@@ -1769,6 +1770,8 @@ function switchTab(tab,btn){
   // Also handle legacy tab-btn if passed
   if(btn&&btn.classList)btn.classList.add("active");
   ["tabForms","tabReports","tabHistory","tabAttendance"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add("hidden")});
+  document.getElementById("settingsView").classList.add("hidden");
+  document.getElementById("dashView").classList.remove("hidden");
   stopReportRefresh();
   if(tab==="forms")document.getElementById("tabForms").classList.remove("hidden");
   if(tab==="reports"){
@@ -1785,7 +1788,7 @@ function switchTab(tab,btn){
     generateReport();startReportRefresh();
   }
   if(tab==="history"){document.getElementById("tabHistory").classList.remove("hidden");renderHistory()}
-  if(tab==="attendance"){document.getElementById("tabAttendance").classList.remove("hidden");_attData=null;_attDate=null;var _isAdm=currentUser&&currentUser.username==="admin";var _pst=document.getElementById("paySubTabs");if(_pst)_pst.style.display=_isAdm?"flex":"none";if(_isAdm&&typeof switchPayTab==="function"){var _pt=typeof _payActiveTab!=="undefined"?_payActiveTab:"signin";switchPayTab(_pt);if(_pt==="signin")renderAttendanceTab()}else{renderAttendanceTab()}}
+  if(tab==="attendance"){document.getElementById("tabAttendance").classList.remove("hidden");_attData=null;_attDate=null;var _isAdm=currentUser&&currentUser.username==="admin";var _pst=document.getElementById("paySubTabs");if(_pst){if(_isAdm)_pst.classList.remove("pay-hidden");else _pst.classList.add("pay-hidden")}if(_isAdm&&typeof switchPayTab==="function"){var _pt=typeof _payActiveTab!=="undefined"?_payActiveTab:"signin";switchPayTab(_pt);if(_pt==="signin")renderAttendanceTab()}else{renderAttendanceTab()}}
   if(tab==="analysis"){
     document.getElementById("tabReports").classList.remove("hidden");
     // Hide the report sub-tabs row and date picker — analysis has its own UI
@@ -6569,8 +6572,10 @@ function renderWeeklyRegister(refDate){
   const isAdmin=currentUser&&currentUser.role==="Project Lead";
   if(!isAdmin){card.style.display="none";return}
   card.style.display="block";
+  window._weekAttData=null;
   if(titleEl)titleEl.textContent=t("weeklyRegister");
   if(pdfBtn)pdfBtn.textContent="📄 "+t("submitToFinance");
+  if(grid)grid.innerHTML='<div style="text-align:center;padding:20px;color:var(--grey)">Loading weekly data...</div>';
   if(satLabel)satLabel.textContent=t("satNotes");
   if(satInput)satInput.placeholder=t("satPending")+"...";
 
@@ -6680,7 +6685,8 @@ function renderWeeklyRegister(refDate){
 }
 
 function generateWeeklyAttPDF(){
-  const d=window._weekAttData;if(!d)return;
+  const d=window._weekAttData;if(!d){showToast("⏳ Loading attendance data... please wait and try again");renderWeeklyRegister(document.getElementById("attDate").value||getGuyanaDate());return}
+  try{
   const{jsPDF}=window.jspdf;
   const pdf=new jsPDF("l","mm","a4");
   const W=pdf.internal.pageSize.getWidth();const M=14;let y=20;
@@ -6736,6 +6742,8 @@ function generateWeeklyAttPDF(){
   pdf.text("Finance: _______________________",M+200,fY);
 
   pdf.save("Weekly_Pay_Register_"+d.mon+".pdf");
+  showToast("✅ PDF downloaded");
+  }catch(e){console.error("PDF error:",e);showToast("❌ PDF generation failed: "+e.message)}
 }
 
 // Auto-calculate OT triggers totals recalc
@@ -7070,7 +7078,7 @@ const _origRenderAttendanceTab=renderAttendanceTab;
 renderAttendanceTab=function(){
   const isAdmin=currentUser&&currentUser.username==="admin";
   const subTabs=document.getElementById("paySubTabs");
-  if(subTabs)subTabs.style.display=isAdmin?"flex":"none";
+  if(subTabs){if(isAdmin)subTabs.classList.remove("pay-hidden");else subTabs.classList.add("pay-hidden")}
   if(isAdmin){switchPayTab(_payActiveTab);if(_payActiveTab==="signin")_origRenderAttendanceTab()}
   else{_origRenderAttendanceTab()}
 };
