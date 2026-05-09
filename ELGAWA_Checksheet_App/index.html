@@ -358,6 +358,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .att-week-grid .totals-row{background:var(--blue-bg);font-weight:700}
 
 /* OK/Cancel floating bar for form card sections */
+.swipe-hint{text-align:center;font-size:10px;color:var(--grey);padding:4px 0;opacity:0.7}
 .card-action-bar{position:fixed;bottom:0;left:0;right:0;z-index:160;display:flex;gap:10px;padding:12px 16px;background:white;border-top:2px solid var(--border);box-shadow:0 -4px 20px rgba(0,0,0,.12);animation:slideUp .25s ease}
 .card-action-bar .btn-ok{flex:1;padding:14px;border:none;border-radius:12px;background:var(--navy);color:white;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(15,110,86,.3)}
 .card-action-bar .btn-cancel{flex:1;padding:14px;border:2px solid var(--border);border-radius:12px;background:white;color:var(--grey);font-size:15px;font-weight:600;cursor:pointer}
@@ -513,6 +514,29 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .hub-report-card{background:white;border-radius:var(--radius);padding:12px;margin-bottom:8px;box-shadow:var(--shadow);border-left:4px solid var(--navy)}
 .hub-report-card h4{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px}
 .hub-report-meta{font-size:11px;color:var(--grey)}
+
+/* Academic Analysis Styles */
+.an-chart-wrap{background:white;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.an-chart-wrap h4{font-size:13px;color:var(--navy);margin:0 0 8px 0}
+.an-chart-wrap canvas{width:100%!important;max-height:220px}
+.an-table-wrap{overflow-x:auto;margin:8px 0}
+.an-table{width:100%;border-collapse:collapse;font-size:11px}
+.an-table th{background:var(--navy);color:white;padding:6px 8px;text-align:left;font-size:10px;font-weight:700;white-space:nowrap}
+.an-table td{padding:5px 8px;border-bottom:1px solid var(--border);font-size:10px}
+.an-table tr:nth-child(even){background:#f8fffe}
+.an-table tr:hover{background:#e6f7f3}
+.an-table .val-good{color:var(--success);font-weight:700}
+.an-table .val-warn{color:var(--warn);font-weight:700}
+.an-table .val-bad{color:var(--danger);font-weight:700}
+.an-exec-narrative{font-size:12px;line-height:1.6;color:#333;padding:12px;background:white;border-radius:10px;margin:8px 0;border-left:4px solid var(--navy)}
+.an-section-title{font-size:14px;font-weight:800;color:var(--navy);margin:16px 0 8px 0;display:flex;align-items:center;gap:6px}
+.an-section-title::before{content:"";width:4px;height:18px;background:var(--navy);border-radius:2px}
+.an-findings{padding:12px;background:#fff;border-radius:10px;margin:8px 0;font-size:11px;line-height:1.5;color:#444}
+.an-findings strong{color:var(--navy)}
+.an-rec-card{background:linear-gradient(135deg,#f0faf7,#e8f5f0);border-radius:10px;padding:12px;margin:6px 0;border-left:4px solid var(--navy)}
+.an-rec-card h5{margin:0 0 4px 0;font-size:12px;color:var(--navy)}
+.an-rec-card p{margin:0;font-size:11px;color:#555;line-height:1.4}
+
 </style>
 </head>
 <body>
@@ -672,14 +696,17 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
     </div>
   </div>
 </div>
-<div id="hubView" class="hub-section hidden">
+<div id="hubSubTabsWrap" class="hub-section hidden" style="max-width:600px;margin:0 auto;padding:16px 16px 0 16px">
   <div class="hub-subtabs" id="hubSubTabs">
     <button class="hub-subtab active" onclick="switchHubTab('overview')">Overview</button>
     <button class="hub-subtab" onclick="switchHubTab('attendance')">Attend</button>
     <button class="hub-subtab" onclick="switchHubTab('pay')">Pay</button>
     <button class="hub-subtab" onclick="switchHubTab('analysis')">Analysis</button>
     <button class="hub-subtab" onclick="switchHubTab('reports')">Reports</button>
+    <button class="hub-subtab admin-item" onclick="switchHubTab('personnel')">Personnel</button>
   </div>
+</div>
+<div id="hubView" class="hub-section hidden">
   <div id="hubOverviewView">
     <div class="hub-overview-card">
       <h3>Today's Snapshot</h3>
@@ -699,6 +726,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
   <div id="hubPayView" style="display:none"></div>
   <div id="hubAnalysisView" style="display:none"></div>
   <div id="hubReportsView" style="display:none"></div>
+  <div id="hubPersonnelView" style="display:none"></div>
 </div>
 <div id="settingsView" class="settings-panel hidden">
   <div class="back-row"><button class="back-btn" onclick="showDash()" id="backBtn1"></button></div>
@@ -815,8 +843,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
   <button class="bnav-item" onclick="switchTab('history')" id="navBtnHistory"><span class="bnav-icon">📂</span><span class="bnav-label">History</span></button>
   <span class="bnav-divider" id="navDivider" style="display:none"></span>
     <button class="bnav-item admin-item" onclick="switchTab('hub')" id="navBtnHub" style="display:none"><span class="bnav-icon">🏠</span><span class="bnav-label">My Hub</span></button>
-  <button class="bnav-item admin-item" onclick="switchTab('attendance')" id="navBtnAttendance" style="display:none"><span class="bnav-icon">📋</span><span class="bnav-label">Attend</span></button>
-  <button class="bnav-item admin-item" onclick="switchTab('analysis')" id="navBtnAnalysis" style="display:none"><span class="bnav-icon">📈</span><span class="bnav-label">Analysis</span></button>
+
   <button class="bnav-item" onclick="showSettings()" id="navBtnSettings"><span class="bnav-icon">⚙️</span><span class="bnav-label">Settings</span></button>
 </nav>
 <div id="toast" class="toast"></div>
@@ -1823,7 +1850,7 @@ function stopReportRefresh(){if(_reportRefreshTimer){clearInterval(_reportRefres
 function switchTab(tab,btn){
   // Update bottom nav active state
   document.querySelectorAll(".bottom-nav .bnav-item").forEach(b=>b.classList.remove("active"));
-  const navMap={forms:"navBtnForms",reports:"navBtnReports",history:"navBtnHistory",attendance:"navBtnAttendance",analysis:"navBtnAnalysis",hub:"navBtnHub"};
+  const navMap={forms:"navBtnForms",reports:"navBtnReports",history:"navBtnHistory",hub:"navBtnHub"};
   const activeBtn=document.getElementById(navMap[tab]);
   if(activeBtn)activeBtn.classList.add("active");
   // Also handle legacy tab-btn if passed
@@ -1831,6 +1858,7 @@ function switchTab(tab,btn){
   ["tabForms","tabReports","tabHistory","tabAttendance"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add("hidden")});
   document.getElementById("settingsView").classList.add("hidden");
   document.getElementById("hubView").classList.add("hidden");
+  var _hstw=document.getElementById("hubSubTabsWrap");if(_hstw)_hstw.classList.add("hidden");
   document.getElementById("dashView").classList.remove("hidden");
   stopReportRefresh();
   if(tab==="forms")document.getElementById("tabForms").classList.remove("hidden");
@@ -1848,27 +1876,13 @@ function switchTab(tab,btn){
     generateReport();startReportRefresh();
   }
   if(tab==="history"){document.getElementById("tabHistory").classList.remove("hidden");renderHistory()}
-  if(tab==="attendance"){document.getElementById("tabAttendance").classList.remove("hidden");_attData=null;_attDate=null;var _isAdm=currentUser&&currentUser.username==="admin";var _pst=document.getElementById("paySubTabs");if(_pst){if(_isAdm)_pst.classList.remove("pay-hidden");else _pst.classList.add("pay-hidden")}if(_isAdm&&typeof switchPayTab==="function"){var _pt=typeof _payActiveTab!=="undefined"?_payActiveTab:"signin";switchPayTab(_pt);if(_pt==="signin")renderAttendanceTab()}else{renderAttendanceTab()}}
-  if(tab==="analysis"){
-    document.getElementById("tabReports").classList.remove("hidden");
-    // Hide the report sub-tabs row and date picker — analysis has its own UI
-    const rptSubTabs=document.querySelector("#tabReports .tab-row");
-    if(rptSubTabs)rptSubTabs.style.display="none";
-    const rptDateRow=document.querySelector("#tabReports .f-field");
-    if(rptDateRow)rptDateRow.style.display="none";
-    const lu=document.getElementById("lastUpdated");if(lu)lu.style.display="none";
-    // Hide all report content, show only analysis
-    ["reportContent","reportToolContent","reportAttendContent","reportMonthlyContent"].forEach(id=>{
-      const el=document.getElementById(id);if(el)el.classList.add("hidden");
-    });
-    const anCont=document.getElementById("reportAnalysisContent");
-    if(anCont)anCont.classList.remove("hidden");
-    renderAnalysisReport();
-  }
-  if(tab==="hub"){document.getElementById("hubView").classList.remove("hidden");switchHubTab(typeof _hubActiveTab!=="undefined"?_hubActiveTab:"overview")}
+  if(tab==="attendance"){switchTab("hub");switchHubTab("attendance");return}
+  if(tab==="analysis"){switchTab("hub");switchHubTab("analysis");return}
+  if(tab==="hub"){document.getElementById("hubSubTabsWrap").classList.remove("hidden");document.getElementById("hubView").classList.remove("hidden");switchHubTab(typeof _hubActiveTab!=="undefined"?_hubActiveTab:"overview");initHubSwipe()}
   if(tab==="settings"){showSettings();return}
   // Persist active tab
   try{localStorage.setItem("elg_active_tab",tab)}catch(e){}
+  initMainSwipe();
 }
 
 function getTeamSubtitle(key){
@@ -1936,13 +1950,11 @@ function showDash(){
   if(analysisTab)analysisTab.style.display=(currentUser.username==="admin")?"inline-block":"none";
   // Analysis in bottom nav — admin only
   const isAdmin=currentUser.username==="admin";
-  const navAnalysisBtn=document.getElementById("navBtnAnalysis");
-  if(navAnalysisBtn)navAnalysisBtn.style.display=isAdmin?"flex":"none";
+
   // Attendance in bottom nav — admin only
   const navHubBtn=document.getElementById("navBtnHub");
   if(navHubBtn)navHubBtn.style.display=isAdmin?"flex":"none";
-  const navAttendBtn=document.getElementById("navBtnAttendance");
-  if(navAttendBtn)navAttendBtn.style.display=isAdmin?"flex":"none";
+
   // Show divider between regular and admin tabs
   const navDivider=document.getElementById("navDivider");
   if(navDivider)navDivider.style.display=isAdmin?"block":"none";
@@ -3379,36 +3391,212 @@ function _loadAndAnalyze(startDate,endDate,callback){
 function _renderExecSummary(agg,period,mode){
   const productivityScore=Math.min(100,Math.round((agg.work.comp*0.4)+(agg.quality.avg*0.3)+((100-Math.min(100,agg.issues.high*20))*0.3)));
   const effScore=agg.manpower.total?Math.min(100,Math.round(parseFloat(agg.manpower.avgHrsPerPerson)/8*100)):0;
-  let html=`<div class="an-card an-exec"><h3>📋 ${t("anExecSummary")} — ${period}</h3>
+  const modeLabel=mode==="daily"?"Daily":mode==="weekly"?"Weekly":"Monthly";
+
+  // ── Executive Summary Header ──
+  let html=`<div class="an-card an-exec"><h3>📋 ${modeLabel} Executive Summary — ${period}</h3>
     <div class="an-kpi">
-      <div class="an-kpi-box"><div class="kn">${agg.work.comp}%</div><div class="kl">${t("anWorkCompletion")}</div></div>
-      <div class="an-kpi-box"><div class="kn">${agg.manpower.total}</div><div class="kl">${t("totalManpower")}</div></div>
-      <div class="an-kpi-box"><div class="kn">${agg.manpower.hrs.toFixed(0)}</div><div class="kl">${t("totalHoursLabel")}</div></div>
+      <div class="an-kpi-box"><div class="kn" style="font-size:22px">${agg.work.comp}%</div><div class="kl">Task Completion</div></div>
+      <div class="an-kpi-box"><div class="kn" style="font-size:22px">${agg.manpower.total}</div><div class="kl">Total Workforce</div></div>
+      <div class="an-kpi-box"><div class="kn" style="font-size:22px">${agg.manpower.hrs.toFixed(0)}</div><div class="kl">Man-Hours</div></div>
     </div>
     <div class="an-kpi">
-      <div class="an-kpi-box"><div class="kn" style="color:${agg.quality.avg>=80?'var(--success)':'var(--warn)'}">${agg.quality.avg}%</div><div class="kl">${t("anQualityScore")}</div></div>
-      <div class="an-kpi-box"><div class="kn" style="color:${agg.manpower.avgPPE>=90?'var(--success)':'var(--danger)'}">${agg.manpower.avgPPE}%</div><div class="kl">${t("anSafety")} (PPE)</div></div>
-      <div class="an-kpi-box"><div class="kn" style="color:${productivityScore>=70?'var(--success)':(productivityScore>=50?'var(--warn)':'var(--danger)')}">${productivityScore}</div><div class="kl">${t("anProductivity")}</div></div>
+      <div class="an-kpi-box"><div class="kn" style="color:${agg.quality.avg>=80?'var(--success)':'var(--warn)'}">${agg.quality.avg}%</div><div class="kl">Quality Score</div></div>
+      <div class="an-kpi-box"><div class="kn" style="color:${agg.manpower.avgPPE>=90?'var(--success)':'var(--danger)'}">${agg.manpower.avgPPE}%</div><div class="kl">PPE Compliance</div></div>
+      <div class="an-kpi-box"><div class="kn" style="color:${productivityScore>=70?'var(--success)':(productivityScore>=50?'var(--warn)':'var(--danger)')}">${productivityScore}</div><div class="kl">Productivity Index</div></div>
     </div>
-    <div style="margin-top:8px">
-      <div style="display:flex;gap:8px;font-size:10px;justify-content:center;flex-wrap:wrap">
-        <span class="an-metric"><b>${agg.work.done}</b>/${agg.work.total} tasks done</span>
-        <span class="an-metric"><b>${agg.work.bl}</b> blocked</span>
-        <span class="an-metric"><b>${agg.manpower.ot.toFixed(1)}</b>h OT (${agg.manpower.total?(agg.manpower.ot/agg.manpower.hrs*100).toFixed(1):0}%)</span>
-        <span class="an-metric"><b>${agg.issues.all.length}</b> issues (${agg.issues.high} HIGH)</span>
-      </div>
-    </div></div>`;
+  </div>`;
+
+  // ── Executive Narrative (academic style) ──
+  const teamsActive=Object.keys(agg.byTeam).length;
+  const topTeam=Object.entries(agg.byTeam).sort((a,b)=>aggregateAnalyses(b[1]).work.comp-aggregateAnalyses(a[1]).work.comp)[0];
+  const topName=topTeam?TEAMS[topTeam[0]]?.name:"N/A";
+  const topComp=topTeam?aggregateAnalyses(topTeam[1]).work.comp:0;
+  const bottomTeam=Object.entries(agg.byTeam).sort((a,b)=>aggregateAnalyses(a[1]).work.comp-aggregateAnalyses(b[1]).work.comp)[0];
+  const bottomName=bottomTeam?TEAMS[bottomTeam[0]]?.name:"N/A";
+  const bottomComp=bottomTeam?aggregateAnalyses(bottomTeam[1]).work.comp:0;
+  const otPct=agg.manpower.hrs?(agg.manpower.ot/agg.manpower.hrs*100).toFixed(1):0;
+
+  let narrative="";
+  if(mode==="daily"){
+    narrative=`<p>This daily analysis covers ${period}, during which ${teamsActive} team(s) submitted operational checksheets encompassing ${agg.manpower.total} workers who collectively logged ${agg.manpower.hrs.toFixed(1)} man-hours, of which ${agg.manpower.ot.toFixed(1)} hours (${otPct}%) constituted overtime.</p>`
+    +`<p>Overall task completion stands at <strong>${agg.work.comp}%</strong> (${agg.work.done} of ${agg.work.total} tasks completed), with ${agg.work.bl} task(s) currently blocked. `
+    +`${topName} demonstrated the highest performance at ${topComp}% completion`+(teamsActive>1?`, while ${bottomName} recorded ${bottomComp}% completion`:"")+`.</p>`
+    +`<p>Quality assurance checks averaged ${agg.quality.avg}%, ${agg.quality.avg>=80?"which is within acceptable project standards.":"which falls below the 80% target threshold and requires corrective attention."} `
+    +`PPE compliance was measured at ${agg.manpower.avgPPE}%, ${agg.manpower.avgPPE>=90?"meeting the minimum safety standard.":"falling below the 90% safety requirement. Immediate corrective action is recommended."}</p>`
+    +(agg.issues.all.length?`<p><strong>Risk Assessment:</strong> ${agg.issues.all.length} issue(s) were reported, of which ${agg.issues.high} are classified as HIGH priority requiring immediate management attention.</p>`:"");
+  }else if(mode==="weekly"){
+    const dates=new Set();Object.values(agg.byTeam).forEach(arr=>arr.forEach(a=>{if(a.date)dates.add(a.date)}));
+    narrative=`<p>This weekly analysis covers the period ${period}, spanning ${dates.size} working day(s) across ${teamsActive} active team(s). The combined workforce of ${agg.manpower.total} worker-days produced ${agg.manpower.hrs.toFixed(0)} man-hours, with ${agg.manpower.ot.toFixed(1)} hours of overtime (${otPct}% of total hours).</p>`
+    +`<p>The aggregate task completion rate for the week stands at <strong>${agg.work.comp}%</strong>, representing ${agg.work.done} completed tasks out of ${agg.work.total} assigned. ${agg.work.bl} task(s) remain in blocked status, indicating dependencies or resource constraints that require resolution.</p>`
+    +`<p>${topName} led weekly performance at ${topComp}% task completion`+(teamsActive>1?`, while ${bottomName} reported the lowest at ${bottomComp}%`:"")+`. `
+    +`The average daily workforce utilization was ${dates.size?(agg.manpower.total/dates.size).toFixed(1):"0"} workers per day, with an average productivity of ${agg.manpower.avgHrsPerPerson} hours per worker.</p>`
+    +`<p>Quality assurance averaged ${agg.quality.avg}% across all teams, and PPE compliance was ${agg.manpower.avgPPE}%. `
+    +`${agg.issues.all.length} cumulative issues were logged during the week, with ${agg.issues.high} at HIGH priority level.</p>`;
+  }else{
+    const dates=new Set();Object.values(agg.byTeam).forEach(arr=>arr.forEach(a=>{if(a.date)dates.add(a.date)}));
+    narrative=`<p>This monthly analysis covers ${period}, encompassing ${dates.size} working days of recorded activity across ${teamsActive} active team(s). The month produced a total of ${agg.manpower.hrs.toFixed(0)} man-hours from ${agg.manpower.total} worker-day entries, with overtime constituting ${otPct}% of total hours worked.</p>`
+    +`<p>Monthly task completion rate reached <strong>${agg.work.comp}%</strong> (${agg.work.done}/${agg.work.total}), with ${agg.work.bl} tasks remaining in blocked status. `
+    +`The highest-performing team was ${topName} at ${topComp}% completion`+(teamsActive>1?`, contrasted with ${bottomName} at ${bottomComp}%`:"")+`.</p>`
+    +`<p>Quality metrics averaged ${agg.quality.avg}% and safety compliance (PPE) averaged ${agg.manpower.avgPPE}% across all teams. `
+    +`A total of ${agg.issues.all.length} issues were documented during the month, ${agg.issues.high} of which were classified as HIGH priority.</p>`
+    +`<p><strong>Recommendation:</strong> ${agg.work.comp>=80?"Current progress is on track. Continue monitoring blocked tasks and maintain quality standards.":agg.work.comp>=50?"Task completion is below target. A focused review of blocked items and resource allocation is recommended.":"Task completion is critically below target. An urgent project review meeting should be convened to address systemic blockers and resource gaps."}</p>`;
+  }
+  html+=`<div class="an-exec-narrative">${narrative}</div>`;
+
+  // ── Detailed Metrics Table ──
+  html+=`<div class="an-section-title">📊 Detailed Performance Metrics</div>`;
+  html+=`<div class="an-table-wrap"><table class="an-table"><thead><tr>
+    <th>Metric</th><th>Value</th><th>Target</th><th>Status</th></tr></thead><tbody>
+    <tr><td>Task Completion Rate</td><td>${agg.work.comp}%</td><td>≥80%</td><td class="${agg.work.comp>=80?'val-good':agg.work.comp>=50?'val-warn':'val-bad'}">${agg.work.comp>=80?'On Track':agg.work.comp>=50?'Below Target':'Critical'}</td></tr>
+    <tr><td>Quality Assurance Score</td><td>${agg.quality.avg}%</td><td>≥80%</td><td class="${agg.quality.avg>=80?'val-good':agg.quality.avg>=50?'val-warn':'val-bad'}">${agg.quality.avg>=80?'Acceptable':'Needs Improvement'}</td></tr>
+    <tr><td>PPE Safety Compliance</td><td>${agg.manpower.avgPPE}%</td><td>≥90%</td><td class="${agg.manpower.avgPPE>=90?'val-good':agg.manpower.avgPPE>=75?'val-warn':'val-bad'}">${agg.manpower.avgPPE>=90?'Compliant':'Non-Compliant'}</td></tr>
+    <tr><td>Workforce Utilization</td><td>${agg.manpower.avgHrsPerPerson} hrs/person</td><td>7-8 hrs</td><td class="${parseFloat(agg.manpower.avgHrsPerPerson)>=7?'val-good':'val-warn'}">${parseFloat(agg.manpower.avgHrsPerPerson)>=7?'Optimal':'Underutilized'}</td></tr>
+    <tr><td>Overtime Ratio</td><td>${otPct}%</td><td>≤15%</td><td class="${parseFloat(otPct)<=15?'val-good':'val-warn'}">${parseFloat(otPct)<=15?'Within Limit':'Elevated'}</td></tr>
+    <tr><td>Productivity Index</td><td>${productivityScore}/100</td><td>≥70</td><td class="${productivityScore>=70?'val-good':productivityScore>=50?'val-warn':'val-bad'}">${productivityScore>=70?'Satisfactory':productivityScore>=50?'Marginal':'Poor'}</td></tr>
+    <tr><td>Blocked Task Ratio</td><td>${agg.work.total?Math.round(agg.work.bl/agg.work.total*100):0}%</td><td>≤10%</td><td class="${agg.work.total&&agg.work.bl/agg.work.total<=0.1?'val-good':'val-warn'}">${agg.work.total&&agg.work.bl/agg.work.total<=0.1?'Acceptable':'Requires Action'}</td></tr>
+    <tr><td>HIGH Priority Issues</td><td>${agg.issues.high}</td><td>0</td><td class="${agg.issues.high===0?'val-good':'val-bad'}">${agg.issues.high===0?'Clear':'Action Required'}</td></tr>
+  </tbody></table></div>`;
+
+  // ── Charts Section ──
+  html+=`<div class="an-section-title">📈 Visual Analysis</div>`;
+
+  // Chart 1: Task Status Distribution (pie/doughnut)
+  const chartId1="_anChart_"+Date.now()+"_1";
+  const chartId2="_anChart_"+Date.now()+"_2";
+  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="an-chart-wrap"><h4>Task Status Distribution</h4><canvas id="${chartId1}"></canvas></div>
+    <div class="an-chart-wrap"><h4>Team Completion Comparison</h4><canvas id="${chartId2}"></canvas></div>
+  </div>`;
+
+  // Chart 3: Manpower/Hours bar chart (full width)
+  const chartId3="_anChart_"+Date.now()+"_3";
+  html+=`<div class="an-chart-wrap"><h4>Workforce & Hours by Team</h4><canvas id="${chartId3}"></canvas></div>`;
+
+  // Schedule chart rendering after DOM update
+  setTimeout(()=>{
+    _renderAnalysisCharts(chartId1,chartId2,chartId3,agg);
+  },100);
 
   // Materials consumed summary
   if(agg.materials.length){
-    html+=`<div class="an-card"><h3>📦 ${t("anMaterialsConsumed")} (${agg.materials.length})</h3>
-      <div style="display:flex;flex-wrap:wrap;gap:4px">`;
-    agg.materials.slice(0,15).forEach(m=>{
-      html+=`<span class="an-spec">${m.name}: ${m.qty} ${m.unit}</span>`;
+    html+=`<div class="an-section-title">📦 Materials Consumed (${agg.materials.length})</div>`;
+    html+=`<div class="an-table-wrap"><table class="an-table"><thead><tr><th>Material</th><th>Quantity</th><th>Unit</th></tr></thead><tbody>`;
+    agg.materials.slice(0,20).forEach(m=>{
+      html+=`<tr><td>${m.name}</td><td>${m.qty}</td><td>${m.unit}</td></tr>`;
     });
-    html+=`</div></div>`;
+    html+=`</tbody></table></div>`;
   }
+
   return html;
+}
+
+function _renderAnalysisCharts(id1,id2,id3,agg){
+  // Chart 1: Task Status Doughnut
+  const c1=document.getElementById(id1);
+  if(c1){
+    const ctx=c1.getContext("2d");
+    const data=[agg.work.done,agg.work.total-agg.work.done-agg.work.bl,agg.work.bl];
+    const colors=["#0F6E56","#F0AD4E","#DC3545"];
+    const labels=["Completed","In Progress","Blocked"];
+    _drawDoughnut(ctx,c1.width,c1.height,data,colors,labels);
+  }
+  // Chart 2: Team Completion Bar
+  const c2=document.getElementById(id2);
+  if(c2){
+    const ctx=c2.getContext("2d");
+    const teams=Object.keys(agg.byTeam).map(tk=>({name:TEAMS[tk]?TEAMS[tk].name:tk,comp:aggregateAnalyses(agg.byTeam[tk]).work.comp,color:TEAMS[tk]?TEAMS[tk].color:"#0F6E56"}));
+    _drawHBar(ctx,c2.width,c2.height,teams);
+  }
+  // Chart 3: Workers + Hours grouped bar
+  const c3=document.getElementById(id3);
+  if(c3){
+    const ctx=c3.getContext("2d");
+    const teams=Object.keys(agg.byTeam).map(tk=>{
+      const ta=aggregateAnalyses(agg.byTeam[tk]);
+      return{name:TEAMS[tk]?TEAMS[tk].name:tk,workers:ta.manpower.total,hours:ta.manpower.hrs,ot:ta.manpower.ot,color:TEAMS[tk]?TEAMS[tk].color:"#0F6E56"};
+    });
+    _drawGroupedBar(ctx,c3.width,c3.height,teams);
+  }
+}
+
+// ── Canvas Chart Drawing Functions ──
+function _drawDoughnut(ctx,w,h,data,colors,labels){
+  const total=data.reduce((a,b)=>a+b,0);if(!total)return;
+  const cx=w*0.4,cy=h/2,r=Math.min(cx,cy)*0.7,ir=r*0.5;
+  let startAngle=-Math.PI/2;
+  data.forEach((val,i)=>{
+    if(!val)return;
+    const sliceAngle=(val/total)*2*Math.PI;
+    ctx.beginPath();ctx.moveTo(cx+ir*Math.cos(startAngle),cy+ir*Math.sin(startAngle));
+    ctx.arc(cx,cy,r,startAngle,startAngle+sliceAngle);
+    ctx.arc(cx,cy,ir,startAngle+sliceAngle,startAngle,true);
+    ctx.closePath();ctx.fillStyle=colors[i];ctx.fill();
+    startAngle+=sliceAngle;
+  });
+  // Center text
+  ctx.fillStyle="#333";ctx.font="bold "+Math.round(r*0.35)+"px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText(total>0?Math.round(data[0]/total*100)+"%":"0%",cx,cy);
+  // Legend
+  let ly=20;
+  data.forEach((val,i)=>{
+    if(!val)return;
+    ctx.fillStyle=colors[i];ctx.fillRect(w*0.75,ly,10,10);
+    ctx.fillStyle="#333";ctx.font="11px sans-serif";ctx.textAlign="left";ctx.textBaseline="top";
+    ctx.fillText(labels[i]+": "+val,w*0.75+14,ly);ly+=16;
+  });
+}
+
+function _drawHBar(ctx,w,h,teams){
+  if(!teams.length)return;
+  const barH=Math.min(24,Math.floor((h-30)/teams.length)-4);
+  const maxW=w*0.6;const labelW=w*0.3;const startX=labelW+5;
+  let y=20;
+  ctx.font="bold 11px sans-serif";ctx.textAlign="right";ctx.textBaseline="middle";
+  teams.sort((a,b)=>b.comp-a.comp).forEach(t=>{
+    const barW=maxW*(t.comp/100);
+    ctx.fillStyle=t.comp>=80?"#0F6E56":t.comp>=50?"#F0AD4E":"#DC3545";
+    ctx.fillRect(startX,y,barW,barH);
+    ctx.fillStyle="#333";ctx.textAlign="right";
+    ctx.fillText(t.name,labelW,y+barH/2);
+    ctx.textAlign="left";ctx.fillStyle="#fff";
+    if(barW>30)ctx.fillText(t.comp+"%",startX+4,y+barH/2);
+    else{ctx.fillStyle="#333";ctx.fillText(t.comp+"%",startX+barW+4,y+barH/2)}
+    y+=barH+4;
+  });
+}
+
+function _drawGroupedBar(ctx,w,h,teams){
+  if(!teams.length)return;
+  const n=teams.length;const gap=8;const groupW=(w-60-gap*(n-1))/n;const barW=groupW/2-2;
+  const maxVal=Math.max(...teams.map(t=>Math.max(t.workers,t.hours)),1);
+  const chartH=h-50;const baseY=h-30;
+  // Y axis
+  ctx.strokeStyle="#ddd";ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const yy=baseY-chartH*i/4;
+    ctx.beginPath();ctx.moveTo(35,yy);ctx.lineTo(w-10,yy);ctx.stroke();
+    ctx.fillStyle="#999";ctx.font="9px sans-serif";ctx.textAlign="right";ctx.textBaseline="middle";
+    ctx.fillText(Math.round(maxVal*i/4),32,yy);
+  }
+  // Bars
+  teams.forEach((t,i)=>{
+    const x=40+i*(groupW+gap);
+    const wH=chartH*(t.workers/maxVal);const hH=chartH*(t.hours/maxVal);
+    ctx.fillStyle="#0F6E56";ctx.fillRect(x,baseY-wH,barW,wH);
+    ctx.fillStyle="#8B5CF6";ctx.fillRect(x+barW+2,baseY-hH,barW,hH);
+    // Label
+    ctx.fillStyle="#333";ctx.font="bold 9px sans-serif";ctx.textAlign="center";ctx.textBaseline="top";
+    const shortName=t.name.length>8?t.name.substring(0,7)+"…":t.name;
+    ctx.fillText(shortName,x+groupW/2,baseY+2);
+    // Values
+    ctx.font="8px sans-serif";ctx.textBaseline="bottom";
+    ctx.fillStyle="#0F6E56";ctx.fillText(t.workers,x+barW/2,baseY-wH-1);
+    ctx.fillStyle="#8B5CF6";ctx.fillText(t.hours.toFixed(0),x+barW+2+barW/2,baseY-hH-1);
+  });
+  // Legend
+  ctx.fillStyle="#0F6E56";ctx.fillRect(w-120,5,10,10);ctx.fillStyle="#333";ctx.font="10px sans-serif";ctx.textAlign="left";ctx.fillText("Workers",w-107,14);
+  ctx.fillStyle="#8B5CF6";ctx.fillRect(w-60,5,10,10);ctx.fillStyle="#333";ctx.fillText("Hours",w-47,14);
 }
 
 function _renderTeamCards(analyses,agg){
@@ -3520,42 +3708,49 @@ function _renderBlockerSection(agg){
 
 function _renderNarrative(agg,period,mode){
   const teamsActive=Object.keys(agg.byTeam).length;
-  const topTeam=Object.entries(agg.byTeam).sort((a,b)=>{
-    const aComp=aggregateAnalyses(a[1]).work.comp;
-    const bComp=aggregateAnalyses(b[1]).work.comp;
-    return bComp-aComp;
-  })[0];
-  const topName=topTeam?TEAMS[topTeam[0]]?.name:"—";
+  const topTeam=Object.entries(agg.byTeam).sort((a,b)=>aggregateAnalyses(b[1]).work.comp-aggregateAnalyses(a[1]).work.comp)[0];
+  const topName=topTeam?TEAMS[topTeam[0]]?.name:"N/A";
   const topComp=topTeam?aggregateAnalyses(topTeam[1]).work.comp:0;
+  const bottomTeam=Object.entries(agg.byTeam).sort((a,b)=>aggregateAnalyses(a[1]).work.comp-aggregateAnalyses(b[1]).work.comp)[0];
+  const bottomName=bottomTeam?TEAMS[bottomTeam[0]]?.name:"N/A";
+  const bottomComp=bottomTeam?aggregateAnalyses(bottomTeam[1]).work.comp:0;
 
-  let narrative="";
-  if(mode==="daily"){
-    narrative=`For ${period}, ${teamsActive} team(s) submitted checksheets with a combined ${agg.manpower.total} workers logging ${agg.manpower.hrs.toFixed(1)} hours. `
-      +`Overall task completion stood at ${agg.work.comp}% (${agg.work.done}/${agg.work.total}). `
-      +`${topName} led with ${topComp}% completion. `
-      +`${agg.work.bl?agg.work.bl+' task(s) remain blocked requiring attention. ':''}`
-      +`${agg.issues.high?agg.issues.high+' HIGH priority issue(s) need immediate action. ':''}`
-      +`PPE compliance averaged ${agg.manpower.avgPPE}%. Quality checks averaged ${agg.quality.avg}%.`;
-  }else if(mode==="weekly"){
-    const dates=new Set();Object.values(agg.byTeam).forEach(arr=>arr.forEach(a=>{if(a.date)dates.add(a.date)}));
-    narrative=`This week (${period}), ${dates.size} working day(s) were recorded across ${teamsActive} active team(s). `
-      +`A total of ${agg.manpower.total} worker-days produced ${agg.manpower.hrs.toFixed(0)} man-hours (${agg.manpower.ot.toFixed(1)}h overtime). `
-      +`Task completion rate: ${agg.work.comp}% (${agg.work.done} of ${agg.work.total} tasks completed). `
-      +`${topName} led performance at ${topComp}%. `
-      +`${agg.issues.all.length} issue(s) were logged (${agg.issues.high} HIGH). `
-      +`PPE compliance: ${agg.manpower.avgPPE}%. Quality: ${agg.quality.avg}%.`;
-  }else{
-    const dates=new Set();Object.values(agg.byTeam).forEach(arr=>arr.forEach(a=>{if(a.date)dates.add(a.date)}));
-    narrative=`For ${period}, ${dates.size} working days were recorded with ${teamsActive} active teams. `
-      +`${agg.manpower.total} worker-days totalled ${agg.manpower.hrs.toFixed(0)} man-hours. `
-      +`Overall completion: ${agg.work.comp}% (${agg.work.done}/${agg.work.total}). `
-      +`Top performer: ${topName} at ${topComp}%. `
-      +`${agg.issues.all.length} issues logged (${agg.issues.high} HIGH priority). `
-      +`Overtime: ${agg.manpower.ot.toFixed(1)}h. PPE: ${agg.manpower.avgPPE}%. Quality: ${agg.quality.avg}%.`;
+  let html=`<div class="an-section-title">🔍 Key Findings</div>`;
+  html+=`<div class="an-findings">`;
+  html+=`<p><strong>1. Workforce Deployment:</strong> ${agg.manpower.total} workers deployed across ${teamsActive} team(s), averaging ${agg.manpower.avgHrsPerPerson} hours per person. ${parseFloat(agg.manpower.avgHrsPerPerson)<7?"This indicates potential underutilization of available manpower. Consider reviewing task assignments and scheduling to maximize productive hours.":"Workforce utilization is within the expected range."}</p>`;
+  html+=`<p><strong>2. Task Execution:</strong> ${agg.work.comp}% of assigned tasks completed (${agg.work.done}/${agg.work.total}). ${agg.work.bl>0?agg.work.bl+" task(s) remain blocked, representing "+Math.round(agg.work.bl/agg.work.total*100)+"% of the total task load. Blocked tasks should be escalated in the next coordination meeting.":"No tasks are currently blocked, indicating effective workflow management."}</p>`;
+  if(teamsActive>1){
+    html+=`<p><strong>3. Performance Variance:</strong> A ${topComp-bottomComp} percentage point gap exists between the highest-performing team (${topName} at ${topComp}%) and the lowest (${bottomName} at ${bottomComp}%). ${topComp-bottomComp>30?"This significant variance warrants investigation into resource distribution and task difficulty between teams.":"This variance is within acceptable range."}</p>`;
+  }
+  html+=`<p><strong>${teamsActive>1?"4":"3"}. Safety & Quality:</strong> PPE compliance stands at ${agg.manpower.avgPPE}% ${agg.manpower.avgPPE<90?"(below the 90% threshold — safety briefings should be reinforced)":""} and quality checks averaged ${agg.quality.avg}% ${agg.quality.avg<80?"(below the 80% acceptance standard)":""}.</p>`;
+  html+=`</div>`;
+
+  html+=`<div class="an-section-title">💡 Recommendations</div>`;
+  if(agg.work.bl>0){
+    html+=`<div class="an-rec-card"><h5>Resolve Blocked Tasks</h5><p>${agg.work.bl} task(s) are blocked. Convene a short coordination meeting to identify dependencies and assign responsibility for unblocking each item within 24 hours.</p></div>`;
+  }
+  if(agg.manpower.avgPPE<90){
+    html+=`<div class="an-rec-card"><h5>Improve PPE Compliance</h5><p>PPE compliance at ${agg.manpower.avgPPE}% is below the mandatory 90% threshold. Conduct a toolbox safety talk and enforce PPE checks before work commences each morning.</p></div>`;
+  }
+  if(agg.quality.avg<80){
+    html+=`<div class="an-rec-card"><h5>Raise Quality Standards</h5><p>Quality score of ${agg.quality.avg}% falls below the 80% project standard. Assign quality inspectors to accompany installation crews and conduct spot checks at 2-hour intervals.</p></div>`;
+  }
+  if(agg.issues.high>0){
+    html+=`<div class="an-rec-card"><h5>Address HIGH Priority Issues</h5><p>${agg.issues.high} HIGH priority issue(s) require immediate management attention. Assign owners and set resolution deadlines within 48 hours.</p></div>`;
+  }
+  if(topComp-bottomComp>30&&teamsActive>1){
+    html+=`<div class="an-rec-card"><h5>Rebalance Team Workloads</h5><p>The ${topComp-bottomComp} point performance gap between ${topName} and ${bottomName} suggests workload or resource imbalance. Review task allocation and consider cross-team support.</p></div>`;
+  }
+  if(parseFloat(agg.manpower.avgHrsPerPerson)<7){
+    html+=`<div class="an-rec-card"><h5>Optimize Work Hours</h5><p>Average hours per worker (${agg.manpower.avgHrsPerPerson}) is below the 7-hour baseline. Review start times, break durations, and task readiness to reduce idle time.</p></div>`;
+  }
+  if(agg.work.comp>=80&&agg.quality.avg>=80&&agg.manpower.avgPPE>=90&&agg.issues.high===0){
+    html+=`<div class="an-rec-card" style="border-left-color:var(--success);background:linear-gradient(135deg,#f0faf5,#e8f5e9)"><h5>All Metrics On Track</h5><p>All key performance indicators are within acceptable ranges. Continue current operational rhythm and maintain standards.</p></div>`;
   }
 
-  return`<div class="an-card"><h3>📝 ${t("anNarrativeSummary")}</h3><div class="an-narrative">${narrative}</div></div>`;
+  return html;
 }
+
 
 // --- Analysis PDF Export ---
 function downloadAnalysisPDF(mode,dateVal){
@@ -3590,63 +3785,96 @@ function downloadAnalysisPDF(mode,dateVal){
 function _buildAnalysisPDF(mode,periodLabel,analyses){
   const agg=aggregateAnalyses(analyses);
   const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");
-  const W=215.9,H=279.4,M=12;let y=12;const nv=[15,110,86];const teal=[15,110,86];
-
-  // Header
-  pdf.setFontSize(16);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");
-  pdf.text("ELGAWA GUYANA INC.",W/2,y,{align:"center"});y+=5;
-  pdf.setFontSize(9);pdf.setTextColor(100);pdf.setFont(undefined,"normal");
-  pdf.text("Pasha Global Luxury Hotel — HVAC Installation Works",W/2,y,{align:"center"});y+=5;
-  pdf.setFontSize(13);pdf.setTextColor(...teal);pdf.setFont(undefined,"bold");
+  const W=215.9,H=279.4,M=12;let y=12;const teal=[15,110,86];const navy=[10,50,60];
   const modeLabel=mode==="daily"?"Daily":mode==="weekly"?"Weekly":"Monthly";
-  pdf.text(`${modeLabel} Structured Analysis Report`,W/2,y,{align:"center"});y+=5;
-  pdf.setFontSize(11);pdf.setTextColor(...nv);pdf.text(periodLabel.toUpperCase(),W/2,y,{align:"center"});y+=2;
-  pdf.setDrawColor(...teal);pdf.setLineWidth(.6);pdf.line(M,y,W-M,y);y+=6;
 
-  // Executive KPIs
+  // ═══ PAGE 1: Cover Header + Executive Summary ═══
+  // Header block
+  pdf.setFillColor(15,110,86);pdf.rect(0,0,W,32,"F");
+  pdf.setFontSize(18);pdf.setTextColor(255);pdf.setFont(undefined,"bold");
+  pdf.text("ELGAWA GUYANA INC.",W/2,14,{align:"center"});
+  pdf.setFontSize(9);pdf.setFont(undefined,"normal");
+  pdf.text("Pasha Global Luxury Hotel — HVAC Installation Works",W/2,20,{align:"center"});
+  pdf.setFontSize(12);pdf.setFont(undefined,"bold");
+  pdf.text(`${modeLabel} Structured Analysis Report`,W/2,28,{align:"center"});
+  y=38;
+
+  // Period and generation info
+  pdf.setFontSize(11);pdf.setTextColor(...navy);pdf.setFont(undefined,"bold");
+  pdf.text(`Report Period: ${periodLabel}`,M,y);
+  pdf.setFontSize(8);pdf.setTextColor(100);pdf.setFont(undefined,"normal");
+  pdf.text(`Generated: ${new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})} at ${new Date().toLocaleTimeString()}`,W-M,y,{align:"right"});
+  y+=3;pdf.setDrawColor(...teal);pdf.setLineWidth(.5);pdf.line(M,y,W-M,y);y+=6;
+
+  // Productivity scores
   const prodScore=Math.min(100,Math.round((agg.work.comp*0.4)+(agg.quality.avg*0.3)+((100-Math.min(100,agg.issues.high*20))*0.3)));
-  pdf.setFontSize(11);pdf.setTextColor(...teal);pdf.setFont(undefined,"bold");
-  pdf.text("Executive Summary",M,y);y+=5;
+  const otPct=agg.manpower.hrs?(agg.manpower.ot/agg.manpower.hrs*100).toFixed(1):"0";
+
+  // Section 1: Executive Summary
+  pdf.setFontSize(12);pdf.setTextColor(...teal);pdf.setFont(undefined,"bold");
+  pdf.text("1. EXECUTIVE SUMMARY",M,y);y+=6;
+
+  // KPI Table
   pdf.autoTable({startY:y,margin:{left:M,right:M},
-    head:[["Metric","Value","Metric","Value"]],
+    head:[["Key Performance Indicator","Value","Target","Status"]],
     body:[
-      ["Checksheets",""+agg.totalSheets,"Total Workers",""+agg.manpower.total],
-      ["Total Man-Hours",agg.manpower.hrs.toFixed(1),"Avg Hrs/Person",agg.manpower.avgHrsPerPerson],
-      ["Tasks Completed",agg.work.done+"/"+agg.work.total,"Completion Rate",agg.work.comp+"%"],
-      ["Tasks Blocked",""+agg.work.bl,"Overtime Hours",agg.manpower.ot.toFixed(1)],
-      ["Quality Score",agg.quality.avg+"%","PPE Compliance",agg.manpower.avgPPE+"%"],
-      ["Issues Reported",""+agg.issues.all.length,"HIGH Priority",""+agg.issues.high],
-      ["Productivity Score",prodScore+"/100","Teams Active",""+Object.keys(agg.byTeam).length],
+      ["Task Completion Rate",agg.work.comp+"%","≥80%",agg.work.comp>=80?"✓ On Track":"✗ Below Target"],
+      ["Total Workforce",""+agg.manpower.total,"—","—"],
+      ["Total Man-Hours",agg.manpower.hrs.toFixed(1),"—","—"],
+      ["Avg Hours/Person",agg.manpower.avgHrsPerPerson,"7-8 hrs",parseFloat(agg.manpower.avgHrsPerPerson)>=7?"✓ Optimal":"⚠ Underutilized"],
+      ["Overtime Ratio",otPct+"%","≤15%",parseFloat(otPct)<=15?"✓ Within Limit":"⚠ Elevated"],
+      ["Quality Score",agg.quality.avg+"%","≥80%",agg.quality.avg>=80?"✓ Acceptable":"✗ Below Standard"],
+      ["PPE Compliance",agg.manpower.avgPPE+"%","≥90%",agg.manpower.avgPPE>=90?"✓ Compliant":"✗ Non-Compliant"],
+      ["Productivity Index",prodScore+"/100","≥70",prodScore>=70?"✓ Satisfactory":"⚠ Below Target"],
+      ["Blocked Tasks",""+agg.work.bl,"0",agg.work.bl===0?"✓ Clear":"⚠ "+agg.work.bl+" Pending"],
+      ["HIGH Priority Issues",""+agg.issues.high,"0",agg.issues.high===0?"✓ None":"✗ Action Required"]
     ],
-    headStyles:{fillColor:teal,fontSize:7},bodyStyles:{fontSize:7},theme:"grid",
-    columnStyles:{0:{fontStyle:"bold",cellWidth:38},2:{fontStyle:"bold",cellWidth:38}}
+    headStyles:{fillColor:teal,fontSize:7,halign:"left"},
+    bodyStyles:{fontSize:7},theme:"grid",
+    columnStyles:{0:{fontStyle:"bold",cellWidth:42},3:{cellWidth:30}},
+    didParseCell:function(data){
+      if(data.section==="body"&&data.column.index===3){
+        const v=data.cell.raw;
+        if(v.startsWith("✓"))data.cell.styles.textColor=[40,167,69];
+        else if(v.startsWith("✗"))data.cell.styles.textColor=[220,53,69];
+        else if(v.startsWith("⚠"))data.cell.styles.textColor=[240,173,78];
+      }
+    }
   });
-  y=pdf.lastAutoTable.finalY+6;
+  y=pdf.lastAutoTable.finalY+5;
 
-  // Narrative
+  // Narrative paragraph
   const teamsActive=Object.keys(agg.byTeam).length;
-  const narrative=`During this ${mode} period, ${teamsActive} team(s) submitted ${agg.totalSheets} checksheets. `
-    +`A total of ${agg.manpower.total} workers logged ${agg.manpower.hrs.toFixed(0)} man-hours (${agg.manpower.ot.toFixed(1)}h overtime). `
-    +`Task completion: ${agg.work.comp}% (${agg.work.done}/${agg.work.total}), with ${agg.work.bl} blocked. `
-    +`Quality checks averaged ${agg.quality.avg}%. PPE compliance: ${agg.manpower.avgPPE}%. `
-    +`${agg.issues.all.length} issue(s) reported (${agg.issues.high} HIGH priority).`;
-  pdf.setFontSize(8);pdf.setTextColor(40);pdf.setFont(undefined,"normal");
-  const narLines=pdf.splitTextToSize(narrative,W-2*M);
-  pdf.text(narLines,M,y);y+=narLines.length*3.5+5;
+  const topTeam=Object.entries(agg.byTeam).sort((a,b)=>aggregateAnalyses(b[1]).work.comp-aggregateAnalyses(a[1]).work.comp)[0];
+  const topName=topTeam?TEAMS[topTeam[0]]?.name:"N/A";
+  const topComp=topTeam?aggregateAnalyses(topTeam[1]).work.comp:0;
 
-  // Team breakdown table
-  if(y>H-50){pdf.addPage();y=12}
-  pdf.setFontSize(11);pdf.setTextColor(...teal);pdf.setFont(undefined,"bold");
-  pdf.text("Team Performance Breakdown",M,y);y+=5;
+  let narr=`This ${modeLabel.toLowerCase()} report covers ${periodLabel}. ${teamsActive} team(s) submitted ${agg.totalSheets||analyses.length} operational checksheets, deploying ${agg.manpower.total} workers who collectively logged ${agg.manpower.hrs.toFixed(1)} man-hours (${agg.manpower.ot.toFixed(1)}h overtime, ${otPct}%). `
+    +`Overall task completion reached ${agg.work.comp}% (${agg.work.done}/${agg.work.total}), with ${agg.work.bl} task(s) blocked. `
+    +`${topName} led performance at ${topComp}% completion. `
+    +`Quality assurance averaged ${agg.quality.avg}% and PPE compliance was ${agg.manpower.avgPPE}%. `
+    +`${agg.issues.all.length} issue(s) were reported (${agg.issues.high} HIGH priority).`;
+
+  pdf.setFontSize(8);pdf.setTextColor(40);pdf.setFont(undefined,"normal");
+  const narLines=pdf.splitTextToSize(narr,W-2*M);
+  if(y+narLines.length*3.5>H-20){pdf.addPage();y=15}
+  pdf.text(narLines,M,y);y+=narLines.length*3.5+8;
+
+  // ═══ PAGE 2: Team Performance Analysis ═══
+  if(y>H-60){pdf.addPage();y=15}
+  pdf.setFontSize(12);pdf.setTextColor(...teal);pdf.setFont(undefined,"bold");
+  pdf.text("2. TEAM PERFORMANCE ANALYSIS",M,y);y+=6;
+
+  // Team comparison table
   const teamRows=Object.keys(agg.byTeam).map(tk=>{
     const tm=TEAMS[tk];const tAgg=aggregateAnalyses(agg.byTeam[tk]);
     return[tm?tm.name:tk,""+tAgg.manpower.total,tAgg.manpower.hrs.toFixed(1),
       tAgg.work.done+"/"+tAgg.work.total,tAgg.work.comp+"%",tAgg.quality.avg+"%",
-      tAgg.manpower.avgPPE+"%",tAgg.manpower.ot.toFixed(1),""+tAgg.issues.all.length];
+      tAgg.manpower.avgPPE+"%",tAgg.manpower.ot.toFixed(1)+"h",""+tAgg.issues.all.length];
   });
   pdf.autoTable({startY:y,margin:{left:M,right:M},
-    head:[["Team","Workers","Hours","Tasks","Comp%","Quality","PPE","OT","Issues"]],body:teamRows,
-    headStyles:{fillColor:teal,fontSize:6},bodyStyles:{fontSize:6},theme:"grid",
+    head:[["Team","Workers","Hours","Tasks","Comp%","Quality","PPE","Overtime","Issues"]],body:teamRows,
+    headStyles:{fillColor:teal,fontSize:7},bodyStyles:{fontSize:7},theme:"grid",
     columnStyles:{0:{fontStyle:"bold"}},
     didParseCell:function(data){
       if(data.section==="body"&&data.column.index===4){
@@ -3660,100 +3888,131 @@ function _buildAnalysisPDF(mode,periodLabel,analyses){
   });
   y=pdf.lastAutoTable.finalY+6;
 
-  // Individual team details
+  // Individual team detail sections
   Object.keys(agg.byTeam).forEach(tk=>{
     const tm=TEAMS[tk];if(!tm)return;
-    const teamAn=agg.byTeam[tk];
-    const tAgg=aggregateAnalyses(teamAn);
+    const teamAn=agg.byTeam[tk];const tAgg=aggregateAnalyses(teamAn);
 
-    if(y>H-40){pdf.addPage();y=12}
-    const tc=tm.color.replace("#","");
-    const cr=parseInt(tc.substring(0,2),16),cg=parseInt(tc.substring(2,4),16),cb=parseInt(tc.substring(4,6),16);
-    pdf.setFontSize(10);pdf.setTextColor(cr,cg,cb);pdf.setFont(undefined,"bold");
-    pdf.text(`${tm.name} — Detailed Analysis`,M,y);y+=4;
+    if(y>H-50){pdf.addPage();y=15}
+    pdf.setFontSize(10);pdf.setTextColor(...navy);pdf.setFont(undefined,"bold");
+    pdf.text(`${tm.name}`,M,y);y+=4;
 
-    const detailRows=[
-      ["Lead(s)",teamAn.map(a=>a.lead).filter(Boolean).join(", ")],
-      ["Workers",""+tAgg.manpower.total],["Hours",tAgg.manpower.hrs.toFixed(1)+"h (OT: "+tAgg.manpower.ot.toFixed(1)+"h)"],
-      ["Tasks",tAgg.work.done+"/"+tAgg.work.total+" ("+tAgg.work.comp+"%)"],
-      ["Quality",tAgg.quality.avg+"%"],["PPE",tAgg.manpower.avgPPE+"%"]
+    const rows=[
+      ["Team Lead(s)",teamAn.map(a=>a.lead).filter(Boolean).join(", ")],
+      ["Workforce",tAgg.manpower.total+" workers, "+tAgg.manpower.hrs.toFixed(1)+"h total ("+tAgg.manpower.ot.toFixed(1)+"h OT)"],
+      ["Task Completion",tAgg.work.done+"/"+tAgg.work.total+" ("+tAgg.work.comp+"%)"],
+      ["Quality / PPE",tAgg.quality.avg+"% quality, "+tAgg.manpower.avgPPE+"% PPE"]
     ];
-
-    // Add specialist metrics
-    const specs=teamAn.filter(a=>Object.keys(a.spec).length>0);
-    if(specs.length){
-      if(tk==="ducting"){
-        const tLen=teamAn.reduce((a,an)=>a+(an.spec.totalLength||0),0);
-        const tPcs=teamAn.reduce((a,an)=>a+(an.spec.ductPieces||0),0);
-        if(tPcs)detailRows.push(["Duct Pieces",""+tPcs]);
-        if(tLen)detailRows.push(["Duct Length",tLen.toFixed(1)+"m"]);
-      }
-      if(tk==="copper"){
-        const tRun=teamAn.reduce((a,an)=>a+(an.spec.totalRun||0),0);
-        const tJ=teamAn.reduce((a,an)=>a+(an.spec.totalJoints||0),0);
-        if(tRun)detailRows.push(["Copper Run",tRun.toFixed(1)+"m"]);
-        if(tJ)detailRows.push(["Copper Joints",""+tJ]);
-      }
-      if(tk==="ahu"){
-        const tags=[...new Set(teamAn.flatMap(a=>a.spec.tags||[]))];
-        if(tags.length)detailRows.push(["AHU Tags",tags.join(", ")]);
-      }
-      if(tk==="commissioning"){
-        const tests=teamAn.reduce((a,an)=>a+(an.spec.tests||0),0);
-        const passed=teamAn.reduce((a,an)=>a+(an.spec.passed||0),0);
-        if(tests)detailRows.push(["Commissioning Tests",passed+"/"+tests+" passed"]);
-      }
-    }
-
-    // Done tasks
     const doneTasks=teamAn.flatMap(a=>a.work.tasks.filter(t=>t.status==="C")).map(t=>t.task);
-    if(doneTasks.length)detailRows.push(["Completed Tasks",doneTasks.join(", ")]);
+    if(doneTasks.length)rows.push(["Completed",doneTasks.join(", ")]);
     const blTasks=teamAn.flatMap(a=>a.work.tasks.filter(t=>t.status==="BL")).map(t=>t.task);
-    if(blTasks.length)detailRows.push(["Blocked Tasks",blTasks.join(", ")]);
+    if(blTasks.length)rows.push(["Blocked",blTasks.join(", ")]);
+    if(tAgg.materials.length)rows.push(["Materials",tAgg.materials.map(m=>m.name+" ("+m.qty+")").join(", ")]);
 
-    // Materials
-    if(tAgg.materials.length){
-      detailRows.push(["Materials Used",tAgg.materials.map(m=>m.name+" ("+m.qty+" "+m.unit+")").join(", ")]);
+    // Specialist data
+    if(tk==="ducting"){
+      const tLen=teamAn.reduce((a,an)=>a+(an.spec.totalLength||0),0);
+      const tPcs=teamAn.reduce((a,an)=>a+(an.spec.ductPieces||0),0);
+      if(tPcs||tLen)rows.push(["Duct Fabrication",tPcs+" pieces, "+tLen.toFixed(1)+"m total"]);
+    }
+    if(tk==="copper"){
+      const tRun=teamAn.reduce((a,an)=>a+(an.spec.totalRun||0),0);
+      const tJ=teamAn.reduce((a,an)=>a+(an.spec.totalJoints||0),0);
+      if(tRun||tJ)rows.push(["Copper Piping",tRun.toFixed(1)+"m run, "+tJ+" joints"]);
     }
 
-    pdf.autoTable({startY:y,margin:{left:M,right:M},
-      body:detailRows,
+    pdf.autoTable({startY:y,margin:{left:M,right:M},body:rows,
       bodyStyles:{fontSize:7},theme:"grid",
-      columnStyles:{0:{fontStyle:"bold",cellWidth:32,fillColor:[245,245,245]}},
+      columnStyles:{0:{fontStyle:"bold",cellWidth:28,fillColor:[245,250,248]}},
       didParseCell:function(data){
-        if(data.section==="body"){
-          const val=data.row.cells[0]?.raw||"";
-          if(val.includes("Blocked"))data.cell.styles.textColor=[220,53,69];
-        }
+        if(data.section==="body"&&data.row.cells[0]?.raw==="Blocked")data.cell.styles.textColor=[220,53,69];
       }
     });
-    y=pdf.lastAutoTable.finalY+5;
+    y=pdf.lastAutoTable.finalY+4;
   });
 
-  // Issues section
+  // ═══ PAGE 3: Issues & Risk Analysis ═══
+  if(y>H-50){pdf.addPage();y=15}
+  pdf.setFontSize(12);pdf.setTextColor(...teal);pdf.setFont(undefined,"bold");
+  pdf.text("3. ISSUES & RISK ANALYSIS",M,y);y+=6;
+
   if(agg.issues.all.length){
-    if(y>H-30){pdf.addPage();y=12}
-    pdf.setFontSize(10);pdf.setTextColor(220,53,69);pdf.setFont(undefined,"bold");
-    pdf.text(`Issues & Blockers (${agg.issues.all.length})`,M,y);y+=4;
-    const issRows=agg.issues.all.map(i=>[i.impact||"?",i.issue,i.team,i.action||""]);
+    agg.issues.all.sort((a,b)=>{const o={H:0,M:1,L:2};return(o[a.impact]||3)-(o[b.impact]||3)});
+    const issRows=agg.issues.all.map(i=>[i.impact||"?",i.issue,i.team,i.action||"—"]);
     pdf.autoTable({startY:y,margin:{left:M,right:M},
-      head:[["Priority","Issue","Team","Action"]],body:issRows,
+      head:[["Priority","Issue Description","Team","Corrective Action"]],body:issRows,
       headStyles:{fillColor:[220,53,69],fontSize:7},bodyStyles:{fontSize:7},theme:"grid",
-      columnStyles:{0:{cellWidth:14}},
+      columnStyles:{0:{cellWidth:14,halign:"center"},1:{cellWidth:55}},
       didParseCell:function(data){
         if(data.section==="body"&&data.column.index===0){
-          if(data.cell.raw==="H")data.cell.styles.textColor=[220,53,69];
-          else if(data.cell.raw==="M")data.cell.styles.textColor=[240,173,78];
-          data.cell.styles.fontStyle="bold";
+          if(data.cell.raw==="H"){data.cell.styles.textColor=[220,53,69];data.cell.styles.fontStyle="bold"}
+          else if(data.cell.raw==="M"){data.cell.styles.textColor=[240,173,78];data.cell.styles.fontStyle="bold"}
         }
       }
     });
     y=pdf.lastAutoTable.finalY+5;
+  }else{
+    pdf.setFontSize(9);pdf.setTextColor(40,167,69);pdf.setFont(undefined,"normal");
+    pdf.text("No issues or blockers were reported during this period.",M,y);y+=6;
   }
 
-  // Footer
-  pdf.setFontSize(7);pdf.setTextColor(150);pdf.setFont(undefined,"normal");
-  pdf.text(`ELGAWA ${modeLabel} Analysis Report | Generated ${new Date().toLocaleString()} | ${currentUser?currentUser.name:"Admin"}`,W/2,H-8,{align:"center"});
+  // ═══ PAGE 4: Findings & Recommendations ═══
+  if(y>H-60){pdf.addPage();y=15}
+  pdf.setFontSize(12);pdf.setTextColor(...teal);pdf.setFont(undefined,"bold");
+  pdf.text("4. FINDINGS & RECOMMENDATIONS",M,y);y+=6;
+
+  // Build findings and recommendations
+  const findings=[];
+  findings.push(["Workforce Utilization",`${agg.manpower.total} workers deployed, averaging ${agg.manpower.avgHrsPerPerson} hours/person. ${parseFloat(agg.manpower.avgHrsPerPerson)>=7?"Within expected range.":"Below 7-hour baseline — review scheduling."}`]);
+  findings.push(["Task Execution",`${agg.work.comp}% completion rate (${agg.work.done}/${agg.work.total}). ${agg.work.bl} blocked. ${agg.work.comp>=80?"On track.":"Below 80% target — escalate blockers."}`]);
+  findings.push(["Quality Assurance",`${agg.quality.avg}% average. ${agg.quality.avg>=80?"Meets project standards.":"Below 80% standard — increase inspection frequency."}`]);
+  findings.push(["Safety Compliance",`PPE at ${agg.manpower.avgPPE}%. ${agg.manpower.avgPPE>=90?"Compliant.":"Below 90% requirement — reinforce safety protocols."}`]);
+  findings.push(["Risk Level",`${agg.issues.all.length} issues (${agg.issues.high} HIGH). ${agg.issues.high===0?"Low risk profile.":"Elevated risk — immediate corrective action needed."}`]);
+
+  pdf.autoTable({startY:y,margin:{left:M,right:M},
+    head:[["Area","Finding & Recommendation"]],body:findings,
+    headStyles:{fillColor:teal,fontSize:7},bodyStyles:{fontSize:7},theme:"grid",
+    columnStyles:{0:{fontStyle:"bold",cellWidth:34}}
+  });
+  y=pdf.lastAutoTable.finalY+6;
+
+  // Overall assessment
+  if(y>H-40){pdf.addPage();y=15}
+  pdf.setFontSize(10);pdf.setTextColor(...navy);pdf.setFont(undefined,"bold");
+  pdf.text("Overall Assessment:",M,y);y+=5;
+  const overallStatus=prodScore>=70?"SATISFACTORY":prodScore>=50?"REQUIRES IMPROVEMENT":"CRITICAL — IMMEDIATE ACTION NEEDED";
+  const statusColor=prodScore>=70?[40,167,69]:prodScore>=50?[240,173,78]:[220,53,69];
+  pdf.setFontSize(11);pdf.setTextColor(...statusColor);pdf.setFont(undefined,"bold");
+  pdf.text(overallStatus,M,y);y+=6;
+
+  let assessment=`The overall productivity index of ${prodScore}/100 indicates ${prodScore>=70?"satisfactory project progress":prodScore>=50?"marginal performance requiring management attention":"critical underperformance requiring immediate intervention"}. `;
+  assessment+=agg.work.comp>=80?`Task completion at ${agg.work.comp}% is within acceptable bounds. `:`Task completion at ${agg.work.comp}% is below the 80% target. `;
+  assessment+=`Key actions for the next period: ${agg.work.bl>0?"(1) Resolve "+agg.work.bl+" blocked tasks, ":""}${agg.manpower.avgPPE<90?"(2) Improve PPE compliance, ":""}${agg.issues.high>0?"(3) Address "+agg.issues.high+" HIGH priority issues, ":""}maintain current quality and safety standards.`;
+
+  pdf.setFontSize(8);pdf.setTextColor(40);pdf.setFont(undefined,"normal");
+  const assLines=pdf.splitTextToSize(assessment,W-2*M);
+  pdf.text(assLines,M,y);y+=assLines.length*3.5+8;
+
+  // Signature block
+  if(y>H-35){pdf.addPage();y=15}
+  y=Math.max(y,H-40);
+  pdf.setDrawColor(180);pdf.setLineWidth(0.3);
+  pdf.line(M,y,M+60,y);pdf.line(W/2+5,y,W/2+65,y);
+  y+=4;
+  pdf.setFontSize(8);pdf.setTextColor(100);pdf.setFont(undefined,"normal");
+  pdf.text("Project Lead",M,y);
+  pdf.text("Site Engineer",W/2+5,y);y+=4;
+  pdf.text(currentUser?currentUser.name:"",M,y);
+
+  // Footer on all pages
+  const pageCount=pdf.getNumberOfPages();
+  for(let p=1;p<=pageCount;p++){
+    pdf.setPage(p);
+    pdf.setFontSize(7);pdf.setTextColor(150);pdf.setFont(undefined,"normal");
+    pdf.text(`ELGAWA ${modeLabel} Analysis Report — ${periodLabel}`,M,H-6);
+    pdf.text(`Page ${p} of ${pageCount}`,W-M,H-6,{align:"right"});
+    pdf.text(`Generated by ELGAWA Checksheet App v6.0`,W/2,H-6,{align:"center"});
+  }
 
   const dateStr=mode==="daily"?periodLabel:(mode==="weekly"?periodLabel.replace("Week of ","W"):periodLabel.replace(/\s+/g,"_"));
   pdf.save(`ELGAWA_${modeLabel}_Analysis_${dateStr}.pdf`);
@@ -5003,7 +5262,9 @@ function getCardSections(teamKey){
   return cards;
 }
 
+let _currentTeam="";
 function renderCardFlow(teamKey){
+  _currentTeam=teamKey;
   _cardSections=getCardSections(teamKey);
   const v=document.getElementById("formView");
   const tm=TEAMS[teamKey];
@@ -5012,13 +5273,23 @@ function renderCardFlow(teamKey){
   const circ=2*Math.PI*34;
   const offset=circ-(pct/100)*circ;
   
+  const _fMode=getFormMode();
   let cardsHtml=_cardSections.map((card,idx)=>{
     const status=card.checkFn();
     const cls=status===2?"done":(status===1?"started":(card.required?"required":""));
     const badge=status===2?"✓":(status===1?"…":"");
     const sub=card.required?t("required")||"Required":"";
-    return`<div class="flow-card ${cls}" onclick="openCardSection('${card.id}',${idx})">
-      <div class="fc-icon">${card.icon}</div>
+    const sc=SECTION_COLORS[card.id]||{bg:"linear-gradient(135deg,#64748b,#94a3b8)",accent:"#64748b",light:"#f8fafc"};
+    const clickFn=_fMode==="swipe"?`openSwipeCard(${idx})`:`openCardSection('${card.id}',${idx})`;
+    if(_fMode==="swipe"){
+      return`<div class="flow-card ${cls}" onclick="${clickFn}" style="border-left:5px solid ${sc.accent};background:${sc.light}">
+        <div class="fc-icon" style="background:${sc.accent};color:white">${card.icon}</div>
+        <div class="fc-body"><div class="fc-title">${card.title}</div>${sub?`<div class="fc-sub">${sub}</div>`:""}</div>
+        <div class="fc-badge">${badge}</div>
+      </div>`;
+    }
+    return`<div class="flow-card ${cls}" onclick="${clickFn}" style="border-left:5px solid ${sc.accent};background:${sc.light}">
+      <div class="fc-icon" style="background:${sc.accent};color:white">${card.icon}</div>
       <div class="fc-body"><div class="fc-title">${card.title}</div>${sub?`<div class="fc-sub">${sub}</div>`:""}</div>
       <div class="fc-badge">${badge}</div>
     </div>`;
@@ -5039,7 +5310,7 @@ function renderCardFlow(teamKey){
         <div class="ring-sub" id="ringSub">${_cardSections.filter(c=>c.checkFn()===2).length}/${_cardSections.length} ${t("sectionsComplete")||"sections complete"}</div>
       </div>
     </div>
-    <div class="card-stack" id="cardStack">${cardsHtml}</div>
+    ${renderFormModeToggle()}<div class="card-stack" id="cardStack">${cardsHtml}</div>
     <div class="submit-bar">
       <button class="btn btn-success btn-submit" onclick="submitAndShare('${teamKey}')" ${pct<60?"disabled":""}>${t("submitShare")}</button>
     </div>`;
@@ -5064,6 +5335,7 @@ function calcFlowPct(){
 
 function openCardSection(sectionId,idx){
   _activeCard=idx;
+  initFormSwipe();
   const card=_cardSections[idx];
   
   // Show the hidden form, hide the card overview
@@ -5099,7 +5371,9 @@ function openCardSection(sectionId,idx){
       actionBar=document.createElement("div");
       actionBar.id="cardActionBar";
       actionBar.className="card-action-bar";
-      actionBar.innerHTML=`<button class="btn-cancel" onclick="cancelCardSection()">Cancel</button><button class="btn-ok" onclick="confirmCardSection()">OK</button>`;
+      const prevDisabled=_activeCard<=0?"disabled":"";
+      const nextDisabled=_activeCard>=_cardSections.length-1?"disabled":"";
+      actionBar.innerHTML=`<button class="btn-cancel" onclick="cancelCardSection()">Cancel</button><div style="display:flex;gap:6px"><button class="btn-ok" onclick="navCard(-1)" ${prevDisabled} style="padding:8px 12px;opacity:${prevDisabled?"0.4":"1"}">◀ Prev</button><button class="btn-ok" onclick="navCard(1)" ${nextDisabled} style="padding:8px 12px;opacity:${nextDisabled?"0.4":"1"}">Next ▶</button></div><button class="btn-ok" onclick="confirmCardSection()">OK</button>`;
       document.body.appendChild(actionBar);
     }
   }
@@ -5146,6 +5420,15 @@ function showModal(title,msg,onOk,opts){
   overlay.querySelector("#_mOk").onclick=()=>{overlay.remove();if(onOk)onOk()};
   overlay.querySelector("#_mCancel").onclick=()=>{overlay.remove();if(opts.onCancel)opts.onCancel()};
   overlay.addEventListener("click",e=>{if(e.target===overlay){overlay.remove();if(opts.onCancel)opts.onCancel()}});
+}
+
+
+function navCard(dir){
+  if(_activeCard===null)return;
+  const next=_activeCard+dir;
+  if(next<0||next>=_cardSections.length)return;
+  confirmCardSection();
+  setTimeout(()=>openCardSection(_cardSections[next].id,next),150);
 }
 
 function closeCardSection(){
@@ -5289,6 +5572,205 @@ function getLocationValue(){
   }
   return sel.value;
 }
+
+
+// ═══ AUTO-CORRECT ENGINE ═══
+// Spelling + grammar + HVAC/construction terminology standardization
+const _HVAC_DICT={
+  // Common misspellings → correct
+  "ductin":"ducting","ductng":"ducting","duting":"ducting","ducitng":"ducting",
+  "instaled":"installed","instlled":"installed","intalled":"installed","insalled":"installed","instaled":"installed",
+  "insulation":"insulation","insulaton":"insulation","insultion":"insulation","insualtion":"insulation",
+  "commisioning":"commissioning","comissioning":"commissioning","commisioning":"commissioning","comisioning":"commissioning",
+  "refridgerant":"refrigerant","refigerant":"refrigerant","refrigerent":"refrigerant","refirgerant":"refrigerant",
+  "compresser":"compressor","comprssor":"compressor","compressor":"compressor",
+  "thermostate":"thermostat","thermstat":"thermostat","thermastat":"thermostat",
+  "maintanance":"maintenance","maintenace":"maintenance","maintence":"maintenance","maintnance":"maintenance",
+  "plumbing":"plumbing","plumming":"plumbing","plubming":"plumbing",
+  "electical":"electrical","eletrical":"electrical","electricl":"electrical","elctrical":"electrical",
+  "weilding":"welding","wlding":"welding","weldig":"welding",
+  "scaffolding":"scaffolding","scaffoldin":"scaffolding","scafolding":"scaffolding","scaffoldig":"scaffolding",
+  "concret":"concrete","concreate":"concrete","conrete":"concrete",
+  "cieling":"ceiling","ceilling":"ceiling","celing":"ceiling",
+  "measurment":"measurement","measurment":"measurement","measrement":"measurement",
+  "equipement":"equipment","equiptment":"equipment","equipmnt":"equipment","euipment":"equipment",
+  "ventilation":"ventilation","ventilaton":"ventilation","ventlation":"ventilation",
+  "condenssor":"condenser","condensor":"condenser","condensr":"condenser",
+  "evaporater":"evaporator","evaportor":"evaporator",
+  "chiler":"chiller","chillr":"chiller","chller":"chiller",
+  "drianage":"drainage","drinage":"drainage","dranage":"drainage",
+  "braizing":"brazing","brazzing":"brazing","brasing":"brazing",
+  "soldiering":"soldering","solding":"soldering","soldring":"soldering",
+  "presure":"pressure","pressue":"pressure","preasure":"pressure",
+  "tempurature":"temperature","temperture":"temperature","temprature":"temperature",
+  "guage":"gauge","gage":"gauge","gaige":"gauge",
+  "calking":"caulking","corking":"caulking","calcing":"caulking",
+  "flaning":"flanging","flangeing":"flanging",
+  "grooving":"grooving","groving":"grooving",
+  "haning":"hanging","hangig":"hanging","hangin":"hanging",
+  "leveling":"levelling","levling":"levelling",
+  "conecting":"connecting","conncting":"connecting","connectig":"connecting",
+  "completd":"completed","complted":"completed","compleated":"completed",
+  "progres":"progress","progess":"progress","progrees":"progress",
+  "pinding":"pending","pendig":"pending","pendng":"pending",
+  "dammaged":"damaged","damged":"damaged","damagd":"damaged",
+  "recieved":"received","recived":"received","receved":"received",
+  "deliverd":"delivered","delivred":"delivered","delvered":"delivered",
+  "delaid":"delayed","delaied":"delayed","dleayed":"delayed",
+  "compleeted":"completed","compleetd":"completed",
+  "fabircation":"fabrication","fabricaton":"fabrication","fabriation":"fabrication",
+  "suspened":"suspended","suspendd":"suspended",
+  "aproved":"approved","appoved":"approved","approvd":"approved",
+  "submited":"submitted","submiteed":"submitted",
+  "requirment":"requirement","requrement":"requirement","requirment":"requirement",
+  "specifaction":"specification","specificaton":"specification",
+  "modificaton":"modification","modifiction":"modification",
+  "acessories":"accessories","accesories":"accessories",
+  "suport":"support","suppot":"support","supoort":"support",
+  "struture":"structure","strcture":"structure","structre":"structure",
+  "rigig":"rigging","riging":"rigging",
+  "lifiting":"lifting","liftng":"lifting","lifing":"lifting",
+  "paning":"panning","pannig":"panning",
+  "tighening":"tightening","tightning":"tightening",
+  "loossening":"loosening","losening":"loosening",
+  "coper":"copper","coppe":"copper","coppr":"copper",
+  "galvanise":"galvanized","galvanised":"galvanized","galvanize":"galvanized",
+  "stainles":"stainless","stainlss":"stainless",
+  "aluminium":"aluminum","alumnum":"aluminum",
+  "fiberglas":"fiberglass","fibreglass":"fiberglass",
+  "louver":"louver","louvre":"louver","louvor":"louver","lovure":"louver",
+  "damper":"damper","dampner":"damper","dampper":"damper",
+  "diffuser":"diffuser","difuser":"diffuser","diffusor":"diffuser",
+  "grille":"grille","gril":"grille","grill":"grille",
+  "ahu":"AHU","fcu":"FCU","vav":"VAV","vrf":"VRF","hvac":"HVAC",
+  "bms":"BMS","ddc":"DDC","pid":"PID","rtu":"RTU",
+  // Location/area terms
+  "terrace":"Terrace","terace":"Terrace","terasse":"Terrace",
+  "lobby":"Lobby","loby":"Lobby","lobbie":"Lobby",
+  "casino":"Casino","cassino":"Casino",
+  "ballroom":"Ballroom","balroom":"Ballroom","ball room":"Ballroom",
+  "corridor":"Corridor","corrider":"Corridor","coridor":"Corridor",
+  "mezzanine":"Mezzanine","mezanine":"Mezzanine","mezzanin":"Mezzanine",
+  "basement":"Basement","basment":"Basement","basemnt":"Basement",
+  "rooftop":"Rooftop","roof top":"Rooftop","rooftoop":"Rooftop",
+  "mechanical":"Mechanical","mechanial":"Mechanical","mechancal":"Mechanical",
+  "penthouse":"Penthouse","pent house":"Penthouse","penthoues":"Penthouse"
+};
+
+// Terminology standardization
+const _TERM_STD={
+  "ac unit":"Air Conditioning Unit","a/c unit":"Air Conditioning Unit","a.c. unit":"Air Conditioning Unit",
+  "ac system":"Air Conditioning System","a/c system":"Air Conditioning System",
+  "duct work":"Ductwork","duct-work":"Ductwork",
+  "pipe work":"Pipework","pipe-work":"Pipework",
+  "fan coil":"Fan Coil Unit","fan coil unit":"Fan Coil Unit",
+  "air handler":"Air Handling Unit","air handling":"Air Handling Unit",
+  "chilled water":"Chilled Water","chill water":"Chilled Water",
+  "condensate drain":"Condensate Drain","condesate drain":"Condensate Drain",
+  "supply air":"Supply Air","suply air":"Supply Air",
+  "return air":"Return Air","retun air":"Return Air",
+  "fresh air":"Fresh Air","frsh air":"Fresh Air",
+  "exhaust air":"Exhaust Air","exhust air":"Exhaust Air",
+  "flex duct":"Flexible Duct","flexi duct":"Flexible Duct","flexible duct":"Flexible Duct",
+  "spiral duct":"Spiral Duct","spiro duct":"Spiral Duct",
+  "rect duct":"Rectangular Duct","rectangular duct":"Rectangular Duct",
+  "round duct":"Round Duct",
+  "fire damper":"Fire Damper","firedamper":"Fire Damper",
+  "smoke damper":"Smoke Damper",
+  "volume damper":"Volume Damper","vol damper":"Volume Damper",
+  "control valve":"Control Valve","contol valve":"Control Valve",
+  "ball valve":"Ball Valve","bal valve":"Ball Valve",
+  "check valve":"Check Valve","chek valve":"Check Valve",
+  "gate valve":"Gate Valve",
+  "butterfly valve":"Butterfly Valve",
+  "pressure test":"Pressure Test","presure test":"Pressure Test",
+  "leak test":"Leak Test","leek test":"Leak Test",
+  "nitrogen test":"Nitrogen Test",
+  "vacuum test":"Vacuum Test","vacum test":"Vacuum Test",
+  "ppe":"PPE","p.p.e":"PPE",
+  "n/a":"N/A","na":"N/A"
+};
+
+function autoCorrectText(text){
+  if(!text||typeof text!=="string"||text.length<2)return text;
+  let result=text;
+
+  // 1. Fix common spelling errors (case-insensitive word match)
+  Object.keys(_HVAC_DICT).forEach(wrong=>{
+    const rx=new RegExp("\\b"+wrong.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","gi");
+    result=result.replace(rx,_HVAC_DICT[wrong]);
+  });
+
+  // 2. Terminology standardization (case-insensitive phrase match)
+  Object.keys(_TERM_STD).forEach(phrase=>{
+    const rx=new RegExp("\\b"+phrase.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","gi");
+    result=result.replace(rx,_TERM_STD[phrase]);
+  });
+
+  // 3. Grammar fixes
+  // Capitalize first letter of each sentence
+  result=result.replace(/(^|[.!?]\s+)([a-z])/g,(m,p,c)=>p+c.toUpperCase());
+  // Capitalize first char of entire string
+  if(result.length>0&&result[0]>="a"&&result[0]<="z"){
+    result=result[0].toUpperCase()+result.slice(1);
+  }
+
+  // Fix double spaces
+  result=result.replace(/\s{2,}/g," ");
+
+  // Fix missing space after period/comma
+  result=result.replace(/([.!?,])([A-Za-z])/g,"$1 $2");
+
+  // Trim
+  result=result.trim();
+
+  return result;
+}
+
+function autoCorrectSheet(d){
+  // Apply auto-correct to all free-text fields in a checksheet
+  if(d.target)d.target=autoCorrectText(d.target);
+  if(d.actual)d.actual=autoCorrectText(d.actual);
+  if(d.variance)d.variance=autoCorrectText(d.variance);
+  if(d.notes)d.notes=autoCorrectText(d.notes);
+  if(d.location)d.location=autoCorrectText(d.location);
+
+  // Work rows
+  if(d.workRows)d.workRows.forEach(r=>{
+    if(r.task)r.task=autoCorrectText(r.task);
+    if(r.area)r.area=autoCorrectText(r.area);
+    if(r.notes)r.notes=autoCorrectText(r.notes);
+  });
+
+  // Issue rows
+  if(d.issueRows)d.issueRows.forEach(r=>{
+    if(r.issue)r.issue=autoCorrectText(r.issue);
+    if(r.action)r.action=autoCorrectText(r.action);
+    if(r.followup)r.followup=autoCorrectText(r.followup);
+  });
+
+  // Material rows
+  if(d.matRows)d.matRows.forEach(r=>{
+    if(r.material)r.material=autoCorrectText(r.material);
+  });
+
+  // Manpower rows - names and trades
+  if(d.manRows)d.manRows.forEach(r=>{
+    if(r.trade)r.trade=autoCorrectText(r.trade);
+  });
+
+  // Tool rows
+  if(d.toolRows)d.toolRows.forEach(r=>{
+    if(r.toolName)r.toolName=autoCorrectText(r.toolName);
+  });
+
+  // Specialist fields
+  if(d.ductNotes)d.ductNotes=autoCorrectText(d.ductNotes);
+  if(d.copperNotes)d.copperNotes=autoCorrectText(d.copperNotes);
+
+  return d;
+}
+// ═══ END AUTO-CORRECT ENGINE ═══
 
 function collectForm(teamKey){
   const tm=TEAMS[teamKey];
@@ -5546,6 +6028,7 @@ function _doFinalSubmit(tk){
   const submitBtn=document.querySelector(".btn-submit");
   if(submitBtn){submitBtn.disabled=true;submitBtn.textContent=t("submitting");}
   const d=collectForm(tk);
+  autoCorrectSheet(d);
   d._id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   savedSheets.push(d);saveSaved();
   clearDraft(tk); // Clear local auto-save after successful submit
@@ -5596,6 +6079,7 @@ function updateAndReshare(tk){
     return;
   }
   const d=collectForm(tk);
+  autoCorrectSheet(d);
   // Preserve the original _id and metadata
   const original=savedSheets[_editingIndex];
   d._id=original._id;
@@ -7184,26 +7668,509 @@ function downloadPayExcel(){
 }
 
 
+
+
+// ═══ FORM SWIPE MODE ═══
+const SECTION_COLORS={
+  info:{bg:"linear-gradient(135deg,#1d9e75,#0d9488)",accent:"#1d9e75",icon:"📋",light:"#e6f7f2"},
+  target:{bg:"linear-gradient(135deg,#3b82f6,#60a5fa)",accent:"#3b82f6",icon:"🎯",light:"#eff6ff"},
+  tool:{bg:"linear-gradient(135deg,#f59e0b,#fbbf24)",accent:"#f59e0b",icon:"🔧",light:"#fffbeb"},
+  work:{bg:"linear-gradient(135deg,#8b5cf6,#a78bfa)",accent:"#8b5cf6",icon:"⚡",light:"#f5f3ff"},
+  duct:{bg:"linear-gradient(135deg,#ef4444,#f87171)",accent:"#ef4444",icon:"🏗️",light:"#fef2f2"},
+  copper:{bg:"linear-gradient(135deg,#d97706,#f59e0b)",accent:"#d97706",icon:"🔩",light:"#fffbeb"},
+  ahuspec:{bg:"linear-gradient(135deg,#0ea5e9,#38bdf8)",accent:"#0ea5e9",icon:"❄️",light:"#f0f9ff"},
+  insspec:{bg:"linear-gradient(135deg,#6366f1,#818cf8)",accent:"#6366f1",icon:"🧱",light:"#eef2ff"},
+  genspec:{bg:"linear-gradient(135deg,#64748b,#94a3b8)",accent:"#64748b",icon:"👷",light:"#f8fafc"},
+  refspec:{bg:"linear-gradient(135deg,#06b6d4,#22d3ee)",accent:"#06b6d4",icon:"🧊",light:"#ecfeff"},
+  drainspec:{bg:"linear-gradient(135deg,#14b8a6,#2dd4bf)",accent:"#14b8a6",icon:"💧",light:"#f0fdfa"},
+  ctrlspec:{bg:"linear-gradient(135deg,#eab308,#facc15)",accent:"#eab308",icon:"⚡",light:"#fefce8"},
+  commspec:{bg:"linear-gradient(135deg,#22c55e,#4ade80)",accent:"#22c55e",icon:"✅",light:"#f0fdf4"},
+  mat:{bg:"linear-gradient(135deg,#e11d48,#fb7185)",accent:"#e11d48",icon:"📦",light:"#fff1f2"},
+  man:{bg:"linear-gradient(135deg,#0369a1,#0ea5e9)",accent:"#0369a1",icon:"👥",light:"#f0f9ff"},
+  qual:{bg:"linear-gradient(135deg,#059669,#34d399)",accent:"#059669",icon:"✔️",light:"#ecfdf5"},
+  iss:{bg:"linear-gradient(135deg,#dc2626,#f87171)",accent:"#dc2626",icon:"⚠️",light:"#fef2f2"},
+  notes:{bg:"linear-gradient(135deg,#7c3aed,#a78bfa)",accent:"#7c3aed",icon:"📝",light:"#f5f3ff"},
+  photo:{bg:"linear-gradient(135deg,#0891b2,#22d3ee)",accent:"#0891b2",icon:"📷",light:"#ecfeff"}
+};
+
+function getFormMode(){try{return localStorage.getItem("elg_form_mode")||"scroll"}catch(e){return"scroll"}}
+function setFormMode(mode){try{localStorage.setItem("elg_form_mode",mode)}catch(e){}}
+
+function renderFormModeToggle(){
+  const mode=getFormMode();
+  return`<div style="display:flex;gap:4px;background:white;border-radius:10px;padding:3px;box-shadow:var(--shadow);margin-bottom:12px">
+    <button onclick="setFormMode('scroll');renderCardFlow(_currentTeam)" style="flex:1;padding:6px 8px;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;${mode==="scroll"?"background:var(--navy);color:white":"background:transparent;color:var(--grey)"}">☰ Scroll</button>
+    <button onclick="setFormMode('swipe');renderCardFlow(_currentTeam)" style="flex:1;padding:6px 8px;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;${mode==="swipe"?"background:var(--navy);color:white":"background:transparent;color:var(--grey)"}">👆 Swipe</button>
+  </div>`;
+}
+
+let _swipeCardIdx=0;
+function openSwipeCard(idx){
+  if(idx<0||idx>=_cardSections.length)return;
+  _swipeCardIdx=idx;
+  _activeCard=idx;
+  const card=_cardSections[idx];
+  const sc=SECTION_COLORS[card.id]||{bg:"linear-gradient(135deg,#64748b,#94a3b8)",accent:"#64748b",icon:card.icon,light:"#f8fafc"};
+  const status=card.checkFn();
+  const statusText=status===2?"✓ Complete":(status===1?"◐ In Progress":"○ Not Started");
+  const statusColor=status===2?"#22c55e":(status===1?"#f59e0b":"#94a3b8");
+
+  // Show the hidden form content
+  const overview=document.getElementById("cardOverview");
+  const hidden=document.getElementById("formContentHidden");
+  if(overview)overview.style.display="none";
+  if(hidden)hidden.style.display="block";
+
+  // Open the correct collapse section
+  hidden.querySelectorAll(".collapse-body").forEach(b=>b.classList.remove("open"));
+  hidden.querySelectorAll(".collapse-hdr").forEach(h=>h.classList.remove("open"));
+
+  if(card.id==="info"||card.id==="target"||card.id==="notes"){
+    const sections=hidden.querySelectorAll(".section");
+    let target=null;
+    if(card.id==="info")target=sections[0];
+    else if(card.id==="target")target=sections[1];
+    else if(card.id==="notes")target=Array.from(sections).find(s=>s.querySelector("#f_notes"));
+    if(target){target.style.border="2px solid "+sc.accent;target.style.boxShadow="0 0 20px "+sc.accent+"33";setTimeout(()=>{target.scrollIntoView({behavior:"smooth",block:"start"})},100)}
+  }else{
+    const hdr=hidden.querySelector(`[data-collapse="${card.id}"]`);
+    const body=hidden.querySelector(`#cb_${card.id}`);
+    if(hdr&&body){hdr.classList.add("open");body.classList.add("open");setTimeout(()=>{hdr.scrollIntoView({behavior:"smooth",block:"start"})},100)}
+  }
+
+  // Build swipe nav header
+  let swipeNav=document.getElementById("swipeNavHeader");
+  if(!swipeNav){
+    swipeNav=document.createElement("div");
+    swipeNav.id="swipeNavHeader";
+    document.body.appendChild(swipeNav);
+  }
+  swipeNav.style.cssText="position:fixed;top:0;left:0;right:0;z-index:600;padding:0;";
+  swipeNav.innerHTML=`
+    <div style="background:${sc.bg};padding:12px 16px 8px;color:white">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <button onclick="closeSwipeCard()" style="background:rgba(255,255,255,.2);border:none;color:white;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">✕ Back</button>
+        <span style="font-size:11px;font-weight:600;opacity:.8">${idx+1} of ${_cardSections.length}</span>
+        <span style="font-size:11px;padding:3px 10px;background:${statusColor};border-radius:12px;font-weight:700">${statusText}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:28px">${sc.icon}</span>
+        <div>
+          <div style="font-size:16px;font-weight:800;letter-spacing:.3px">${card.title}</div>
+          <div style="font-size:10px;opacity:.7">${card.required?"Required section":"Optional section"}</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:2px;padding:4px 12px;background:${sc.light}">
+      ${_cardSections.map((c,i)=>{
+        const col=SECTION_COLORS[c.id]||{accent:"#94a3b8"};
+        const done=c.checkFn()>=2;
+        return`<div style="flex:1;height:4px;border-radius:2px;background:${i===idx?col.accent:(done?"#22c55e":"#e2e8f0")};transition:all .3s"></div>`;
+      }).join("")}
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:6px 12px;background:${sc.light};border-bottom:1px solid #e2e8f0">
+      <button onclick="swipeFormNav(-1)" ${idx<=0?"disabled":""} style="padding:4px 14px;border:1px solid ${sc.accent}44;background:white;border-radius:8px;font-size:11px;font-weight:700;color:${sc.accent};cursor:pointer;opacity:${idx<=0?"0.3":"1"}">◀ Prev</button>
+      <button onclick="confirmAndNextSwipe()" style="padding:4px 14px;border:none;background:${sc.accent};border-radius:8px;font-size:11px;font-weight:700;color:white;cursor:pointer">OK ✓</button>
+      <button onclick="swipeFormNav(1)" ${idx>=_cardSections.length-1?"disabled":""} style="padding:4px 14px;border:1px solid ${sc.accent}44;background:white;border-radius:8px;font-size:11px;font-weight:700;color:${sc.accent};cursor:pointer;opacity:${idx>=_cardSections.length-1?"0.3":"1"}">Next ▶</button>
+    </div>`;
+
+  // Add top padding to content so it's not hidden behind fixed header
+  hidden.style.paddingTop="130px";
+
+  // Init swipe on form content
+  initFormSwipe();
+
+  // Snapshot for cancel
+  _cardSnapshot=snapshotFormFields();
+}
+
+function closeSwipeCard(){
+  const swipeNav=document.getElementById("swipeNavHeader");
+  if(swipeNav)swipeNav.remove();
+  const hidden=document.getElementById("formContentHidden");
+  if(hidden){hidden.style.display="none";hidden.style.paddingTop="";
+    hidden.querySelectorAll(".section").forEach(s=>{s.style.border="";s.style.boxShadow=""});
+  }
+  const overview=document.getElementById("cardOverview");
+  if(overview)overview.style.display="block";
+  // Remove old card action bar if any
+  const actionBar=document.getElementById("cardActionBar");
+  if(actionBar)actionBar.remove();
+  _activeCard=null;
+  // Refresh card overview
+  if(typeof _currentTeam!=="undefined")renderCardFlow(_currentTeam);
+}
+
+function swipeFormNav(dir){
+  const next=_swipeCardIdx+dir;
+  if(next<0||next>=_cardSections.length)return;
+  // Clean up current section highlights
+  const hidden=document.getElementById("formContentHidden");
+  if(hidden)hidden.querySelectorAll(".section").forEach(s=>{s.style.border="";s.style.boxShadow=""});
+  openSwipeCard(next);
+}
+
+function confirmAndNextSwipe(){
+  if(_swipeCardIdx<_cardSections.length-1){
+    swipeFormNav(1);
+  }else{
+    closeSwipeCard();
+  }
+}
+
+// ═══ SWIPE NAVIGATION ENGINE ═══
+function addSwipeNav(element, onLeft, onRight, threshold){
+  threshold=threshold||50;
+  let _sx=0,_sy=0,_swiping=false;
+  element.addEventListener("touchstart",function(e){
+    const t=e.touches[0];_sx=t.clientX;_sy=t.clientY;_swiping=true;
+  },{passive:true});
+  element.addEventListener("touchmove",function(e){
+    if(!_swiping)return;
+    const t=e.touches[0];
+    const dx=t.clientX-_sx;
+    const dy=t.clientY-_sy;
+    // Only block default if horizontal swipe is dominant
+    if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>20){e.preventDefault()}
+  },{passive:false});
+  element.addEventListener("touchend",function(e){
+    if(!_swiping)return;
+    _swiping=false;
+    const t=e.changedTouches[0];
+    const dx=t.clientX-_sx;
+    const dy=t.clientY-_sy;
+    if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>threshold){
+      if(dx<0&&onLeft)onLeft();
+      if(dx>0&&onRight)onRight();
+    }
+  },{passive:true});
+}
+
+// Hub sub-tab swipe navigation
+function initHubSwipe(){
+  const hubWrap=document.getElementById("hubSubTabsWrap");
+  const hubView=document.getElementById("hubView");
+  const tabAtt=document.getElementById("tabAttendance");
+  const tabRpt=document.getElementById("tabReports");
+  
+  function getHubTabs(){
+    const isAdmin=currentUser&&currentUser.username==="admin";
+    return isAdmin?["overview","attendance","pay","analysis","reports","personnel"]:["overview","attendance","pay","analysis","reports"];
+  }
+  function swipeHub(dir){
+    const tabs=getHubTabs();
+    const cur=typeof _hubActiveTab!=="undefined"?_hubActiveTab:"overview";
+    const idx=tabs.indexOf(cur);
+    if(idx===-1)return;
+    const next=idx+dir;
+    if(next>=0&&next<tabs.length)switchHubTab(tabs[next]);
+  }
+  // Attach swipe to all hub-related containers
+  [hubWrap,hubView,tabAtt,tabRpt].forEach(el=>{
+    if(el)addSwipeNav(el,()=>swipeHub(1),()=>swipeHub(-1));
+  });
+}
+
+// Form card swipe navigation (swipe between form sections)
+function initFormSwipe(){
+  const formHidden=document.getElementById("formContentHidden");
+  if(!formHidden||formHidden._swipeInit)return;
+  formHidden._swipeInit=true;
+  addSwipeNav(formHidden,function(){
+    // Swipe left = next card
+    const mode=getFormMode();
+    if(mode==="swipe"){
+      swipeFormNav(1);
+    }else if(_activeCard!==null&&_activeCard<_cardSections.length-1){
+      confirmCardSection();
+      setTimeout(()=>openCardSection(_cardSections[_activeCard+1].id,_activeCard+1),150);
+    }
+  },function(){
+    // Swipe right = prev card
+    const mode=getFormMode();
+    if(mode==="swipe"){
+      swipeFormNav(-1);
+    }else if(_activeCard!==null&&_activeCard>0){
+      confirmCardSection();
+      setTimeout(()=>openCardSection(_cardSections[_activeCard-1].id,_activeCard-1),150);
+    }
+  },60);
+  
+  // Also add swipe on card overview to open first/last
+  const overview=document.getElementById("cardOverview");
+  if(overview&&!overview._swipeInit){
+    overview._swipeInit=true;
+    // No swipe on overview — tapping cards is the entry point
+  }
+}
+
+
+
+// ═══ MAIN PAGE SWIPE (bottom nav tabs) ═══
+let _mainSwipeInit=false;
+function initMainSwipe(){
+  if(_mainSwipeInit)return;
+  _mainSwipeInit=true;
+  const dash=document.getElementById("dashView");
+  if(!dash)return;
+  function getMainTabs(){
+    const isAdmin=currentUser&&currentUser.username==="admin";
+    return isAdmin?["forms","reports","history","hub","settings"]:["forms","reports","history","settings"];
+  }
+  function getCurrentMainTab(){
+    try{return localStorage.getItem("elg_active_tab")||"forms"}catch(e){return"forms"}
+  }
+  addSwipeNav(dash,function(){
+    // Swipe left = next tab
+    const tabs=getMainTabs();
+    const cur=getCurrentMainTab();
+    const idx=tabs.indexOf(cur);
+    if(idx>=0&&idx<tabs.length-1){
+      const next=tabs[idx+1];
+      if(next==="settings")showSettings();
+      else switchTab(next);
+    }
+  },function(){
+    // Swipe right = prev tab
+    const tabs=getMainTabs();
+    const cur=getCurrentMainTab();
+    const idx=tabs.indexOf(cur);
+    if(idx>0){switchTab(tabs[idx-1])}
+  },60);
+  // Also attach to settings view
+  const sv=document.getElementById("settingsView");
+  if(sv&&!sv._mainSwipe){
+    sv._mainSwipe=true;
+    addSwipeNav(sv,function(){},function(){
+      // Swipe right from settings = go to previous tab
+      const tabs=getMainTabs();
+      const idx=tabs.indexOf("settings");
+      if(idx>0)switchTab(tabs[idx-1]);
+    },60);
+  }
+}
+
 // ═══ MY HUB ═══
 let _hubActiveTab="overview";
 
 function switchHubTab(tab){
   _hubActiveTab=tab;
   document.querySelectorAll("#hubSubTabs .hub-subtab").forEach((b,i)=>{
-    const tabs=["overview","attendance","pay","analysis","reports"];
+    const tabs=["overview","attendance","pay","analysis","reports","personnel"];
     b.classList.toggle("active",tabs[i]===tab);
   });
-  ["hubOverviewView","hubAttendanceView","hubPayView","hubAnalysisView","hubReportsView"].forEach(id=>{
-    document.getElementById(id).style.display="none";
+  // Hide all hub internal views
+  ["hubOverviewView","hubPayView","hubReportsView","hubPersonnelView"].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display="none";
   });
-  const viewMap={overview:"hubOverviewView",attendance:"hubAttendanceView",pay:"hubPayView",analysis:"hubAnalysisView",reports:"hubReportsView"};
-  document.getElementById(viewMap[tab]).style.display="block";
+  // Hide tabAttendance and analysis when not in those modes
+  const tabAtt=document.getElementById("tabAttendance");
+  if(tabAtt)tabAtt.classList.add("hidden");
+  // Hide analysis content
+  const rptTab=document.getElementById("tabReports");
+  if(tab!=="analysis"&&rptTab)rptTab.classList.add("hidden");
 
-  if(tab==="overview")renderHubOverview();
-  if(tab==="attendance")renderHubAttendance();
-  if(tab==="pay")renderHubPay();
-  if(tab==="analysis")renderHubAnalysis();
-  if(tab==="reports")renderHubReports();
+  if(tab==="attendance"){
+    // Show real attendance tab content
+    document.getElementById("hubView").classList.add("hidden");
+    if(tabAtt)tabAtt.classList.remove("hidden");
+    _attData=null;_attDate=null;
+    var _isAdm=currentUser&&currentUser.username==="admin";
+    var _pst=document.getElementById("paySubTabs");
+    if(_pst){if(_isAdm)_pst.classList.remove("pay-hidden");else _pst.classList.add("pay-hidden")}
+    if(_isAdm&&typeof switchPayTab==="function"){
+      var _pt=typeof _payActiveTab!=="undefined"?_payActiveTab:"signin";
+      switchPayTab(_pt);if(_pt==="signin")renderAttendanceTab();
+    }else{renderAttendanceTab()}
+  }else if(tab==="analysis"){
+    // Show real analysis content inside tabReports
+    document.getElementById("hubView").classList.add("hidden");
+    if(rptTab)rptTab.classList.remove("hidden");
+    const rptSubTabs=document.querySelector("#tabReports .tab-row");
+    if(rptSubTabs)rptSubTabs.style.display="none";
+    const rptDateRow=document.querySelector("#tabReports .f-field");
+    if(rptDateRow)rptDateRow.style.display="none";
+    const lu=document.getElementById("lastUpdated");if(lu)lu.style.display="none";
+    ["reportContent","reportToolContent","reportAttendContent","reportMonthlyContent"].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.classList.add("hidden");
+    });
+    const anCont=document.getElementById("reportAnalysisContent");
+    if(anCont)anCont.classList.remove("hidden");
+    renderAnalysisReport();
+  }else{
+    // Hub internal views (overview, pay, reports)
+    document.getElementById("hubView").classList.remove("hidden");
+    const viewMap={overview:"hubOverviewView",pay:"hubPayView",reports:"hubReportsView",personnel:"hubPersonnelView"};
+    if(viewMap[tab]){
+      document.getElementById(viewMap[tab]).style.display="block";
+    }
+    if(tab==="overview")renderHubOverview();
+    if(tab==="pay")renderHubPay();
+    if(tab==="reports")renderHubReports();
+    if(tab==="personnel")renderHubPersonnel();
+  }
+}
+
+
+// ═══ HUB PERSONNEL MANAGEMENT ═══
+function renderHubPersonnel(){
+  const el=document.getElementById("hubPersonnelView");
+  if(!el)return;
+  if(!currentUser||currentUser.username!=="admin"){el.innerHTML="<p style='text-align:center;color:var(--grey);padding:32px'>Admin access required</p>";return}
+  const allUsers=getUsers();
+  const customUsers=getCustomUsers();
+  const disabledUsers=getDisabledUsers();
+  const workers=getWorkerRoster();
+  const customWorkers=getCustomWorkers();
+
+  // Build user list (team leads, supervisors, engineers)
+  const userEntries=Object.entries({...BASE_USERS,...getCustomUsers()}).filter(([k])=>k!=="admin");
+  const disSet=new Set(disabledUsers);
+
+  let html=`<div class="hub-overview-card">
+    <h3 style="margin-bottom:12px">👥 Login Users <span style="font-size:11px;color:var(--grey)">(Team Leads, Supervisors, Engineers)</span></h3>
+    <div id="hubUserList">`;
+
+  userEntries.sort((a,b)=>a[1].name.localeCompare(b[1].name));
+  userEntries.forEach(([uname,u],i)=>{
+    const isDisabled=disSet.has(uname);
+    const isCustom=!!customUsers[uname];
+    const isBase=!!BASE_USERS[uname];
+    const statusBadge=isDisabled?`<span style="font-size:9px;background:#e74c3c;color:white;padding:1px 6px;border-radius:8px;margin-left:6px">Disabled</span>`:`<span style="font-size:9px;background:#27ae60;color:white;padding:1px 6px;border-radius:8px;margin-left:6px">Active</span>`;
+    const roleBadge=`<span style="font-size:9px;background:var(--teal);color:white;padding:1px 6px;border-radius:8px;margin-left:4px">${u.role||"—"}</span>`;
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:4px;background:${isDisabled?"#ffeaea":"#f8fffe"};border-radius:10px;border:1px solid ${isDisabled?"#f5c6cb":"#e0e0e0"}">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name}${statusBadge}${roleBadge}</div>
+        <div style="font-size:10px;color:var(--grey)">@${uname}${isBase?" • Built-in":" • Custom"}</div>
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        ${isDisabled?`<button onclick="hubEnableUser('${uname}')" style="font-size:10px;padding:4px 10px;background:#27ae60;color:white;border:none;border-radius:6px;cursor:pointer">Enable</button>`:`<button onclick="hubDisableUser('${uname}')" style="font-size:10px;padding:4px 10px;background:#e74c3c;color:white;border:none;border-radius:6px;cursor:pointer">Disable</button>`}
+        ${isCustom?`<button onclick="hubRemoveUser('${uname}')" style="font-size:10px;padding:4px 10px;background:#95a5a6;color:white;border:none;border-radius:6px;cursor:pointer">Remove</button>`:""}
+      </div>
+    </div>`;
+  });
+
+  html+=`</div>
+    <div style="margin-top:12px;padding:12px;background:#f0fdfa;border-radius:10px;border:1px dashed var(--teal)">
+      <div style="font-weight:700;font-size:12px;color:var(--teal);margin-bottom:8px">+ Add New Login User</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+        <input id="hubNewUserName" placeholder="Full Name" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+        <input id="hubNewUserUname" placeholder="Username" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+        <input id="hubNewUserPass" placeholder="Password" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+        <select id="hubNewUserRole" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+          <option value="Team Lead">Team Lead</option>
+          <option value="Supervisor">Supervisor</option>
+          <option value="Engineer">Engineer</option>
+        </select>
+      </div>
+      <button onclick="hubAddUser()" style="width:100%;padding:8px;background:linear-gradient(135deg,var(--teal),#0d9488);color:white;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">Add User</button>
+    </div>
+  </div>`;
+
+  // Worker Roster Section
+  html+=`<div class="hub-overview-card" style="margin-top:12px">
+    <h3 style="margin-bottom:12px">🔧 Worker Roster <span style="font-size:11px;color:var(--grey)">(${workers.length} workers)</span></h3>
+    <div id="hubWorkerList">`;
+
+  workers.forEach((name,i)=>{
+    const isCustom=customWorkers.includes(name);
+    const num=i+1;
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;margin-bottom:3px;background:white;border-radius:8px;border:1px solid #eee">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:9px;font-weight:700;color:white;background:var(--teal);border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${num}</span>
+        <span style="font-size:12px;font-weight:600;color:var(--navy)">${name}</span>
+        ${isCustom?`<span style="font-size:9px;color:var(--grey)">(custom)</span>`:""}
+      </div>
+      ${isCustom?`<button onclick="hubRemoveWorker('${name.replace(/'/g,"\\'")}')" style="font-size:10px;padding:3px 8px;background:#e74c3c;color:white;border:none;border-radius:6px;cursor:pointer">✕</button>`:""}
+    </div>`;
+  });
+
+  html+=`</div>
+    <div style="margin-top:12px;display:flex;gap:6px">
+      <input id="hubNewWorkerName" placeholder="Worker full name" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+      <button onclick="hubAddWorker()" style="padding:8px 16px;background:linear-gradient(135deg,var(--teal),#0d9488);color:white;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">+ Add</button>
+    </div>
+  </div>`;
+
+  el.innerHTML=html;
+}
+
+// Hub Personnel helper functions
+function hubAddUser(){
+  const nameEl=document.getElementById("hubNewUserName");
+  const unameEl=document.getElementById("hubNewUserUname");
+  const passEl=document.getElementById("hubNewUserPass");
+  const roleEl=document.getElementById("hubNewUserRole");
+  const name=nameEl.value.trim();
+  const uname=unameEl.value.trim().toLowerCase().replace(/[^a-z0-9]/g,"");
+  const pass=passEl.value.trim();
+  const role=roleEl.value;
+  if(!name||!uname||!pass){showToast("Please fill in all fields");return}
+  if(uname.length<3){showToast("Username must be at least 3 characters");return}
+  if(pass.length<4){showToast("Password must be at least 4 characters");return}
+  const allU={...BASE_USERS,...getCustomUsers()};
+  if(allU[uname]){showToast("Username already exists");return}
+  const cu=getCustomUsers();
+  cu[uname]={pass:pass,name:name,role:role,teams:"all"};
+  saveCustomUsers(cu);
+  USERS=getUsers();
+  nameEl.value="";unameEl.value="";passEl.value="";
+  renderHubPersonnel();
+  if(typeof cloudSaveUsers==="function")cloudSaveUsers();
+  showToast(name+" added as "+role);
+}
+function hubDisableUser(uname){
+  showModal("Disable User","Disable "+uname+"? They won't be able to log in.",()=>{
+    const dis=getDisabledUsers();
+    if(!dis.includes(uname))dis.push(uname);
+    saveDisabledUsers(dis);
+    USERS=getUsers();
+    renderHubPersonnel();
+    showToast(uname+" disabled");
+  },{danger:true,okText:"Disable"});
+}
+function hubEnableUser(uname){
+  let dis=getDisabledUsers();
+  dis=dis.filter(u=>u!==uname);
+  saveDisabledUsers(dis);
+  USERS=getUsers();
+  renderHubPersonnel();
+  showToast(uname+" enabled");
+}
+function hubRemoveUser(uname){
+  showModal("Remove User","Permanently remove "+uname+"? This only removes custom users.",()=>{
+    const cu=getCustomUsers();
+    delete cu[uname];
+    saveCustomUsers(cu);
+    USERS=getUsers();
+    renderHubPersonnel();
+    if(typeof cloudSaveUsers==="function")cloudSaveUsers();
+    showToast(uname+" removed");
+  },{danger:true,okText:"Remove"});
+}
+function hubAddWorker(){
+  const inp=document.getElementById("hubNewWorkerName");
+  const name=inp.value.trim();
+  if(!name){showToast("Enter worker name");return}
+  const roster=getWorkerRoster();
+  if(roster.some(w=>w.toLowerCase()===name.toLowerCase())){showToast("Worker already exists");return}
+  const custom=getCustomWorkers();
+  custom.push(name);
+  saveCustomWorkers(custom);
+  inp.value="";
+  renderHubPersonnel();
+  showToast(name+" added to roster");
+}
+function hubRemoveWorker(name){
+  showModal("Remove Worker","Remove "+name+" from the roster?",()=>{
+    let custom=getCustomWorkers();
+    custom=custom.filter(n=>n!==name);
+    saveCustomWorkers(custom);
+    renderHubPersonnel();
+    showToast(name+" removed");
+  },{danger:true,okText:"Remove"});
 }
 
 function renderHubOverview(){
@@ -7234,7 +8201,7 @@ function renderHubOverview(){
 
     // Team lead status
     const USERS=getUsers();
-    const leads=Object.entries(USERS).filter(([k,u])=>u.role&&(u.role.includes("Lead")||u.role.includes("Supervisor"))&&k!=="admin");
+    const leads=Object.entries(USERS).filter(([k,u])=>u.role&&(u.role.includes("Lead")||u.role.includes("Supervisor")||u.role.includes("Engineer"))&&k!=="admin");
     let leadsIn=0;
     let leadHtml="";
     leads.forEach(([username,user])=>{
@@ -7290,20 +8257,14 @@ function hubConfirmWorker(name,present){
   renderHubOverview();
 }
 
-function renderHubAttendance(){
-  const container=document.getElementById("hubAttendanceView");
-  container.innerHTML='<div class="att-card"><h3>Attendance Register</h3><p style="font-size:11px;color:var(--grey);margin-bottom:8px">View is in the Attendance tab</p><button class="btn btn-primary" onclick="switchTab(&#39;attendance&#39;)">Open Attendance Tab</button></div>';
-}
+function renderHubAttendance(){/* Now handled inline by switchHubTab */}
 
 function renderHubPay(){
   const container=document.getElementById("hubPayView");
   container.innerHTML='<div class="att-card"><h3>Payment System</h3><p style="font-size:11px;color:var(--grey);margin-bottom:8px">Access daily entry, Suriname weekly, and payment sheet</p><button class="btn btn-primary" onclick="switchTab(&#39;attendance&#39;);setTimeout(()=>switchPayTab(&#39;payentry&#39;),100)">Open Payment Entry</button><button class="btn" onclick="switchTab(&#39;attendance&#39;);setTimeout(()=>switchPayTab(&#39;paysheet&#39;),100)" style="margin-top:8px;background:#8B5CF6;color:white">Open Pay Sheet</button></div>';
 }
 
-function renderHubAnalysis(){
-  const container=document.getElementById("hubAnalysisView");
-  container.innerHTML='<div class="att-card"><h3>Analysis Reports</h3><p style="font-size:11px;color:var(--grey);margin-bottom:8px">Daily, weekly, and monthly team analysis</p><button class="btn btn-primary" onclick="switchTab(&#39;analysis&#39;)">Open Analysis Tab</button></div>';
-}
+function renderHubAnalysis(){/* Now handled inline by switchHubTab */}
 
 function renderHubReports(){
   const date=getGuyanaDate();
