@@ -7252,9 +7252,10 @@ function renderHubOverview(){
       let uHtml='<div class="hub-unreg">';
       uHtml+='<h4>'+unregistered.length+' worker(s) not yet registered</h4>';
       unregistered.forEach(name=>{
+        var safeName=name.replace(/"/g,'&quot;');
         uHtml+='<div class="hub-unreg-row"><span class="hub-unreg-name">'+name+'</span><div class="hub-confirm-btns">'
-          +'<button class="hub-confirm-btn present" onclick="hubConfirmWorker(''+name.replace(/'/g,"\'")+'',true)">Present</button>'
-          +'<button class="hub-confirm-btn absent" onclick="hubConfirmWorker(''+name.replace(/'/g,"\'")+'',false)">Absent</button>'
+          +'<button class="hub-confirm-btn present" onclick="hubConfirmWorker(&quot;'+safeName+'&quot;,true)">Present</button>'
+          +'<button class="hub-confirm-btn absent" onclick="hubConfirmWorker(&quot;'+safeName+'&quot;,false)">Absent</button>'
           +'</div></div>';
       });
       uHtml+='</div>';
@@ -7281,17 +7282,17 @@ function hubConfirmWorker(name,present){
 
 function renderHubAttendance(){
   const container=document.getElementById("hubAttendanceView");
-  container.innerHTML='<div class="att-card"><h3>Attendance Register</h3><p style="font-size:11px;color:var(--grey);margin-bottom:8px">View is in the Attendance tab</p><button class="btn btn-primary" onclick="switchTab('attendance')">Open Attendance Tab</button></div>';
+  container.innerHTML='<div class="att-card"><h3>Attendance Register</h3><p style="font-size:11px;color:var(--grey);margin-bottom:8px">View is in the Attendance tab</p><button class="btn btn-primary" onclick="switchTab(&#39;attendance&#39;)">Open Attendance Tab</button></div>';
 }
 
 function renderHubPay(){
   const container=document.getElementById("hubPayView");
-  container.innerHTML='<div class="att-card"><h3>Payment System</h3><p style="font-size:11px;color:var(--grey);margin-bottom:8px">Access daily entry, Suriname weekly, and payment sheet</p><button class="btn btn-primary" onclick="switchTab('attendance');setTimeout(()=>switchPayTab('payentry'),100)">Open Payment Entry</button><button class="btn" onclick="switchTab('attendance');setTimeout(()=>switchPayTab('paysheet'),100)" style="margin-top:8px;background:#8B5CF6;color:white">Open Pay Sheet</button></div>';
+  container.innerHTML='<div class="att-card"><h3>Payment System</h3><p style="font-size:11px;color:var(--grey);margin-bottom:8px">Access daily entry, Suriname weekly, and payment sheet</p><button class="btn btn-primary" onclick="switchTab(&#39;attendance&#39;);setTimeout(()=>switchPayTab(&#39;payentry&#39;),100)">Open Payment Entry</button><button class="btn" onclick="switchTab(&#39;attendance&#39;);setTimeout(()=>switchPayTab(&#39;paysheet&#39;),100)" style="margin-top:8px;background:#8B5CF6;color:white">Open Pay Sheet</button></div>';
 }
 
 function renderHubAnalysis(){
   const container=document.getElementById("hubAnalysisView");
-  container.innerHTML='<div class="att-card"><h3>Analysis Reports</h3><p style="font-size:11px;color:var(--grey);margin-bottom:8px">Daily, weekly, and monthly team analysis</p><button class="btn btn-primary" onclick="switchTab('analysis')">Open Analysis Tab</button></div>';
+  container.innerHTML='<div class="att-card"><h3>Analysis Reports</h3><p style="font-size:11px;color:var(--grey);margin-bottom:8px">Daily, weekly, and monthly team analysis</p><button class="btn btn-primary" onclick="switchTab(&#39;analysis&#39;)">Open Analysis Tab</button></div>';
 }
 
 function renderHubReports(){
