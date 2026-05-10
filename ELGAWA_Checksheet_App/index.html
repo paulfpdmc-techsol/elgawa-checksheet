@@ -359,7 +359,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 
 /* OK/Cancel floating bar for form card sections */
 .swipe-hint{text-align:center;font-size:10px;color:var(--grey);padding:4px 0;opacity:0.7}
-.card-action-bar{position:fixed;bottom:0;left:0;right:0;z-index:160;display:flex;gap:10px;padding:12px 16px;background:white;border-top:2px solid var(--border);box-shadow:0 -4px 20px rgba(0,0,0,.12);animation:slideUp .25s ease}
+.card-action-bar{position:fixed;bottom:0;left:0;right:0;z-index:600;display:flex;gap:10px;padding:12px 16px env(safe-area-inset-bottom,12px);background:white;border-top:2px solid var(--border);box-shadow:0 -4px 20px rgba(0,0,0,.12);animation:slideUp .25s ease}
 .card-action-bar .btn-ok{flex:1;padding:14px;border:none;border-radius:12px;background:var(--navy);color:white;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(15,110,86,.3)}
 .card-action-bar .btn-cancel{flex:1;padding:14px;border:2px solid var(--border);border-radius:12px;background:white;color:var(--grey);font-size:15px;font-weight:600;cursor:pointer}
 .card-action-bar .btn-ok:active{transform:scale(.97)}.card-action-bar .btn-cancel:active{transform:scale(.97)}
@@ -875,7 +875,31 @@ const BASE_USERS={
   romario:{pass:"romario2026",name:"Romario Barron",role:"Team Lead",teams:"all"},
   kenny:{pass:"kenny2026",name:"Kenneth Soerowidjojo",role:"Team Lead",teams:"all"},
   julio:{pass:"julio2026",name:"Julio Caraballo",role:"Team Lead",teams:"all"},
-  jose:{pass:"jose2026",name:"Jose Gonzalez",role:"Team Lead",teams:"all"}
+  jose:{pass:"jose2026",name:"Jose Gonzalez",role:"Team Lead",teams:"all"},
+  luis:{pass:"luis2026",name:"Luis Miguel",role:"Worker",teams:"all"},
+  john:{pass:"john2026",name:"John Peter Jaspe",role:"Worker",teams:"all"},
+  yosvani:{pass:"yosvani2026",name:"Yosvani Pavon Fuentes",role:"Worker",teams:"all"},
+  yajandri:{pass:"yajandri2026",name:"Yajandri Martinez",role:"Worker",teams:"all"},
+  yoanis:{pass:"yoanis2026",name:"Yoanis Osorio",role:"Worker",teams:"all"},
+  joseq:{pass:"joseq2026",name:"Jose N. Queipo",role:"Worker",teams:"all"},
+  yoandi:{pass:"yoandi2026",name:"Yoandi Osorio",role:"Worker",teams:"all"},
+  frank:{pass:"frank2026",name:"Frank Gonzalez Quintana",role:"Worker",teams:"all"},
+  gregorio:{pass:"gregorio2026",name:"Gregorio Enrique",role:"Worker",teams:"all"},
+  joser:{pass:"joser2026",name:"Jose Rojas",role:"Worker",teams:"all"},
+  juan:{pass:"juan2026",name:"Juan Lopez",role:"Worker",teams:"all"},
+  josea:{pass:"josea2026",name:"Jose Wilfredo Arevalo",role:"Worker",teams:"all"},
+  guan:{pass:"guan2026",name:"Guan Marquez",role:"Worker",teams:"all"},
+  daymith:{pass:"daymith2026",name:"Daymith Garcia",role:"Worker",teams:"all"},
+  marlon:{pass:"marlon2026",name:"Marlon Cedeno",role:"Worker",teams:"all"},
+  wilfredo:{pass:"wilfredo2026",name:"Wilfredo Delgado",role:"Worker",teams:"all"},
+  reinaldo:{pass:"reinaldo2026",name:"Reinaldo Anasco",role:"Worker",teams:"all"},
+  wilfred:{pass:"wilfred2026",name:"Wilfred Arevalo",role:"Worker",teams:"all"},
+  alfredo:{pass:"alfredo2026",name:"Alfredo Vinas",role:"Worker",teams:"all"},
+  sayad:{pass:"sayad2026",name:"Sayad Jayat",role:"Worker",teams:"all"},
+  rajiv:{pass:"rajiv2026",name:"Rajiv Poeran",role:"Worker",teams:"all"},
+  addel:{pass:"addel2026",name:"Addel Fundora Gomez",role:"Worker",teams:"all"},
+  shanic:{pass:"shanic2026",name:"Shanic Burnette",role:"Worker",teams:"all"},
+  hosea:{pass:"hosea2026",name:"Hosea Mckend",role:"Worker",teams:"all"}
 };
 // Worker roster — these are personnel names for dropdowns (NOT login accounts)
 // Admin can add more via Settings > Manage Workers
@@ -904,7 +928,8 @@ function isOTEligible(name){if(!name)return false;const list=getOTEligible();ret
 function getCustomWorkers(){try{return JSON.parse(localStorage.getItem("elg_custom_workers")||"[]")}catch(e){return[]}}
 function saveCustomWorkers(cw){try{localStorage.setItem("elg_custom_workers",JSON.stringify(cw))}catch(e){}}
 function getWorkerRoster(){
-  const roster=[...BASE_WORKER_ROSTER,...getCustomWorkers()];
+  var removedBase=[];try{removedBase=JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]")}catch(e){}
+  const roster=[...BASE_WORKER_ROSTER.filter(n=>!removedBase.includes(n)),...getCustomWorkers()];
   // Exclude workers who have been promoted to login users (team leads/supervisors)
   const allUsers=getUsers();
   const userNames=Object.values(allUsers).map(u=>u.name?u.name.toLowerCase():"");
@@ -2148,18 +2173,38 @@ function renderReportData(date,daySheets){
     return;
   }
 
-  let totalMan=0,totalHrs=0,totalOT=0,allIssues=[],allWork=[],allTools=[];
+  let totalHrs=0,totalOT=0,allIssues=[],allWork=[],allTools=[];
   const teamGroups={};
+  // Deduplicate workers across team submissions — same person in multiple teams counts once
+  const uniqueWorkers={};// name -> {hours, ot, teams:[]}
   daySheets.forEach(s=>{
     if(!teamGroups[s.teamKey])teamGroups[s.teamKey]=[];
     teamGroups[s.teamKey].push(s);
-    totalMan+=parseInt(s.totalMan)||0;
-    totalHrs+=parseFloat(s.totalHrs)||0;
-    totalOT+=parseFloat(s.totalOT)||0;
+    // Track unique workers from manpower rows
+    if(s.manRows){
+      s.manRows.forEach(r=>{
+        if(r.name&&r.name.trim()){
+          const n=r.name.trim();
+          const hrs=parseFloat(r.hours)||0;
+          const ot=parseFloat(r.ot)||0;
+          if(!uniqueWorkers[n]){
+            uniqueWorkers[n]={hours:hrs,ot:ot,teams:[s.teamName||s.teamKey]};
+          }else{
+            // Worker already counted — use the HIGHER hours (they worked the full day, just split across teams)
+            uniqueWorkers[n].hours=Math.max(uniqueWorkers[n].hours,hrs);
+            uniqueWorkers[n].ot=Math.max(uniqueWorkers[n].ot,ot);
+            if(!uniqueWorkers[n].teams.includes(s.teamName||s.teamKey))uniqueWorkers[n].teams.push(s.teamName||s.teamKey);
+          }
+        }
+      });
+    }
     if(s.issueRows)s.issueRows.filter(r=>r.issue).forEach(r=>allIssues.push({...r,team:s.teamName,lead:s.teamLead}));
     if(s.workRows)s.workRows.filter(r=>r.task).forEach(r=>allWork.push({...r,team:s.teamName}));
     if(s.toolRows)s.toolRows.filter(r=>r.toolName).forEach(r=>allTools.push({...r,team:s.teamName}));
   });
+  // Calculate deduplicated totals
+  const totalMan=Object.keys(uniqueWorkers).length||(()=>{let m=0;daySheets.forEach(s=>{m+=parseInt(s.totalMan)||0});return m})();
+  Object.values(uniqueWorkers).forEach(w=>{totalHrs+=w.hours;totalOT+=w.ot});
 
   const tasksDone=allWork.filter(w=>w.status==="C").length;
   const tasksIP=allWork.filter(w=>w.status==="IP").length;
@@ -2485,7 +2530,7 @@ function _buildToolPDF(date,daySheets){
   pdf.setFontSize(13);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text(t("pdfDailyToolReport")+" - "+date,W/2,y,{align:"center"});y+=2;
   pdf.setDrawColor(...nv);pdf.setLineWidth(.5);pdf.line(M,y,W-M,y);y+=6;
   const allTools=daySheets.flatMap(s=>(s.toolRows||[]).filter(r=>r.toolName).map(r=>({...r,team:s.teamName})));
-  if(!allTools.length){pdf.text(t("pdfNoToolsReported"),M,y);pdf.save(`ELGAWA_Tool_Report_${date}.pdf`);return}
+  if(!allTools.length){pdf.text(t("pdfNoToolsReported"),M,y);showPDFPreview(pdf,`ELGAWA_Tool_Report_${date}.pdf`);return}
   const alerts=allTools.filter(t=>t.condition==="Damaged"||t.condition==="Lost"||t.returnStatus==="Not Returned");
   if(alerts.length){
     pdf.setFontSize(11);pdf.setTextColor(220,53,69);pdf.setFont(undefined,"bold");pdf.text(`${t("pdfToolAlerts")} (${alerts.length})`,M,y);y+=5;
@@ -2499,7 +2544,7 @@ function _buildToolPDF(date,daySheets){
     body:allTools.map(tl=>[tl.toolName,tl.toolCode||"",tl.qty||"",tl.condition||"",tl.assignedTo||"",tl.toolLocation||"",tl.returnStatus||"",tl.team]),
     headStyles:{fillColor:nv,fontSize:6},bodyStyles:{fontSize:6},theme:"grid"});
   pdf.setFontSize(7);pdf.setTextColor(150);pdf.text(`ELGAWA Tool Report | ${new Date().toLocaleString()}`,W/2,H-8,{align:"center"});
-  pdf.save(`ELGAWA_Tool_Report_${date}.pdf`);
+  showPDFPreview(pdf,`ELGAWA_Tool_Report_${date}.pdf`);
 }
 
 function downloadAttendanceReport(date){
@@ -2516,7 +2561,7 @@ function _buildAttendancePDF(date,daySheets){
   pdf.setDrawColor(...nv);pdf.setLineWidth(.5);pdf.line(M,y,W-M,y);y+=5;
   const allWorkersRaw2=daySheets.flatMap(s=>(s.manRows||[]).filter(r=>r.name).map(r=>({...r,team:s.teamName})));const _seen2=new Set();const allWorkers=allWorkersRaw2.filter(w=>{const key=w.name.toLowerCase().trim();if(_seen2.has(key))return false;_seen2.add(key);return true});
   allWorkers.sort((a,b)=>(a.team||"").localeCompare(b.team||"")||(a.name||"").localeCompare(b.name||""));
-  if(!allWorkers.length){pdf.text(t("pdfNoAttendance"),M,y);pdf.save(`ELGAWA_Attendance_${date}.pdf`);return}
+  if(!allWorkers.length){pdf.text(t("pdfNoAttendance"),M,y);showPDFPreview(pdf,`ELGAWA_Attendance_${date}.pdf`);return}
   const totalHrs=allWorkers.reduce((a,r)=>a+(parseFloat(r.hours)||0),0);
   const totalOT=allWorkers.reduce((a,r)=>a+(parseFloat(r.ot)||0),0);
   pdf.autoTable({startY:y,margin:{left:M,right:M},
@@ -2528,7 +2573,7 @@ function _buildAttendancePDF(date,daySheets){
     columnStyles:{0:{cellWidth:8},1:{cellWidth:45},9:{cellWidth:30}}
   });
   pdf.setFontSize(7);pdf.setTextColor(150);pdf.text(`ELGAWA Attendance | Generated ${new Date().toLocaleString()} | ${currentUser?currentUser.name:"Admin"}`,W/2,H-6,{align:"center"});
-  pdf.save(`ELGAWA_Attendance_${date}.pdf`);
+  showPDFPreview(pdf,`ELGAWA_Attendance_${date}.pdf`);
 }
 
 // ================================================================
@@ -3053,7 +3098,7 @@ function _buildMonthlyPDF(monthVal,allSheets){
   // Footer
   pdf.setFontSize(7);pdf.setTextColor(150);pdf.setFont(undefined,"normal");
   pdf.text(`ELGAWA Monthly Report — ${monthName} | Generated ${new Date().toLocaleString()} | ${currentUser?currentUser.name:"Admin"}`,W/2,H-8,{align:"center"});
-  pdf.save(`ELGAWA_Monthly_Report_${monthVal}.pdf`);
+  showPDFPreview(pdf,`ELGAWA_Monthly_Report_${monthVal}.pdf`);
   showToast(t("monthlyPdfDownloaded"));
 }
 
@@ -3729,44 +3774,73 @@ function _renderBlockerSection(agg){
 
 function _renderNarrative(agg,period,mode){
   const teamsActive=Object.keys(agg.byTeam).length;
-  const topTeam=Object.entries(agg.byTeam).sort((a,b)=>aggregateAnalyses(b[1]).work.comp-aggregateAnalyses(a[1]).work.comp)[0];
-  const topName=topTeam?TEAMS[topTeam[0]]?.name:"N/A";
-  const topComp=topTeam?aggregateAnalyses(topTeam[1]).work.comp:0;
-  const bottomTeam=Object.entries(agg.byTeam).sort((a,b)=>aggregateAnalyses(a[1]).work.comp-aggregateAnalyses(b[1]).work.comp)[0];
-  const bottomName=bottomTeam?TEAMS[bottomTeam[0]]?.name:"N/A";
-  const bottomComp=bottomTeam?aggregateAnalyses(bottomTeam[1]).work.comp:0;
+  const sorted=Object.entries(agg.byTeam).map(([k,v])=>({key:k,name:TEAMS[k]?.name||k,agg:aggregateAnalyses(v)})).sort((a,b)=>b.agg.work.comp-a.agg.work.comp);
+  const topName=sorted[0]?.name||"N/A";
+  const topComp=sorted[0]?.agg.work.comp||0;
+  const bottomName=sorted.length>1?sorted[sorted.length-1].name:"N/A";
+  const bottomComp=sorted.length>1?sorted[sorted.length-1].agg.work.comp:0;
+  const prodScore=Math.min(100,Math.round((agg.work.comp*0.4)+(agg.quality.avg*0.3)+((100-Math.min(100,agg.issues.high*20))*0.3)));
+  const otPct=agg.manpower.hrs?(agg.manpower.ot/agg.manpower.hrs*100).toFixed(1):"0";
+  const avgH=parseFloat(agg.manpower.avgHrsPerPerson);
+  const labourEfficiency=avgH>=8?"high":avgH>=7?"acceptable":avgH>=5?"below expectations":"critically low";
+  const costImplication=avgH<7?`At an average of ${agg.manpower.avgHrsPerPerson} productive hours per worker, you are paying for approximately ${(8-avgH).toFixed(1)} idle hours per person per day. Across ${agg.manpower.total} workers, that represents roughly ${((8-avgH)*agg.manpower.total).toFixed(0)} unbilled man-hours — a direct cost leak that erodes your margin.`:"";
 
-  let html=`<div class="an-section-title">🔍 Key Findings</div>`;
-  html+=`<div class="an-findings">`;
-  html+=`<p><strong>1. Workforce Deployment:</strong> ${agg.manpower.total} workers deployed across ${teamsActive} team(s), averaging ${agg.manpower.avgHrsPerPerson} hours per person. ${parseFloat(agg.manpower.avgHrsPerPerson)<7?"This indicates potential underutilization of available manpower. Consider reviewing task assignments and scheduling to maximize productive hours.":"Workforce utilization is within the expected range."}</p>`;
-  html+=`<p><strong>2. Task Execution:</strong> ${agg.work.comp}% of assigned tasks completed (${agg.work.done}/${agg.work.total}). ${agg.work.bl>0?agg.work.bl+" task(s) remain blocked, representing "+Math.round(agg.work.bl/agg.work.total*100)+"% of the total task load. Blocked tasks should be escalated in the next coordination meeting.":"No tasks are currently blocked, indicating effective workflow management."}</p>`;
-  if(teamsActive>1){
-    html+=`<p><strong>3. Performance Variance:</strong> A ${topComp-bottomComp} percentage point gap exists between the highest-performing team (${topName} at ${topComp}%) and the lowest (${bottomName} at ${bottomComp}%). ${topComp-bottomComp>30?"This significant variance warrants investigation into resource distribution and task difficulty between teams.":"This variance is within acceptable range."}</p>`;
-  }
-  html+=`<p><strong>${teamsActive>1?"4":"3"}. Safety & Quality:</strong> PPE compliance stands at ${agg.manpower.avgPPE}% ${agg.manpower.avgPPE<90?"(below the 90% threshold — safety briefings should be reinforced)":""} and quality checks averaged ${agg.quality.avg}% ${agg.quality.avg<80?"(below the 80% acceptance standard)":""}.</p>`;
+  let html=`<div class="an-section-title">📋 Project Director's Assessment</div>`;
+  html+=`<div class="an-findings" style="background:linear-gradient(135deg,#f8faf9,#edf5f3);border-radius:10px;padding:14px;margin-bottom:10px">`;
+  html+=`<p style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:8px">Productivity Index: <span style="color:${prodScore>=70?'var(--success)':prodScore>=50?'#e67e22':'#e74c3c'};font-size:18px">${prodScore}/100</span> — ${prodScore>=70?"Operations are tracking within acceptable parameters.":prodScore>=50?"Performance is marginal. Without intervention this period, schedule slippage is probable.":"This is a red flag. Current trajectory will not meet milestone commitments."}</p>`;
   html+=`</div>`;
 
-  html+=`<div class="an-section-title">💡 Recommendations</div>`;
+  html+=`<div class="an-section-title">🔍 Senior Management Findings</div>`;
+  html+=`<div class="an-findings">`;
+
+  // 1. Labour Productivity
+  html+=`<p><strong>1. Labour Productivity & Cost Exposure:</strong> ${agg.manpower.total} workers deployed across ${teamsActive} trade(s), logging ${agg.manpower.hrs.toFixed(1)} man-hours (${agg.manpower.ot.toFixed(1)}h overtime at ${otPct}%). Labour efficiency is <strong>${labourEfficiency}</strong> at ${agg.manpower.avgHrsPerPerson} hours/worker. ${costImplication} ${parseFloat(otPct)>15?`Overtime at ${otPct}% exceeds the 15% threshold — this signals either scope creep, inefficient sequencing, or understaffing. Each of these has different corrective actions; do not default to adding headcount without diagnosing root cause.`:""}</p>`;
+
+  // 2. Schedule Performance
+  html+=`<p><strong>2. Schedule Performance & Critical Path Impact:</strong> Task completion at ${agg.work.comp}% (${agg.work.done} of ${agg.work.total}). ${agg.work.bl>0?`<span style="color:#e74c3c;font-weight:600">${agg.work.bl} task(s) are blocked</span>, representing ${Math.round(agg.work.bl/agg.work.total*100)}% of today's scope. Every blocked task is a potential predecessor for downstream work — if these are on the critical path, your end date moves right. Action required: identify whether these blocks are procurement-related (supplier dependency), design-related (missing drawings/RFIs), or resource-related (skill gap/equipment availability), and assign specific owners with 24-hour resolution targets.`:"Zero blocked tasks — your workflow sequencing is clean. Maintain this by ensuring lookahead planning stays 2 weeks ahead of active work."}</p>`;
+
+  // 3. Team Performance Variance
+  if(teamsActive>1){
+    const gap=topComp-bottomComp;
+    html+=`<p><strong>3. Inter-Trade Performance Variance:</strong> ${gap>0?`${topName} leads at ${topComp}% while ${bottomName} trails at ${bottomComp}% — a ${gap}-point spread. `:"All teams are performing at similar levels. "}${gap>30?`This gap is operationally significant. Before assuming the trailing team is underperforming, check: (a) are their tasks inherently longer-cycle (e.g., copper brazing vs. duct hanging), (b) are they waiting on predecessor trades, (c) do they have adequate materials staged? The answer determines whether you rebalance labour, escalate procurement, or adjust expectations.`:gap>15?`This variance warrants a brief coordination check between trade leads to ensure no cascading delays.`:`This is within normal variance for multi-trade operations.`}</p>`;
+  }
+
+  // 4. Quality & Compliance
+  html+=`<p><strong>${teamsActive>1?"4":"3"}. Quality Assurance & Safety Compliance:</strong> QA score at ${agg.quality.avg}%, PPE compliance at ${agg.manpower.avgPPE}%. ${agg.quality.avg<80?`Quality below 80% means rework is likely — and rework on HVAC installations (especially ductwork sealing and refrigerant piping) is 3-4x the original labour cost. Increase inspection hold points now rather than paying for it later in the punch list phase. `:"Quality is within project standards. "}${agg.manpower.avgPPE<90?`PPE non-compliance is a liability exposure, not just a metric. One incident with documented non-compliance shifts responsibility from the GC to your firm. This requires a mandatory toolbox talk tomorrow morning — no exceptions.`:""}</p>`;
+
+  // 5. Risk Profile
+  if(agg.issues.all.length>0){
+    html+=`<p><strong>${teamsActive>1?"5":"4"}. Risk Profile:</strong> ${agg.issues.all.length} issue(s) logged, including ${agg.issues.high} at HIGH priority. ${agg.issues.high>0?`HIGH-priority issues that persist beyond 48 hours without an assigned owner and resolution date should be escalated to the client coordination meeting — unresolved site issues that surprise the client erode trust faster than any schedule delay.`:`No critical risks at this time, but monitor material staging for next week's planned activities.`}</p>`;
+  }
+  html+=`</div>`;
+
+  // Strategic Recommendations
+  html+=`<div class="an-section-title">💡 Director's Recommendations</div>`;
+
+  // Always show the most actionable items
   if(agg.work.bl>0){
-    html+=`<div class="an-rec-card"><h5>Resolve Blocked Tasks</h5><p>${agg.work.bl} task(s) are blocked. Convene a short coordination meeting to identify dependencies and assign responsibility for unblocking each item within 24 hours.</p></div>`;
-  }
-  if(agg.manpower.avgPPE<90){
-    html+=`<div class="an-rec-card"><h5>Improve PPE Compliance</h5><p>PPE compliance at ${agg.manpower.avgPPE}% is below the mandatory 90% threshold. Conduct a toolbox safety talk and enforce PPE checks before work commences each morning.</p></div>`;
-  }
-  if(agg.quality.avg<80){
-    html+=`<div class="an-rec-card"><h5>Raise Quality Standards</h5><p>Quality score of ${agg.quality.avg}% falls below the 80% project standard. Assign quality inspectors to accompany installation crews and conduct spot checks at 2-hour intervals.</p></div>`;
-  }
-  if(agg.issues.high>0){
-    html+=`<div class="an-rec-card"><h5>Address HIGH Priority Issues</h5><p>${agg.issues.high} HIGH priority issue(s) require immediate management attention. Assign owners and set resolution deadlines within 48 hours.</p></div>`;
-  }
-  if(topComp-bottomComp>30&&teamsActive>1){
-    html+=`<div class="an-rec-card"><h5>Rebalance Team Workloads</h5><p>The ${topComp-bottomComp} point performance gap between ${topName} and ${bottomName} suggests workload or resource imbalance. Review task allocation and consider cross-team support.</p></div>`;
+    html+=`<div class="an-rec-card" style="border-left-color:#e74c3c"><h5>PRIORITY 1: Unblock ${agg.work.bl} Task(s) Within 24 Hours</h5><p>Blocked tasks are schedule poison. For each: (1) identify the root cause category (procurement / design / resource / access), (2) assign a named individual — not a team — as the resolution owner, (3) set a specific deadline (not "ASAP"), (4) report status at tomorrow's standup. If the block is supplier-related, escalate to Project Lead for direct supplier engagement today.</p></div>`;
   }
   if(parseFloat(agg.manpower.avgHrsPerPerson)<7){
-    html+=`<div class="an-rec-card"><h5>Optimize Work Hours</h5><p>Average hours per worker (${agg.manpower.avgHrsPerPerson}) is below the 7-hour baseline. Review start times, break durations, and task readiness to reduce idle time.</p></div>`;
+    html+=`<div class="an-rec-card" style="border-left-color:#e67e22"><h5>PRIORITY ${agg.work.bl>0?"2":"1"}: Address Labour Underutilization</h5><p>At ${agg.manpower.avgHrsPerPerson} hours/worker, you are burning payroll without proportionate output. Investigate: Are workers arriving late? Are materials staged before crews mobilise? Are there access restrictions or trade stacking delays? Track the first productive task start time tomorrow — if it's after 7:30 AM, your setup/staging process needs redesign. Target: workers hands-on-tools within 30 minutes of arrival.</p></div>`;
   }
-  if(agg.work.comp>=80&&agg.quality.avg>=80&&agg.manpower.avgPPE>=90&&agg.issues.high===0){
-    html+=`<div class="an-rec-card" style="border-left-color:var(--success);background:linear-gradient(135deg,#f0faf5,#e8f5e9)"><h5>All Metrics On Track</h5><p>All key performance indicators are within acceptable ranges. Continue current operational rhythm and maintain standards.</p></div>`;
+  if(agg.manpower.avgPPE<90){
+    html+=`<div class="an-rec-card" style="border-left-color:#e67e22"><h5>Mandatory Safety Corrective Action</h5><p>PPE compliance at ${agg.manpower.avgPPE}% is a contractual and legal liability. Tomorrow: (1) 15-minute toolbox talk before work begins, (2) supervisors conduct PPE spot-checks at 10 AM and 2 PM, (3) workers found non-compliant twice are stood down for the day. Document everything — this protects the company if an incident occurs.</p></div>`;
+  }
+  if(agg.quality.avg<80){
+    html+=`<div class="an-rec-card" style="border-left-color:#e74c3c"><h5>Quality Intervention Required</h5><p>Quality at ${agg.quality.avg}% will generate rework. For HVAC installations, rework costs 3-4x the original labour. Action: (1) add inspection hold points at duct sealing, pipe pressure testing, and electrical connections, (2) supervisor sign-off required before proceeding past each hold point, (3) photograph all completed work for QA documentation.</p></div>`;
+  }
+  if(agg.issues.high>0){
+    html+=`<div class="an-rec-card" style="border-left-color:#e74c3c"><h5>Escalate ${agg.issues.high} HIGH-Priority Issue(s)</h5><p>Each HIGH-priority issue needs: (1) a named owner, (2) a root cause statement, (3) a corrective action with deadline, (4) a verification step to confirm resolution. If any involve safety or structural concerns, notify the GC Safety Officer within 24 hours regardless of resolution status.</p></div>`;
+  }
+  if(parseFloat(otPct)>15){
+    html+=`<div class="an-rec-card" style="border-left-color:#e67e22"><h5>Overtime Cost Control</h5><p>OT at ${otPct}% exceeds the 15% budget threshold. Before approving continued overtime: (1) confirm these hours are genuinely productive and not caused by late starts, (2) evaluate whether adding one more worker at straight time is cheaper than OT premiums, (3) check whether OT hours are concentrated on specific tasks that could be re-sequenced to regular hours.</p></div>`;
+  }
+  if(topComp-bottomComp>30&&teamsActive>1){
+    html+=`<div class="an-rec-card"><h5>Cross-Trade Resource Rebalancing</h5><p>The ${topComp-bottomComp}-point gap between ${topName} and ${bottomName} may indicate an opportunity to redeploy labour. If ${topName} is completing tasks ahead of schedule, check whether any of their workers have cross-trade capability to support ${bottomName} temporarily. This is cheaper than both overtime and schedule delay.</p></div>`;
+  }
+  if(agg.work.comp>=80&&agg.quality.avg>=80&&agg.manpower.avgPPE>=90&&agg.issues.high===0&&avgH>=7){
+    html+=`<div class="an-rec-card" style="border-left-color:var(--success);background:linear-gradient(135deg,#f0faf5,#e8f5e9)"><h5>Operations On Track — Maintain & Look Ahead</h5><p>All KPIs are within target. Use this momentum to: (1) confirm material deliveries for next week's planned activities, (2) review the 2-week lookahead with trade leads, (3) identify any upcoming access constraints or crane/hoist scheduling conflicts, (4) pre-stage materials at installation points to sustain tomorrow's productivity.</p></div>`;
   }
 
   return html;
@@ -3817,7 +3891,7 @@ function _buildAnalysisPDF(mode,periodLabel,analyses){
   pdf.setFontSize(9);pdf.setFont(undefined,"normal");
   pdf.text("Pasha Global Luxury Hotel — HVAC Installation Works",W/2,20,{align:"center"});
   pdf.setFontSize(12);pdf.setFont(undefined,"bold");
-  pdf.text(`${modeLabel} Structured Analysis Report`,W/2,28,{align:"center"});
+  pdf.text(`${modeLabel} Project Director's Analysis Report`,W/2,28,{align:"center"});
   y=38;
 
   // Period and generation info
@@ -3870,11 +3944,19 @@ function _buildAnalysisPDF(mode,periodLabel,analyses){
   const topName=topTeam?TEAMS[topTeam[0]]?.name:"N/A";
   const topComp=topTeam?aggregateAnalyses(topTeam[1]).work.comp:0;
 
-  let narr=`This ${modeLabel.toLowerCase()} report covers ${periodLabel}. ${teamsActive} team(s) submitted ${agg.totalSheets||analyses.length} operational checksheets, deploying ${agg.manpower.total} workers who collectively logged ${agg.manpower.hrs.toFixed(1)} man-hours (${agg.manpower.ot.toFixed(1)}h overtime, ${otPct}%). `
-    +`Overall task completion reached ${agg.work.comp}% (${agg.work.done}/${agg.work.total}), with ${agg.work.bl} task(s) blocked. `
-    +`${topName} led performance at ${topComp}% completion. `
-    +`Quality assurance averaged ${agg.quality.avg}% and PPE compliance was ${agg.manpower.avgPPE}%. `
-    +`${agg.issues.all.length} issue(s) were reported (${agg.issues.high} HIGH priority).`;
+  const avgH=parseFloat(agg.manpower.avgHrsPerPerson);
+  const labourRating=avgH>=8?"strong":avgH>=7?"acceptable":avgH>=5?"below baseline":"critically underutilized";
+  let narr=`PROJECT DIRECTOR'S BRIEFING — ${periodLabel.toUpperCase()}\n\n`
+    +`${teamsActive} trade team(s) mobilised, generating ${agg.totalSheets||analyses.length} operational checksheet(s). `
+    +`Total deployment: ${agg.manpower.total} workers, ${agg.manpower.hrs.toFixed(1)} man-hours logged (${agg.manpower.ot.toFixed(1)}h overtime at ${otPct}%). `
+    +`Labour productivity is ${labourRating} at ${agg.manpower.avgHrsPerPerson} hours per worker. `
+    +`${avgH<7?"This represents approximately "+(((8-avgH)*agg.manpower.total).toFixed(0))+" idle man-hours across the workforce — a direct margin erosion that requires scheduling intervention. ":""}`
+    +`\nTask completion: ${agg.work.comp}% (${agg.work.done}/${agg.work.total}). `
+    +`${agg.work.bl>0?agg.work.bl+" task(s) blocked — each represents a potential critical path risk requiring named ownership and 24-hour resolution. ":"No blocked tasks — workflow sequencing is clean. "}`
+    +`${topName} led at ${topComp}% completion${teamsActive>1&&topComp-aggregateAnalyses(Object.entries(agg.byTeam).sort((a,b)=>aggregateAnalyses(a[1]).work.comp-aggregateAnalyses(b[1]).work.comp)[0][1]).work.comp>20?", however the inter-trade performance gap warrants investigation into resource balance and predecessor dependencies":""}. `
+    +`Quality: ${agg.quality.avg}%${agg.quality.avg<80?" (below 80% standard — rework exposure is elevated)":""}. `
+    +`PPE: ${agg.manpower.avgPPE}%${agg.manpower.avgPPE<90?" (non-compliant — contractual and liability risk)":""}. `
+    +`${agg.issues.all.length} issue(s) reported (${agg.issues.high} HIGH priority${agg.issues.high>0?" — escalation required":""}).`;
 
   pdf.setFontSize(8);pdf.setTextColor(40);pdf.setFont(undefined,"normal");
   const narLines=pdf.splitTextToSize(narr,W-2*M);
@@ -3982,13 +4064,14 @@ function _buildAnalysisPDF(mode,periodLabel,analyses){
   pdf.setFontSize(12);pdf.setTextColor(...teal);pdf.setFont(undefined,"bold");
   pdf.text("4. FINDINGS & RECOMMENDATIONS",M,y);y+=6;
 
-  // Build findings and recommendations
+  // Build director-level findings and recommendations
   const findings=[];
-  findings.push(["Workforce Utilization",`${agg.manpower.total} workers deployed, averaging ${agg.manpower.avgHrsPerPerson} hours/person. ${parseFloat(agg.manpower.avgHrsPerPerson)>=7?"Within expected range.":"Below 7-hour baseline — review scheduling."}`]);
-  findings.push(["Task Execution",`${agg.work.comp}% completion rate (${agg.work.done}/${agg.work.total}). ${agg.work.bl} blocked. ${agg.work.comp>=80?"On track.":"Below 80% target — escalate blockers."}`]);
-  findings.push(["Quality Assurance",`${agg.quality.avg}% average. ${agg.quality.avg>=80?"Meets project standards.":"Below 80% standard — increase inspection frequency."}`]);
-  findings.push(["Safety Compliance",`PPE at ${agg.manpower.avgPPE}%. ${agg.manpower.avgPPE>=90?"Compliant.":"Below 90% requirement — reinforce safety protocols."}`]);
-  findings.push(["Risk Level",`${agg.issues.all.length} issues (${agg.issues.high} HIGH). ${agg.issues.high===0?"Low risk profile.":"Elevated risk — immediate corrective action needed."}`]);
+  const avgHPdf=parseFloat(agg.manpower.avgHrsPerPerson);
+  findings.push(["Labour Productivity & Cost",`${agg.manpower.total} workers, ${agg.manpower.avgHrsPerPerson} hrs/person avg. ${avgHPdf>=7?"Utilization is within acceptable range.":("Underutilization detected: ~"+((8-avgHPdf)*agg.manpower.total).toFixed(0)+" idle man-hours/day = direct margin erosion. Root cause analysis required: late starts, material staging, or access delays?")} OT at ${otPct}% ${parseFloat(otPct)>15?"exceeds 15% budget threshold — evaluate whether adding straight-time headcount is more cost-effective than premium OT rates.":"is within budget parameters."}`]);
+  findings.push(["Schedule & Critical Path",`${agg.work.comp}% completion (${agg.work.done}/${agg.work.total}). ${agg.work.bl>0?agg.work.bl+" blocked task(s) — each is a potential predecessor for downstream trades. If on critical path, end date moves right. Assign named owners with 24-hr resolution deadlines.":"No blocked tasks — maintain 2-week lookahead planning."} ${agg.work.comp<80?"Below 80% target: review whether shortfall is volume-based (too many tasks assigned) or execution-based (rework, access, materials).":""}`]);
+  findings.push(["Quality & Rework Risk",`QA score: ${agg.quality.avg}%. ${agg.quality.avg<80?"Below 80% = elevated rework probability. HVAC rework costs 3-4x original labour. Add inspection hold points at duct sealing, pipe testing, and electrical connections.":"Meets project standard. Maintain current inspection rhythm."}`]);
+  findings.push(["Safety & Liability",`PPE: ${agg.manpower.avgPPE}%. ${agg.manpower.avgPPE<90?"Non-compliant. One incident with documented PPE non-compliance shifts liability from GC to subcontractor. Mandatory toolbox talk + spot-checks required.":"Fully compliant — continue daily verification."}`]);
+  findings.push(["Risk & Escalation",`${agg.issues.all.length} issues (${agg.issues.high} HIGH). ${agg.issues.high>0?"HIGH issues persisting beyond 48 hrs without resolution must be raised at next client coordination meeting. Unresolved site issues that surprise the client erode trust faster than schedule delays.":"Low risk profile. Focus forward: confirm material deliveries for next week's scope."}`]);
 
   pdf.autoTable({startY:y,margin:{left:M,right:M},
     head:[["Area","Finding & Recommendation"]],body:findings,
@@ -4006,9 +4089,16 @@ function _buildAnalysisPDF(mode,periodLabel,analyses){
   pdf.setFontSize(11);pdf.setTextColor(...statusColor);pdf.setFont(undefined,"bold");
   pdf.text(overallStatus,M,y);y+=6;
 
-  let assessment=`The overall productivity index of ${prodScore}/100 indicates ${prodScore>=70?"satisfactory project progress":prodScore>=50?"marginal performance requiring management attention":"critical underperformance requiring immediate intervention"}. `;
-  assessment+=agg.work.comp>=80?`Task completion at ${agg.work.comp}% is within acceptable bounds. `:`Task completion at ${agg.work.comp}% is below the 80% target. `;
-  assessment+=`Key actions for the next period: ${agg.work.bl>0?"(1) Resolve "+agg.work.bl+" blocked tasks, ":""}${agg.manpower.avgPPE<90?"(2) Improve PPE compliance, ":""}${agg.issues.high>0?"(3) Address "+agg.issues.high+" HIGH priority issues, ":""}maintain current quality and safety standards.`;
+  let assessment=`Productivity Index: ${prodScore}/100 — ${prodScore>=70?"Operations are within acceptable parameters. Current trajectory supports milestone commitments if sustained.":prodScore>=50?"Performance is marginal. Without targeted intervention on the items below, schedule slippage becomes probable within 1-2 weeks.":"Current performance trajectory will not meet contractual milestones. Immediate management action required on all flagged items."} `;
+  assessment+=`\nTask completion at ${agg.work.comp}% ${agg.work.comp>=80?"is on track":"is below the 80% baseline — root cause analysis required to distinguish between scope overload, resource gaps, and execution issues"}. `;
+  assessment+=`\nPriority actions for the next reporting period: `;
+  let actNum=1;
+  if(agg.work.bl>0){assessment+=`(${actNum++}) Resolve ${agg.work.bl} blocked task(s) — assign named owners with specific deadlines. `}
+  if(avgHPdf<7){assessment+=`(${actNum++}) Investigate labour underutilization — target 7+ productive hours per worker. `}
+  if(agg.manpower.avgPPE<90){assessment+=`(${actNum++}) Conduct mandatory toolbox safety talk and enforce PPE spot-checks. `}
+  if(agg.issues.high>0){assessment+=`(${actNum++}) Escalate ${agg.issues.high} HIGH priority issue(s) with resolution deadlines. `}
+  if(parseFloat(otPct)>15){assessment+=`(${actNum++}) Review overtime justification — evaluate straight-time alternatives. `}
+  if(actNum===1)assessment+=`Maintain current operational standards and verify material staging for upcoming scope.`;
 
   pdf.setFontSize(8);pdf.setTextColor(40);pdf.setFont(undefined,"normal");
   const assLines=pdf.splitTextToSize(assessment,W-2*M);
@@ -4036,7 +4126,7 @@ function _buildAnalysisPDF(mode,periodLabel,analyses){
   }
 
   const dateStr=mode==="daily"?periodLabel:(mode==="weekly"?periodLabel.replace("Week of ","W"):periodLabel.replace(/\s+/g,"_"));
-  pdf.save(`ELGAWA_${modeLabel}_Analysis_${dateStr}.pdf`);
+  showPDFPreview(pdf,`ELGAWA_${modeLabel}_Analysis_${dateStr}.pdf`);
   showToast("Analysis PDF downloaded!");
 }
 
@@ -4492,7 +4582,7 @@ function buildReportPDF(date,extraSheets){
 
 function downloadReport(date){
   const pdf=buildReportPDF(date);
-  if(pdf)pdf.save(`ELGAWA_Daily_Report_${date}.pdf`);
+  if(pdf)showPDFPreview(pdf,`ELGAWA_Daily_Report_${date}.pdf`);
 }
 
 function shareReport(date){
@@ -5359,19 +5449,20 @@ function openCardSection(sectionId,idx){
   initFormSwipe();
   const card=_cardSections[idx];
   const sc=SECTION_COLORS[card.id]||{bg:"linear-gradient(135deg,#64748b,#94a3b8)",accent:"#64748b",light:"#f8fafc"};
-  
+
   // Show the hidden form, hide the card overview
   const overview=document.getElementById("cardOverview");
   const hidden=document.getElementById("formContentHidden");
   if(overview)overview.style.display="none";
   if(hidden){
     hidden.style.display="block";
-    // CLEAN VIEW: Hide ALL sections first, then only show the active one
+    hidden.style.paddingBottom="90px";
+    // Show only the active section
     hidden.querySelectorAll(".section").forEach(s=>{s.style.display="none"});
     hidden.querySelectorAll(".collapse-hdr").forEach(h=>{h.style.display="none";h.classList.remove("open")});
     hidden.querySelectorAll(".collapse-body").forEach(b=>{b.style.display="none";b.classList.remove("open")});
     hidden.querySelectorAll(".submit-bar,.form-hdr,.back-row").forEach(el=>{if(el)el.style.display="none"});
-    
+
     if(sectionId==="info"||sectionId==="target"||sectionId==="notes"){
       const sections=hidden.querySelectorAll(".section");
       let target=null;
@@ -5385,26 +5476,14 @@ function openCardSection(sectionId,idx){
       if(hdr&&body){hdr.style.display="flex";body.style.display="block";hdr.classList.add("open");body.classList.add("open");setTimeout(()=>{window.scrollTo({top:0,behavior:"smooth"})},100)}
     }
 
-    // Add section header bar
+    // Add sticky navigation header with section jump buttons
     let sectionHdr=document.getElementById("scrollSectionHeader");
     if(!sectionHdr){
       sectionHdr=document.createElement("div");
       sectionHdr.id="scrollSectionHeader";
       hidden.insertBefore(sectionHdr,hidden.firstChild);
     }
-    const status=card.checkFn();
-    const statusText=status===2?"✓ Complete":(status===1?"◐ In Progress":"○ Not Started");
-    const statusColor=status===2?"#22c55e":(status===1?"#f59e0b":"#94a3b8");
-    sectionHdr.style.cssText="margin-bottom:12px;border-radius:12px;overflow:hidden;box-shadow:var(--shadow)";
-    sectionHdr.innerHTML=`<div style="background:${sc.bg};padding:10px 16px;color:white;display:flex;align-items:center;justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:8px"><span style="font-size:22px">${card.icon}</span><span style="font-weight:800;font-size:14px">${card.title}</span></div>
-      <span style="font-size:10px;padding:3px 10px;background:${statusColor};border-radius:12px;font-weight:700">${statusText}</span>
-    </div>
-    <div style="display:flex;gap:2px;padding:4px 8px;background:${sc.light}">${_cardSections.map((c,i)=>{
-      const col=SECTION_COLORS[c.id]||{accent:"#94a3b8"};
-      const done=c.checkFn()>=2;
-      return'<div style="flex:1;height:3px;border-radius:2px;background:'+(i===idx?col.accent:(done?"#22c55e":"#e2e8f0"))+'"></div>';
-    }).join("")}</div>`;
+    _updateSectionHeader(idx);
 
     // Add OK/Cancel action bar at bottom
     let actionBar=document.getElementById("cardActionBar");
@@ -5414,11 +5493,46 @@ function openCardSection(sectionId,idx){
       actionBar.id="cardActionBar";
       actionBar.className="card-action-bar";
     }
-    const prevDisabled=_activeCard<=0?"disabled":"";
-    const nextDisabled=_activeCard>=_cardSections.length-1?"disabled":"";
-    actionBar.innerHTML=`<div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap"><button class="btn-cancel" onclick="cancelCardSection()" style="padding:8px 12px;font-size:11px">✕ Cancel</button><button class="btn-ok" onclick="navCard(-1)" ${prevDisabled} style="padding:8px 12px;font-size:11px;opacity:${prevDisabled?"0.3":"1"}">◀ Prev</button><button class="btn-ok" onclick="confirmCardSection()" style="padding:8px 14px;font-size:11px;background:linear-gradient(135deg,var(--navy),var(--navy-lt))">🏠 Main</button><button class="btn-ok" onclick="navCard(1)" ${nextDisabled} style="padding:8px 12px;font-size:11px;opacity:${nextDisabled?"0.3":"1"}">Next ▶</button><button class="btn-ok" onclick="confirmCardSection()" style="padding:8px 14px;font-size:11px;background:linear-gradient(135deg,#22c55e,#16a34a)">OK ✓</button></div>`;
+    actionBar.innerHTML=`<div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap"><button class="btn-cancel" onclick="cancelCardSection()" style="padding:8px 12px;font-size:11px">✕ Cancel</button><button class="btn-ok" onclick="confirmCardSection()" style="padding:8px 14px;font-size:11px;background:linear-gradient(135deg,var(--navy),var(--navy-lt))">🏠 Back to Cards</button><button class="btn-ok" onclick="confirmCardSection()" style="padding:8px 14px;font-size:11px;background:linear-gradient(135deg,#22c55e,#16a34a)">OK ✓</button></div>`;
     document.body.appendChild(actionBar);
+    // Hide bottom nav so it doesn't overlap action bar
+    const bnav=document.getElementById("bottomNav");
+    if(bnav)bnav.style.display="none";
   }
+}
+
+function _updateSectionHeader(idx){
+  const sectionHdr=document.getElementById("scrollSectionHeader");
+  if(!sectionHdr||!_cardSections||!_cardSections[idx])return;
+  const card=_cardSections[idx];
+  const sc=SECTION_COLORS[card.id]||{bg:"linear-gradient(135deg,#64748b,#94a3b8)",accent:"#64748b",light:"#f8fafc"};
+  const status=card.checkFn();
+  const statusText=status===2?"✓ Complete":(status===1?"◐ In Progress":"○ Not Started");
+  const statusColor=status===2?"#22c55e":(status===1?"#f59e0b":"#94a3b8");
+  sectionHdr.style.cssText="position:sticky;top:0;z-index:550;margin-bottom:12px;border-radius:12px;overflow:hidden;box-shadow:var(--shadow)";
+  // Build section jump buttons — tap any to switch section
+  const jumpBtns=_cardSections.map((c,i)=>{
+    const isActive=i===idx;
+    const bg=isActive?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.1)";
+    const border=isActive?"2px solid white":"2px solid transparent";
+    return`<button onclick="jumpToCardSection(${i})" style="background:${bg};border:${border};color:white;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer;white-space:nowrap;font-weight:${isActive?'800':'500'}">${c.icon}</button>`;
+  }).join("");
+  sectionHdr.innerHTML=`<div style="background:${sc.bg};padding:8px 10px;color:white;display:flex;align-items:center;justify-content:space-between;gap:6px">
+    <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0"><span style="font-size:18px">${card.icon}</span><span style="font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${card.title}</span><span style="font-size:9px;padding:2px 8px;background:${statusColor};border-radius:10px;font-weight:700;white-space:nowrap">${statusText}</span></div>
+    <button onclick="confirmCardSection()" style="background:rgba(255,255,255,0.25);border:none;color:white;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;cursor:pointer">✕</button>
+  </div>
+  <div style="display:flex;gap:4px;padding:6px 8px;background:${sc.light};overflow-x:auto;-webkit-overflow-scrolling:touch">${jumpBtns}</div>
+  <div style="display:flex;gap:2px;padding:3px 8px;background:${sc.light}">${_cardSections.map((c,i)=>{
+    const col=SECTION_COLORS[c.id]||{accent:"#94a3b8"};
+    const done=c.checkFn()>=2;
+    return'<div style="flex:1;height:3px;border-radius:2px;background:'+(i===idx?col.accent:(done?"#22c55e":"#e2e8f0"))+'"></div>';
+  }).join("")}</div>`;
+}
+
+function jumpToCardSection(idx){
+  if(!_cardSections||!_cardSections[idx])return;
+  // Switch to a different section without closing — just re-open it
+  openCardSection(_cardSections[idx].id,idx);
 }
 
 
@@ -5480,6 +5594,7 @@ function closeCardSection(){
   if(overview)overview.style.display="block";
   if(hidden){
     hidden.style.display="none";
+    hidden.style.paddingBottom="";
     // Restore all hidden sections
     hidden.querySelectorAll(".section").forEach(s=>{s.style.display="";s.style.border="";s.style.boxShadow="";s.style.borderRadius=""});
     hidden.querySelectorAll(".collapse-hdr").forEach(h=>{h.style.display=""});
@@ -5492,6 +5607,9 @@ function closeCardSection(){
   // Remove action bar
   const actionBar=document.getElementById("cardActionBar");
   if(actionBar)actionBar.remove();
+  // Restore bottom nav
+  const bnav=document.getElementById("bottomNav");
+  if(bnav)bnav.style.display="";
   // Refresh card statuses
   if(_formTeamKey)renderCardFlow(_formTeamKey);
   window.scrollTo(0,0);
@@ -6310,8 +6428,7 @@ function exportTeamPDF(teamKey,date){
         const tm=TEAMS[teamKey];
         const fn=`Checksheet_${tm.name.replace(/\s/g,"_")}_${date}.pdf`;
         const pdfDoc=buildPDFDoc(d);
-        pdfDoc.save(fn);
-        showToast("📄 PDF downloaded — share via WhatsApp");
+        showPDFPreview(pdfDoc,fn);
       }else{showToast("No data found for this team")}
     });
     return;
@@ -6320,8 +6437,7 @@ function exportTeamPDF(teamKey,date){
   const tm=TEAMS[teamKey];
   const fn=`Checksheet_${tm.name.replace(/\s/g,"_")}_${date}.pdf`;
   const pdfDoc=buildPDFDoc(d);
-  pdfDoc.save(fn);
-  showToast("📄 PDF downloaded — share via WhatsApp");
+  showPDFPreview(pdfDoc,fn);
 }
 function buildPDFDoc(data){
   const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");const tm=TEAMS[data.teamKey];
@@ -6433,18 +6549,57 @@ function buildPDFDoc(data){
   return pdf;
 }
 function clearForm(){showModal(t("confirm")||"Confirm",t("clearConfirm")||"Clear all form data?",()=>{document.querySelectorAll("#formView input:not([type=date]),#formView textarea").forEach(el=>{if(el.type!=="date"&&!el.readOnly)el.value=""});document.querySelectorAll("#formView select").forEach(el=>el.selectedIndex=0);document.querySelectorAll(".other-input").forEach(el=>el.style.display="none");if(_formTeamKey)clearDraft(_formTeamKey)},{danger:true,okText:t("clear")||"Clear"})}
-function downloadPDF(i){generatePDF(savedSheets[i])}
-function sharePDF(i){generatePDF(savedSheets[i],true)}
+function downloadPDF(i){generatePDF(savedSheets[i],"preview")}
+function sharePDF(i){generatePDF(savedSheets[i],"share")}
 
-function generatePDF(data,share){
+function generatePDF(data,mode){
   const tm=TEAMS[data.teamKey];
   const fn=`Checksheet_${tm.name.replace(/\s/g,"_")}_${data.date||"undated"}.pdf`;
   const pdf=buildPDFDoc(data);
-  if(share){const blob=pdf.output("blob");
+  if(mode==="share"){const blob=pdf.output("blob");
     if(navigator.share&&navigator.canShare){const file=new File([blob],fn,{type:"application/pdf"});
       navigator.share({title:`ELGAWA ${tm.name}`,text:`Checksheet - ${data.date}`,files:[file]}).catch(()=>{pdf.save(fn);window.open(`https://wa.me/?text=${encodeURIComponent(`ELGAWA ${tm.name} Checksheet ${data.date} - PDF attached`)}`)})
     }else{pdf.save(fn);window.open(`https://wa.me/?text=${encodeURIComponent(`ELGAWA ${tm.name} Checksheet ${data.date}`)}`)}
+  }else if(mode==="preview"){
+    showPDFPreview(pdf,fn);
   }else{pdf.save(fn)}
+}
+
+// Universal PDF preview modal
+function showPDFPreview(pdfDoc,filename){
+  const blob=pdfDoc.output("blob");
+  const url=URL.createObjectURL(blob);
+  const overlay=document.createElement("div");
+  overlay.className="modal-overlay";
+  overlay.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px";
+  overlay.innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;justify-content:center">
+      <span style="color:white;font-size:14px;font-weight:600;align-self:center;margin-right:8px">${escHtml(filename)}</span>
+      <button onclick="this.closest('.modal-overlay')._downloadFn()" style="background:var(--teal);color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600">⬇️ Download</button>
+      <button onclick="this.closest('.modal-overlay')._shareFn()" style="background:#25D366;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600">📤 Share</button>
+      <button onclick="this.closest('.modal-overlay')._closeFn()" style="background:#e74c3c;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600">✕ Close</button>
+    </div>
+    <iframe src="${url}" style="width:100%;max-width:900px;flex:1;border:none;border-radius:8px;background:white"></iframe>
+  `;
+  overlay._downloadFn=function(){
+    const a=document.createElement("a");a.href=url;a.download=filename;a.click();
+    showToast("PDF downloaded");
+  };
+  overlay._shareFn=function(){
+    if(navigator.share&&navigator.canShare){
+      const file=new File([blob],filename,{type:"application/pdf"});
+      navigator.share({title:filename,files:[file]}).catch(()=>{});
+    }else{
+      overlay._downloadFn();
+      window.open("https://wa.me/?text="+encodeURIComponent(filename));
+    }
+  };
+  overlay._closeFn=function(){
+    URL.revokeObjectURL(url);
+    overlay.remove();
+  };
+  overlay.addEventListener("click",function(e){if(e.target===overlay){overlay._closeFn()}});
+  document.body.appendChild(overlay);
 }
 
 function switchSettingsTab(tab){
@@ -7033,7 +7188,7 @@ function renderAttendanceTab(){
 }
 
 function _renderAttendanceUI(date,roster,data,container,actions,summary){
-  const isAdmin=currentUser&&(currentUser.role==="Project Lead"||currentUser.role==="Engineer");
+  const isAdmin=currentUser&&currentUser.role==="Project Lead";
   const locked=data.verified===true;
   
   // Summary stats
@@ -7056,29 +7211,85 @@ function _renderAttendanceUI(date,roster,data,container,actions,summary){
     if(isAdmin)actHtml+='<button class="btn" onclick="verifyAttendance()" style="background:#17a2b8;color:white">🔒 '+t("verifyAttendance")+'</button>';
   }else{
     actHtml+='<div class="att-status att-verified" style="padding:8px 16px;font-size:13px">🔒 '+t("attLocked")+' — '+( data.verifiedBy||"admin")+'</div>';
+    if(isAdmin)actHtml+='<button class="btn" onclick="unlockAttendance()" style="background:#e67e22;color:white;font-size:12px;padding:6px 14px">🔓 Unlock for Editing</button>';
   }
   actions.innerHTML=actHtml;
   
+  // Build combined list: roster + any manually-added workers in data not on roster
+  const allNames=[...roster];
+  if(data.workers){
+    Object.keys(data.workers).forEach(name=>{
+      if(!allNames.includes(name)&&data.workers[name]._manualAdd)allNames.push(name);
+    });
+  }
+
   // Worker list
   let html='';
-  roster.forEach(name=>{
+  allNames.forEach(name=>{
     const w=data.workers[name]||{present:false,timeIn:"",timeOut:"",shift:"day"};
     const checked=w.present?'checked':'';
     const disabled=locked?'disabled':'';
     const isNight=w.shift==="night";
+    const isManual=w._manualAdd;
     const statusClass=w.present?(isNight?'att-present" style="background:#2c3e50;color:white':'att-present'):'att-absent';
     const statusText=w.present?(isNight?'🌙 '+t("nightShift"):t("present")):t("absent");
     html+='<div class="att-row"'+(isNight?' style="background:#f0f3f7"':'')+'>';
-    html+='<input type="checkbox" class="att-check" data-worker="'+name+'" '+checked+' '+disabled+' onchange="updateAttWorker(this)">';
-    html+='<span class="att-name">'+name+'</span>';
+    html+='<input type="checkbox" class="att-check" data-worker="'+escHtml(name)+'" '+checked+' '+disabled+' onchange="updateAttWorker(this)">';
+    html+='<span class="att-name">'+escHtml(name)+(isManual?' <span style="font-size:9px;color:var(--teal);font-weight:600">(added)</span>':'')+'</span>';
     if(!locked)html+='<button onclick="toggleShift(\''+name.replace(/'/g,"\\'")+'\')" style="border:none;background:'+(isNight?'#2c3e50':'#eee')+';color:'+(isNight?'white':'#666')+';border-radius:6px;padding:2px 6px;font-size:11px;cursor:pointer" title="'+t("toggleShift")+'">'+(isNight?'🌙':'☀️')+'</button>';
     else html+='<span style="font-size:11px">'+(isNight?'🌙':'☀️')+'</span>';
-    html+='<input type="time" class="att-time" data-worker="'+name+'" data-field="timeIn" value="'+(w.timeIn||"")+'" '+disabled+' onchange="updateAttTime(this)" title="'+t("timeIn")+'">';
-    html+='<input type="time" class="att-time" data-worker="'+name+'" data-field="timeOut" value="'+(w.timeOut||"")+'" '+disabled+' onchange="updateAttTime(this)" title="'+t("timeOut")+'">';
+    html+='<input type="time" class="att-time" data-worker="'+escHtml(name)+'" data-field="timeIn" value="'+(w.timeIn||"")+'" '+disabled+' onchange="updateAttTime(this)" title="'+t("timeIn")+'">';
+    html+='<input type="time" class="att-time" data-worker="'+escHtml(name)+'" data-field="timeOut" value="'+(w.timeOut||"")+'" '+disabled+' onchange="updateAttTime(this)" title="'+t("timeOut")+'">';
     html+='<span class="att-status '+statusClass+'">'+statusText+'</span>';
+    if(isAdmin&&!locked)html+='<button onclick="attRemoveWorker(\''+name.replace(/'/g,"\\'")+'\')" style="border:none;background:#e74c3c;color:white;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1;padding:0" title="Remove from attendance">✕</button>';
     html+='</div>';
   });
+  // Admin: Add worker button
+  if(isAdmin&&!locked){
+    html+='<div style="text-align:center;margin-top:10px"><button onclick="attAddWorker()" class="btn" style="background:var(--teal);color:white;font-size:12px;padding:6px 16px">➕ Add Worker to Attendance</button></div>';
+  }
   container.innerHTML=html;
+}
+
+// Admin: manually add a worker to today's attendance
+function attAddWorker(){
+  const allPersonnel=getAllPersonnel();
+  const data=_getCurrentAttData();
+  // Show a prompt with name entry
+  const name=prompt("Enter worker name to add to attendance:");
+  if(!name||!name.trim())return;
+  const trimmed=name.trim();
+  // Check if already in attendance
+  const roster=getWorkerRoster();
+  if(roster.includes(trimmed)){
+    showToast(trimmed+" is already on the roster");
+    return;
+  }
+  if(data.workers[trimmed]&&data.workers[trimmed]._manualAdd){
+    showToast(trimmed+" is already added");
+    return;
+  }
+  // Add to attendance data with manual flag
+  const now=getGuyanaDateTime();
+  const timeNow=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  data.workers[trimmed]={present:true,timeIn:timeNow,timeOut:"",shift:"day",_manualAdd:true};
+  saveAttendanceLocal(_attDate,data);
+  showToast("Added "+trimmed+" to attendance");
+  renderAttendanceTab();
+}
+
+// Admin: remove a worker from today's attendance
+function attRemoveWorker(name){
+  showModal("Remove Worker","Remove "+name+" from today's attendance?",function(){_doAttRemove(name)});
+}
+function _doAttRemove(name){
+  const data=_getCurrentAttData();
+  if(data.workers[name]){
+    delete data.workers[name];
+    saveAttendanceLocal(_attDate,data);
+    showToast("Removed "+name+" from attendance");
+    renderAttendanceTab();
+  }
 }
 
 // In-memory attendance state for current session
@@ -7162,6 +7373,20 @@ function _doVerifyAttendance(){
   cloudSaveAttendance(date,data).then(()=>{
     showToast(t("attVerified"));
     renderAttendanceTab();
+  });
+}
+
+function unlockAttendance(){
+  showModal("Unlock Attendance","Unlock this attendance record for editing? It was verified by "+((_getCurrentAttData().verifiedBy)||"admin")+".",()=>{
+    const data=_getCurrentAttData();
+    data.verified=false;
+    delete data.verifiedBy;
+    delete data.verifiedAt;
+    saveAttendanceLocal(_attDate,data);
+    cloudSaveAttendance(_attDate,data).then(()=>{
+      showToast("Attendance unlocked for editing");
+      renderAttendanceTab();
+    });
   });
 }
 
@@ -7359,7 +7584,7 @@ function generateWeeklyAttPDF(){
   pdf.text("Approved by: _______________________",M+100,fY);
   pdf.text("Finance: _______________________",M+200,fY);
 
-  pdf.save("Weekly_Pay_Register_"+d.mon+".pdf");
+  showPDFPreview(pdf,"Weekly_Pay_Register_"+d.mon+".pdf");
   showToast("✅ PDF downloaded");
   }catch(e){console.error("PDF error:",e);showToast("❌ PDF generation failed: "+e.message)}
 }
@@ -7718,7 +7943,7 @@ function downloadPayPDF(){
   pdf.setFontSize(9);pdf.setTextColor(100);
   pdf.text("Prepared by: _______________________",M,y);pdf.text("Date: _____________",M+80,y);y+=7;
   pdf.text("Approved by: _______________________",M,y);pdf.text("Finance: _______________________",M+80,y);
-  pdf.save("Payment_Sheet_"+getWeekMondayFromDate(getGuyanaDate())+".pdf");showToast("✅ PDF downloaded");
+  showPDFPreview(pdf,"Payment_Sheet_"+getWeekMondayFromDate(getGuyanaDate())+".pdf");showToast("✅ PDF downloaded");
 }
 
 // Excel (CSV) Download
@@ -8163,6 +8388,7 @@ function renderHubPersonnel(){
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
         <input id="hubNewUserPass" placeholder="Password" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:12px">
         <select id="hubNewUserRole" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+          <option value="Worker">Worker</option>
           <option value="Team Lead">Team Lead</option>
           <option value="Supervisor">Supervisor</option>
           <option value="Engineer">Engineer</option>
@@ -8179,14 +8405,19 @@ function renderHubPersonnel(){
 
   workers.forEach((name,i)=>{
     const isCustom=customWorkers.includes(name);
+    const isBase=BASE_WORKER_ROSTER.includes(name);
     const num=i+1;
+    const eName=name.replace(/'/g,"\\'");
     html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;margin-bottom:3px;background:white;border-radius:8px;border:1px solid #eee">
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:9px;font-weight:700;color:white;background:var(--teal);border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${num}</span>
         <span style="font-size:12px;font-weight:600;color:var(--navy)">${name}</span>
         ${isCustom?`<span style="font-size:9px;color:var(--grey)">(custom)</span>`:""}
       </div>
-      ${isCustom?`<button onclick="hubRemoveWorker('${name.replace(/'/g,"\\'")}')" style="font-size:10px;padding:3px 8px;background:#e74c3c;color:white;border:none;border-radius:6px;cursor:pointer">✕</button>`:""}
+      <div style="display:flex;gap:3px">
+        <button onclick="hubEditWorker('${eName}')" style="font-size:10px;padding:3px 8px;background:#3b82f6;color:white;border:none;border-radius:6px;cursor:pointer">✏️</button>
+        <button onclick="hubRemoveWorkerAny('${eName}')" style="font-size:10px;padding:3px 8px;background:#e74c3c;color:white;border:none;border-radius:6px;cursor:pointer">✕</button>
+      </div>
     </div>`;
   });
 
@@ -8195,6 +8426,8 @@ function renderHubPersonnel(){
       <input id="hubNewWorkerName" placeholder="Worker full name" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:12px">
       <button onclick="hubAddWorker()" style="padding:8px 16px;background:linear-gradient(135deg,var(--teal),#0d9488);color:white;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">+ Add</button>
     </div>
+    <button onclick="hubFindDuplicates()" style="width:100%;margin-top:8px;padding:8px;background:#f59e0b;color:white;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">🔍 Find Similar Names</button>
+    <div id="hubDuplicatesResult" style="margin-top:8px"></div>
   </div>`;
 
   el.innerHTML=html;
@@ -8267,13 +8500,90 @@ function hubAddWorker(){
   showToast(name+" added to roster");
 }
 function hubRemoveWorker(name){
-  showModal("Remove Worker","Remove "+name+" from the roster?",()=>{
-    let custom=getCustomWorkers();
-    custom=custom.filter(n=>n!==name);
+  showModal("Remove Worker","Remove "+name+" from the roster?",function(){
+    var custom=getCustomWorkers();
+    custom=custom.filter(function(n){return n!==name});
     saveCustomWorkers(custom);
     renderHubPersonnel();
     showToast(name+" removed");
   },{danger:true,okText:"Remove"});
+}
+
+// Remove ANY worker (base or custom)
+function hubRemoveWorkerAny(name){
+  showModal("Remove Worker","Remove "+name+" from the roster?",function(){
+    if(BASE_WORKER_ROSTER.includes(name)){
+      var removed=[];try{removed=JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]")}catch(e){}
+      if(!removed.includes(name))removed.push(name);
+      try{localStorage.setItem("elg_base_workers_removed",JSON.stringify(removed))}catch(e){}
+    }
+    var custom=getCustomWorkers();
+    custom=custom.filter(function(n){return n!==name});
+    saveCustomWorkers(custom);
+    renderHubPersonnel();
+    if(typeof renderWorkerRoster==="function")renderWorkerRoster();
+    showToast(name+" removed from roster");
+  },{danger:true,okText:"Remove"});
+}
+
+// Edit (rename) a worker
+function hubEditWorker(oldName){
+  var newName=prompt("Rename worker:\n"+oldName,""+oldName);
+  if(!newName||!newName.trim()||newName.trim()===oldName)return;
+  newName=newName.trim();
+  var roster=getWorkerRoster();
+  if(roster.some(function(w){return w.toLowerCase()===newName.toLowerCase()&&w!==oldName})){showToast("A worker with that name already exists");return}
+  // If base worker, remove old + add new as custom
+  if(BASE_WORKER_ROSTER.includes(oldName)){
+    var removed=[];try{removed=JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]")}catch(e){}
+    if(!removed.includes(oldName))removed.push(oldName);
+    try{localStorage.setItem("elg_base_workers_removed",JSON.stringify(removed))}catch(e){}
+    var custom=getCustomWorkers();
+    custom.push(newName);
+    saveCustomWorkers(custom);
+  }else{
+    // Custom worker — rename in place
+    var custom=getCustomWorkers();
+    var idx=custom.indexOf(oldName);
+    if(idx>=0)custom[idx]=newName;
+    saveCustomWorkers(custom);
+  }
+  renderHubPersonnel();
+  if(typeof renderWorkerRoster==="function")renderWorkerRoster();
+  showToast(oldName+" renamed to "+newName);
+}
+
+// Fuzzy name similarity (Levenshtein distance)
+function _levenshtein(a,b){
+  a=a.toLowerCase();b=b.toLowerCase();
+  if(a===b)return 0;
+  var m=a.length,n=b.length;
+  var d=[];
+  for(var i=0;i<=m;i++){d[i]=[i]}
+  for(var j=0;j<=n;j++){d[0][j]=j}
+  for(var i=1;i<=m;i++){
+    for(var j=1;j<=n;j++){
+      var cost=a[i-1]===b[j-1]?0:1;
+      d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+cost);
+    }
+  }
+  return d[m][n];
+}
+
+function findSimilarWorkers(){
+  var roster=getWorkerRoster();
+  var pairs=[];
+  for(var i=0;i<roster.length;i++){
+    for(var j=i+1;j<roster.length;j++){
+      var dist=_levenshtein(roster[i],roster[j]);
+      var maxLen=Math.max(roster[i].length,roster[j].length);
+      var similarity=1-(dist/maxLen);
+      if(similarity>=0.7&&dist<=4){
+        pairs.push({a:roster[i],b:roster[j],similarity:Math.round(similarity*100)});
+      }
+    }
+  }
+  return pairs;
 }
 
 function renderHubOverview(){
@@ -8544,34 +8854,34 @@ function renderWorkerStatus(data,date){
   if(!data||!data.signIn){
     // Not signed in
     statusEl.innerHTML='<div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:20px;text-align:center">'
-      +'<div style="font-size:36px;margin-bottom:8px">⏳</div>'
+      +'<div style="font-size:36px;margin-bottom:8px">\u23f3</div>'
       +'<h3 style="color:var(--grey);margin:0">Not Signed In</h3>'
       +'<p style="font-size:12px;color:var(--grey);margin:4px 0">Tap below to start your day</p>'
       +'</div>';
-    actionsEl.innerHTML='<button onclick="workerSignIn()" style="width:100%;padding:16px;font-size:18px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,var(--teal),#0d9488);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(29,158,117,0.3)">✅ Sign In</button>';
+    actionsEl.innerHTML='<button onclick="workerSignIn()" style="width:100%;padding:16px;font-size:18px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,var(--teal),#0d9488);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(29,158,117,0.3)">\u2705 Sign In</button>';
   }else if(data.signIn&&!data.signOut){
     // Signed in, working
     const minsElapsed=calcMinsBetween(data.signIn,timeStr);
     statusEl.innerHTML='<div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:20px;text-align:center;border-left:5px solid var(--teal)">'
-      +'<div style="font-size:36px;margin-bottom:8px">🟢</div>'
+      +'<div style="font-size:36px;margin-bottom:8px">\ud83d\udfe2</div>'
       +'<h3 style="color:var(--teal);margin:0">On Site</h3>'
       +'<p style="font-size:14px;margin:8px 0"><strong>Signed in:</strong> '+formatTime12(data.signIn)+'</p>'
       +'<p style="font-size:12px;color:var(--grey)">Working for '+formatDuration(minsElapsed)+'</p>'
-      +(data.confirmed?'<p style="font-size:11px;color:var(--teal);margin-top:4px">✅ Confirmed by Admin</p>':'')
+      +(data.confirmed?'<p style="font-size:11px;color:var(--teal);margin-top:4px">\u2705 Confirmed by Admin</p>':'')
       +'</div>';
-    actionsEl.innerHTML='<button onclick="workerSignOut()" style="width:100%;padding:16px;font-size:18px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#e11d48,#fb7185);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(225,29,72,0.3)">🔴 Sign Out</button>';
+    actionsEl.innerHTML='<button onclick="workerSignOut()" style="width:100%;padding:16px;font-size:18px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#e11d48,#fb7185);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(225,29,72,0.3)">\ud83d\udd34 Sign Out</button>';
   }else{
     // Day complete
     const totalMins=calcMinsBetween(data.signIn,data.signOut);
     statusEl.innerHTML='<div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:20px;text-align:center;border-left:5px solid #3b82f6">'
-      +'<div style="font-size:36px;margin-bottom:8px">✅</div>'
+      +'<div style="font-size:36px;margin-bottom:8px">\u2705</div>'
       +'<h3 style="color:#3b82f6;margin:0">Day Complete</h3>'
       +'<div style="display:flex;justify-content:center;gap:24px;margin:12px 0">'
       +'<div><div style="font-size:11px;color:var(--grey)">In</div><div style="font-weight:600">'+formatTime12(data.signIn)+'</div></div>'
       +'<div><div style="font-size:11px;color:var(--grey)">Out</div><div style="font-weight:600">'+formatTime12(data.signOut)+'</div></div>'
       +'<div><div style="font-size:11px;color:var(--grey)">Total</div><div style="font-weight:600">'+formatDuration(totalMins)+'</div></div>'
       +'</div>'
-      +(data.confirmed?'<p style="font-size:11px;color:var(--teal);margin-top:4px">✅ Confirmed by Admin</p>':'')
+      +(data.confirmed?'<p style="font-size:11px;color:var(--teal);margin-top:4px">\u2705 Confirmed by Admin</p>':'')
       +'</div>';
     actionsEl.innerHTML='<p style="text-align:center;font-size:12px;color:var(--grey)">Your attendance has been recorded. See you tomorrow!</p>';
   }
@@ -8618,22 +8928,22 @@ function renderWorkerHistory(){
       const dayLabel=new Date(r.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
       if(r.data&&r.data.signIn){
         const totalMins=r.data.signOut?calcMinsBetween(r.data.signIn,r.data.signOut):0;
-        const status=r.data.signOut?'<span style="color:var(--teal)">✅ '+formatDuration(totalMins)+'</span>':'<span style="color:#f59e0b">🟡 In progress</span>';
-        const confirmed=r.data.confirmed?'<span style="font-size:10px;color:var(--teal)"> ✓</span>':'';
+        const status=r.data.signOut?'<span style="color:var(--teal)">\u2705 '+formatDuration(totalMins)+'</span>':'<span style="color:#f59e0b">\ud83d\udfe1 In progress</span>';
+        const confirmed=r.data.confirmed?'<span style="font-size:10px;color:var(--teal)"> \u2713</span>':'';
         html+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0">'
           +'<span>'+dayLabel+'</span>'
-          +'<span>'+formatTime12(r.data.signIn)+' — '+(r.data.signOut?formatTime12(r.data.signOut):'...')+'</span>'
+          +'<span>'+formatTime12(r.data.signIn)+' \u2014 '+(r.data.signOut?formatTime12(r.data.signOut):'...')+'</span>'
           +'<span>'+status+confirmed+'</span></div>';
       }else{
         html+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;color:#ccc">'
-          +'<span>'+dayLabel+'</span><span>—</span><span>No record</span></div>';
+          +'<span>'+dayLabel+'</span><span>\u2014</span><span>No record</span></div>';
       }
     });
     el.innerHTML=html||'<p style="color:var(--grey)">No history yet</p>';
   });
 }
 
-// ═══ AUTO-REFRESH FOR WORKER VIEW ═══
+// \u2550\u2550\u2550 AUTO-REFRESH FOR WORKER VIEW \u2550\u2550\u2550
 function startWorkerRefresh(){
   stopWorkerRefresh();
   _workerRefreshInterval=setInterval(()=>{
@@ -8648,9 +8958,9 @@ function stopWorkerRefresh(){
   if(_workerRefreshInterval){clearInterval(_workerRefreshInterval);_workerRefreshInterval=null}
 }
 
-// ═══════════════════════════════════════════════════════
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 // ADMIN SELF-ATTENDANCE DASHBOARD
-// ═══════════════════════════════════════════════════════
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 function renderSelfAttendanceDashboard(container,date){
   if(!container)return;
   loadAllSelfAttendance(date).then(allData=>{
@@ -8662,7 +8972,7 @@ function renderSelfAttendanceDashboard(container,date){
     loadTL.then(tlData=>{
       const roster=getWorkerRoster();
       let html='<div style="margin-top:16px;background:white;border-radius:12px;box-shadow:var(--shadow);padding:16px">';
-      html+='<h3 style="color:var(--navy);font-size:14px;margin-bottom:4px">📱 Self Sign-In Records</h3>';
+      html+='<h3 style="color:var(--navy);font-size:14px;margin-bottom:4px">\ud83d\udcf1 Self Sign-In Records</h3>';
       html+='<p style="font-size:11px;color:var(--grey);margin-bottom:12px">Worker self-reported attendance vs team lead records</p>';
       
       // Count stats
@@ -8694,11 +9004,11 @@ function renderSelfAttendanceDashboard(container,date){
           
           let statusBadge,statusColor;
           if(d.confirmed){
-            statusBadge='✅ OK';statusColor='var(--teal)';
+            statusBadge='\u2705 OK';statusColor='var(--teal)';
           }else if(tlPresent){
-            statusBadge='📋 TL✓';statusColor='#3b82f6';
+            statusBadge='\ud83d\udccb TL\u2713';statusColor='#3b82f6';
           }else{
-            statusBadge='⏳ Pend';statusColor='#f59e0b';
+            statusBadge='\u23f3 Pend';statusColor='#f59e0b';
           }
           
           html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px 60px;gap:4px;padding:8px 4px;border-bottom:1px solid #f0f0f0;align-items:center">';
@@ -8709,16 +9019,16 @@ function renderSelfAttendanceDashboard(container,date){
           html+='<span style="color:'+statusColor+';font-weight:600;font-size:10px">'+statusBadge+'</span>';
           html+='<span style="display:flex;gap:2px">';
           if(!d.confirmed){
-            html+='<button onclick="confirmSelfAttendance(\''+date+'\',\''+username+'\')" style="border:none;background:var(--teal);color:white;border-radius:4px;padding:2px 5px;font-size:10px;cursor:pointer" title="Confirm">✓</button>';
+            html+='<button onclick="confirmSelfAttendance(\''+date+'\',\''+username+'\')" style="border:none;background:var(--teal);color:white;border-radius:4px;padding:2px 5px;font-size:10px;cursor:pointer" title="Confirm">\u2713</button>';
           }
-          html+='<button onclick="editSelfAttendance(\''+date+'\',\''+username+'\',\''+(d.signIn||"")+'\',\''+(d.signOut||"")+'\')" style="border:none;background:#3b82f6;color:white;border-radius:4px;padding:2px 5px;font-size:10px;cursor:pointer" title="Edit">✏️</button>';
+          html+='<button onclick="editSelfAttendance(\''+date+'\',\''+username+'\',\''+( d.signIn||"")+'\',\''+(d.signOut||"")+'\')" style="border:none;background:#3b82f6;color:white;border-radius:4px;padding:2px 5px;font-size:10px;cursor:pointer" title="Edit">\u270f\ufe0f</button>';
           html+='</span></div>';
         });
       }
       
       // Team-lead confirmed section
       html+='<div style="margin-top:16px;padding-top:12px;border-top:2px solid #e5e7eb">';
-      html+='<h4 style="color:var(--navy);font-size:13px;margin-bottom:8px">📋 Team Lead Records <span style="font-size:10px;color:var(--teal);font-weight:400">(Confirmed)</span></h4>';
+      html+='<h4 style="color:var(--navy);font-size:13px;margin-bottom:8px">\ud83d\udccb Team Lead Records <span style="font-size:10px;color:var(--teal);font-weight:400">(Confirmed)</span></h4>';
       if(tlData&&tlData.workers&&Object.keys(tlData.workers).length>0){
         let tlPresent=0;
         html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px;gap:4px;padding:6px 4px;background:#e6f7f2;border-radius:6px;font-weight:600;color:var(--grey);margin-bottom:4px">'
@@ -8726,13 +9036,13 @@ function renderSelfAttendanceDashboard(container,date){
         Object.entries(tlData.workers).forEach(([wname,w])=>{
           if(!w.present)return;
           tlPresent++;
-          const shift=w.shift==="night"?"🌙 Night":"☀️ Day";
+          const shift=w.shift==="night"?"\ud83c\udf19 Night":"\u2600\ufe0f Day";
           html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px;gap:4px;padding:6px 4px;border-bottom:1px solid #f0f0f0">';
           html+='<span>'+wname+'</span>';
-          html+='<span>'+(w.timeIn?formatTime12(w.timeIn):'—')+'</span>';
-          html+='<span>'+(w.timeOut?formatTime12(w.timeOut):'—')+'</span>';
+          html+='<span>'+(w.timeIn?formatTime12(w.timeIn):'\u2014')+'</span>';
+          html+='<span>'+(w.timeOut?formatTime12(w.timeOut):'\u2014')+'</span>';
           html+='<span style="font-size:10px">'+shift+'</span>';
-          html+='<span style="color:var(--teal);font-weight:600;font-size:10px">✅ Actual</span></div>';
+          html+='<span style="color:var(--teal);font-weight:600;font-size:10px">\u2705 Actual</span></div>';
         });
         if(tlPresent===0)html+='<p style="text-align:center;color:var(--grey);font-size:11px;padding:8px">No workers marked present by team leads</p>';
       }else{
@@ -8767,8 +9077,8 @@ function editSelfAttendance(date,username,curIn,curOut){
   modal.className="modal-overlay";
   modal.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999";
   modal.innerHTML='<div style="background:white;border-radius:16px;padding:24px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2)">'
-    +'<h3 style="margin:0 0 4px;color:var(--navy)">✏️ Edit Time</h3>'
-    +'<p style="font-size:12px;color:var(--grey);margin:0 0 16px">'+username+' — '+date+'</p>'
+    +'<h3 style="margin:0 0 4px;color:var(--navy)">\u270f\ufe0f Edit Time</h3>'
+    +'<p style="font-size:12px;color:var(--grey);margin:0 0 16px">'+username+' \u2014 '+date+'</p>'
     +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">Time In</label>'
     +'<input type="time" id="editSelfIn" value="'+curIn+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box"></div>'
     +'<div style="margin-bottom:16px"><label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">Time Out</label>'
@@ -8792,10 +9102,10 @@ function saveSelfAttEdit(date,username){
     data.editedAt=Date.now();
     saveSelfAttendance(date,username,data);
     // Close modal
-    var m=document.querySelector(".modal-overlay");if(m)m.remove();
+    const m=document.querySelector(".modal-overlay");if(m)m.remove();
     // Re-render
-    var dashCont=document.getElementById("selfAttDashboard");
-    var attDate=document.getElementById("attDate");
+    const dashCont=document.getElementById("selfAttDashboard");
+    const attDate=document.getElementById("attDate");
     if(dashCont)renderSelfAttendanceDashboard(dashCont,attDate?attDate.value:date);
   });
 }
