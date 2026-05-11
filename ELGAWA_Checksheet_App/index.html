@@ -2119,13 +2119,65 @@ function _renderHistoryCards(list,sheets,date){
       <div class="h-item-inner" style="background:white;padding:10px">
         <div class="top"><span class="h-badge" style="background:${tm?tm.color:'#999'}">${tm?tm.icon:""} ${s.teamName||"?"}</span><span class="meta">${subTime||""} ${photoTag}</span></div>
         <div class="meta" style="margin:4px 0"><b>${s.submittedBy||s.teamLead||"Unknown"}</b>${areaTag}${s.editedAt?`<span style="background:#e67e22;color:white;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:4px">✏️ ${t("edited")}</span>`:""}</div>
-        <div class="h-actions" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${editBtn}${ri>=0?`<button class="h-btn" onclick="downloadPDF(${ri})">\u{1F4C4} ${t("pdfBtn")}</button><button class="h-btn" onclick="sharePDF(${ri})">\u{1F4AC} ${t("whatsappBtn")}</button><button class="h-btn" onclick="viewSaved(${ri})">\u{1F441}\ufe0f ${t("view")}</button><button class="h-btn del" onclick="deleteSaved(${ri})">\u{1F5D1}\ufe0f</button>`:""}</div>
+        <div class="h-actions" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${editBtn}${ri>=0?`<button class="h-btn" onclick="downloadPDF(${ri})">\u{1F4C4} ${t("pdfBtn")}</button><button class="h-btn" onclick="sharePDF(${ri})">\u{1F4AC} ${t("whatsappBtn")}</button><button class="h-btn" onclick="viewSaved(${ri})">\u{1F441}\ufe0f ${t("view")}</button>${isAdmin?`<button class="h-btn" onclick="reassignSheetDate(${ri},'${date}')" style="background:#6366f1;color:white">📅 Date</button>`:""}<button class="h-btn del" onclick="deleteSaved(${ri})">\u{1F5D1}\ufe0f</button>`:""}</div>
       </div>
     </div>`
   }).join("");
 }
 function deleteSaved(i){showModal(t("confirm")||"Confirm",t("deleteConfirm")||"Delete this report?",()=>{savedSheets.splice(i,1);saveSaved();renderHistory();showToast(t("deleted"))},{danger:true,okText:t("delete")||"Delete"})}
 function viewSaved(i){openForm(savedSheets[i].teamKey,savedSheets[i])}
+// Reassign a submission to a different date (admin only)
+function reassignSheetDate(i,currentDate){
+  const sheet=savedSheets[i];
+  if(!sheet)return;
+  // Build date picker modal
+  const modal=document.createElement("div");
+  modal.className="modal-overlay";
+  modal.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999";
+  modal.innerHTML='<div style="background:white;border-radius:16px;padding:24px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3)">'
+    +'<h3 style="margin:0 0 4px;color:var(--navy)">\u{1F4C5} Reassign Date</h3>'
+    +'<p style="font-size:12px;color:var(--grey);margin:0 0 16px">Move this report from <b>'+currentDate+'</b> to a different date</p>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">New Date</label>'
+    +'<input type="date" id="reassignDatePicker" value="'+currentDate+'" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box"></div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px">Cancel</button>'
+    +'<button onclick="doReassignDate('+i+',\''+currentDate+'\')" style="flex:1;padding:10px;border:none;border-radius:8px;background:#6366f1;color:white;cursor:pointer;font-weight:600;font-size:13px">Move</button>'
+    +'</div></div>';
+  document.body.appendChild(modal);
+}
+function doReassignDate(i,oldDate){
+  const newDate=document.getElementById("reassignDatePicker").value;
+  if(!newDate||newDate===oldDate){document.querySelector(".modal-overlay").remove();return;}
+  const sheet=savedSheets[i];
+  if(!sheet)return;
+  const fb=getFirebaseUrl();
+  // Update local
+  const oldSheetDate=sheet.date;
+  sheet.date=newDate;
+  sheet.reassignedFrom=oldDate;
+  sheet.reassignedAt=Date.now();
+  sheet.reassignedBy=currentUser.username;
+  saveSaved();
+  // Update Firebase: delete from old date, save to new date
+  if(fb&&sheet._id){
+    // Delete from old date
+    fetch(fb+"/checksheets/"+oldDate+'.json?orderBy="_id"&equalTo="'+sheet._id+'"')
+      .then(r=>r.json())
+      .then(obj=>{
+        if(obj&&Object.keys(obj).length){
+          const fbKey=Object.keys(obj)[0];
+          fetch(fb+"/checksheets/"+oldDate+"/"+fbKey+".json",{method:"DELETE"});
+        }
+      }).catch(()=>{});
+    // Save to new date
+    fetch(fb+"/checksheets/"+newDate+".json",{method:"POST",body:JSON.stringify(sheet),headers:{"Content-Type":"application/json"}})
+      .catch(()=>{});
+  }
+  // Close modal and refresh
+  const m=document.querySelector(".modal-overlay");if(m)m.remove();
+  showToast("✅ Report moved to "+newDate);
+  renderHistoryForDate(oldDate);
+}
 // Edit mode — re-open submitted checksheet for correction
 let _editingIndex=-1; // tracks which savedSheet index we're editing (-1 = new)
 function editSaved(i){
@@ -9159,6 +9211,57 @@ function confirmSelfAttendance(date,username){
     data.confirmedBy=currentUser.username;
     data.confirmedAt=Date.now();
     saveSelfAttendance(date,username,data);
+    // Re-render dashboard
+    const attDate=document.getElementById("attDate");
+    const d=attDate?attDate.value:date;
+    const dashCont=document.getElementById("selfAttDashboard");
+    if(dashCont)renderSelfAttendanceDashboard(dashCont,d);
+  });
+}
+
+function editSelfAttendance(date,username,curIn,curOut){
+  // Build modal
+  const modal=document.createElement("div");
+  modal.className="modal-overlay";
+  modal.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999";
+  modal.innerHTML='<div style="background:white;border-radius:16px;padding:24px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2)">'
+    +'<h3 style="margin:0 0 4px;color:var(--navy)">✏️ Edit Time</h3>'
+    +'<p style="font-size:12px;color:var(--grey);margin:0 0 16px">'+username+' — '+date+'</p>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">Time In</label>'
+    +'<input type="time" id="editSelfIn" value="'+curIn+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box"></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">Time Out</label>'
+    +'<input type="time" id="editSelfOut" value="'+curOut+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box"></div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px">Cancel</button>'
+    +'<button onclick="saveSelfAttEdit(\''+date+'\',\''+username+'\')" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--teal);color:white;cursor:pointer;font-weight:600;font-size:13px">Save</button>'
+    +'</div></div>';
+  document.body.appendChild(modal);
+}
+
+function saveSelfAttEdit(date,username){
+  const inVal=document.getElementById("editSelfIn").value;
+  const outVal=document.getElementById("editSelfOut").value;
+  loadSelfAttendance(date,username).then(data=>{
+    if(!data)data={source:"admin-created",name:username,timestamp:Date.now()};
+    data.signIn=inVal;
+    data.signOut=outVal||null;
+    if(outVal)data.totalMins=calcMinsBetween(inVal,outVal);
+    data.editedBy=currentUser.username;
+    data.editedAt=Date.now();
+    saveSelfAttendance(date,username,data);
+    // Close modal
+    const m=document.querySelector(".modal-overlay");if(m)m.remove();
+    // Re-render
+    const dashCont=document.getElementById("selfAttDashboard");
+    const attDate=document.getElementById("attDate");
+    if(dashCont)renderSelfAttendanceDashboard(dashCont,attDate?attDate.value:date);
+  });
+}
+
+</script>
+</body>
+</html>
+);
     // Re-render dashboard
     const attDate=document.getElementById("attDate");
     const d=attDate?attDate.value:date;
