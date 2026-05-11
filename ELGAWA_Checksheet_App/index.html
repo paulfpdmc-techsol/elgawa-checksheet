@@ -7278,6 +7278,7 @@ function _renderAttendanceUI(date,roster,data,container,actions,summary){
   let presentCount=0,absentCount=0,nightCount=0;
   roster.forEach(name=>{
     const w=data.workers[name];
+    if(w&&w._removed)return; // Skip removed workers from counts
     if(w&&w.present){presentCount++;if(w.shift==="night")nightCount++}else absentCount++;
   });
   summary.innerHTML=
@@ -7310,6 +7311,7 @@ function _renderAttendanceUI(date,roster,data,container,actions,summary){
   let html='';
   allNames.forEach(name=>{
     const w=data.workers[name]||{present:false,timeIn:"",timeOut:"",shift:"day"};
+    if(w._removed)return; // Skip workers removed by admin
     const checked=w.present?'checked':'';
     const disabled=locked?'disabled':'';
     const isNight=w.shift==="night";
@@ -7367,12 +7369,21 @@ function attRemoveWorker(name){
 }
 function _doAttRemove(name){
   const data=_getCurrentAttData();
-  if(data.workers[name]){
-    delete data.workers[name];
-    saveAttendanceLocal(_attDate,data);
-    showToast("Removed "+name+" from attendance");
-    renderAttendanceTab();
-  }
+  // Mark as removed (not just delete) so roster workers stay hidden too
+  if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:"",shift:"day"};
+  data.workers[name]._removed=true;
+  data.workers[name].present=false;
+  saveAttendanceLocal(_attDate,data);
+  // Sync removal to cloud
+  const fb=getFirebaseUrl();
+  if(fb)cloudSaveAttendance(_attDate,data);
+  showToast("Removed "+name+" from attendance");
+  // Re-render immediately with local data (avoids async cloud race condition)
+  const roster=getWorkerRoster();
+  const container=document.getElementById("attList");
+  const actions=document.getElementById("attActions");
+  const summary=document.getElementById("attSummary");
+  _renderAttendanceUI(_attDate,roster,data,container,actions,summary);
 }
 
 // In-memory attendance state for current session
