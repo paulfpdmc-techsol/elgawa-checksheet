@@ -2131,37 +2131,59 @@ function renderHistoryForDate(date){
   }
 }
 function _renderHistoryCards(list,sheets,date){
-  const today=getGuyanaDate();
-  const isAdmin=currentUser&&currentUser.username==="admin";
+  var today=getGuyanaDate();
+  var isAdmin=currentUser&&currentUser.username==="admin";
   if(!sheets.length){
-    list.innerHTML=`<div class="empty" style="padding:30px;text-align:center">
-      <div style="font-size:36px;margin-bottom:8px">\u{1F4ED}</div>
-      <div style="font-size:13px;color:var(--grey);font-weight:600">No reports for ${date}</div>
-      <div style="font-size:11px;color:#aaa;margin-top:4px">Try selecting a different date</div>
-      <button onclick="renderHistoryForDate('${date}')" style="margin-top:10px;font-size:11px;padding:6px 16px;border-radius:8px;background:var(--navy);color:white;border:none;cursor:pointer">🔄 Retry</button>
-    </div>`;return;
+    list.innerHTML='<div class="empty" style="padding:30px;text-align:center">'
+      +'<div style="font-size:36px;margin-bottom:8px">\u{1F4ED}</div>'
+      +'<div style="font-size:13px;color:var(--grey);font-weight:600">No reports for '+date+'</div>'
+      +'<div style="font-size:11px;color:#aaa;margin-top:4px">Try selecting a different date</div>'
+      +'<button onclick="renderHistoryForDate(\''+date+'\')" style="margin-top:10px;font-size:11px;padding:6px 16px;border-radius:8px;background:var(--navy);color:white;border:none;cursor:pointer">\u{1F504} Retry</button>'
+      +'</div>';return;
   }
-  const sorted=[...sheets].sort((a,b)=>new Date(b.submittedAt||b.savedAt||0)-new Date(a.submittedAt||a.savedAt||0));
-  list.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">${sorted.length} report${sorted.length>1?"s":""} for ${date}</div>`+sorted.map(s=>{
-    const ri=savedSheets.indexOf(s);
-    const tm=TEAMS[s.teamKey];
-    const isToday=date===today;
-    const isOwner=currentUser&&(s.submittedBy===currentUser.name||s.teamLead===currentUser.name||s.savedBy===currentUser.name);
-    const canEdit=isToday&&(isOwner||isAdmin)&&ri>=0;
-    const editBtn=canEdit?`<button class="h-btn" onclick="editSaved(${ri})" style="background:var(--navy);color:white">\u270f\ufe0f ${t("edit")}</button>`:"";
-    const areaTag=s.location?` \u2014 ${s.location}${s.floor?" "+s.floor:""}`:"";
-    const subTime=s.submittedAt?new Date(s.submittedAt).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",timeZone:"America/Guyana"}):"";
-    const photoCount=(s.photos||[]).length;
-    const photoTag=photoCount?`<span style="font-size:10px;color:var(--navy)">\u{1F4F7} ${photoCount}</span>`:"";
-    return`<div class="h-item" style="border-left:4px solid ${tm?tm.color:'#999'}" ontouchstart="swipeStart(event,this)" ontouchmove="swipeMove(event,this)" ontouchend="swipeEnd(event,this)">
-      ${ri>=0?`<div class="h-item-del-bg" onclick="deleteSaved(${ri})">\u{1F5D1}\ufe0f Delete</div>`:""}
-      <div class="h-item-inner" style="background:white;padding:10px">
-        <div class="top"><span class="h-badge" style="background:${tm?tm.color:'#999'}">${tm?tm.icon:""} ${s.teamName||"?"}</span><span class="meta">${subTime||""} ${photoTag}</span></div>
-        <div class="meta" style="margin:4px 0"><b>${s.submittedBy||s.teamLead||"Unknown"}</b>${areaTag}${s.editedAt?`<span style="background:#e67e22;color:white;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:4px">✏️ ${t("edited")}</span>`:""}</div>
-        <div class="h-actions" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${editBtn}${ri>=0?`<button class="h-btn" onclick="downloadPDF(${ri})">\u{1F4C4} ${t("pdfBtn")}</button><button class="h-btn" onclick="sharePDF(${ri})">\u{1F4AC} ${t("whatsappBtn")}</button><button class="h-btn" onclick="viewSaved(${ri})">\u{1F441}\ufe0f ${t("view")}</button>${isAdmin?`<button class="h-btn" onclick="reassignSheetDate(${ri},'${date}')" style="background:#6366f1;color:white">📅 Date</button>`:""}<button class="h-btn del" onclick="deleteSaved(${ri})">\u{1F5D1}\ufe0f</button>`:""}</div>
-      </div>
-    </div>`
-  }).join("");
+  var sorted=[...sheets].sort(function(a,b){return new Date(b.submittedAt||b.savedAt||0)-new Date(a.submittedAt||a.savedAt||0)});
+  // Ensure every sheet has a valid index in savedSheets
+  sorted.forEach(function(s){if(_findSheetIndex(s)<0){savedSheets.push(s);saveSaved()}});
+  var html='<div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">'+sorted.length+' report'+(sorted.length>1?'s':'')+' for '+date+'</div>';
+  sorted.forEach(function(s){
+    var ri=_findSheetIndex(s);
+    var tm=TEAMS[s.teamKey];
+    var isOwner=currentUser&&(s.submittedBy===currentUser.name||s.teamLead===currentUser.name||s.savedBy===currentUser.name);
+    var canEdit=(isOwner||isAdmin)&&ri>=0;
+    var areaTag=s.location?' — '+escHtml(s.location)+(s.floor?' '+escHtml(s.floor):''):'';
+    var subTime=s.submittedAt?new Date(s.submittedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Guyana'}):'';
+    var photoCount=(s.photos||[]).length;
+    var photoTag=photoCount?'<span style="font-size:10px;color:var(--navy)">\u{1F4F7} '+photoCount+'</span>':'';
+    var editedTag=s.editedAt?'<span style="background:#e67e22;color:white;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:4px">✏️ '+t('edited')+'</span>':'';
+    var reassignTag=s.reassignedFrom?'<span style="background:#6366f1;color:white;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:4px">\u{1F4C5} from '+s.reassignedFrom+'</span>':'';
+    var btns='';
+    if(canEdit)btns+='<button class="h-btn" onclick="editSaved('+ri+')" style="background:var(--navy);color:white">✏️ '+t('edit')+'</button>';
+    btns+='<button class="h-btn" onclick="downloadPDF('+ri+')" style="background:var(--teal);color:white">\u{1F4C4} PDF</button>';
+    btns+='<button class="h-btn" onclick="sharePDF('+ri+')" style="background:#25D366;color:white">\u{1F4AC} WhatsApp</button>';
+    btns+='<button class="h-btn" onclick="viewSaved('+ri+')">\u{1F441}️ '+t('view')+'</button>';
+    if(isAdmin)btns+='<button class="h-btn" onclick="reassignSheetDate('+ri+',\''+date+'\')" style="background:#6366f1;color:white">\u{1F4C5} Date</button>';
+    btns+='<button class="h-btn del" onclick="deleteSaved('+ri+')">\u{1F5D1}️</button>';
+    var swipeBg='<div class="h-item-del-bg" style="display:flex;gap:0">';
+    if(canEdit)swipeBg+='<div onclick="editSaved('+ri+')" style="background:var(--navy);color:white;display:flex;align-items:center;padding:0 16px;font-size:12px;font-weight:600;cursor:pointer">✏️ Edit</div>';
+    swipeBg+='<div onclick="deleteSaved('+ri+')" style="background:var(--danger);color:white;display:flex;align-items:center;padding:0 16px;font-size:12px;font-weight:600;cursor:pointer">\u{1F5D1}️ Delete</div>';
+    swipeBg+='</div>';
+    html+='<div class="h-item" style="border-left:4px solid '+(tm?tm.color:'#999')+'" ontouchstart="swipeStart(event,this)" ontouchmove="swipeMove(event,this)" ontouchend="swipeEnd(event,this)">'
+      +swipeBg
+      +'<div class="h-item-inner" style="background:white;padding:10px">'
+      +'<div class="top"><span class="h-badge" style="background:'+(tm?tm.color:'#999')+'">'+(tm?tm.icon:'')+' '+(s.teamName||'?')+'</span><span class="meta">'+(subTime||'')+' '+photoTag+'</span></div>'
+      +'<div class="meta" style="margin:4px 0"><b>'+escHtml(s.submittedBy||s.teamLead||'Unknown')+'</b>'+areaTag+editedTag+reassignTag+'</div>'
+      +'<div class="h-actions" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">'+btns+'</div>'
+      +'</div></div>';
+  });
+  list.innerHTML=html;
+}
+// Find sheet index in savedSheets by _id or reference
+function _findSheetIndex(s){
+  var idx=savedSheets.indexOf(s);
+  if(idx>=0)return idx;
+  if(s._id){for(var j=0;j<savedSheets.length;j++){if(savedSheets[j]._id===s._id)return j}}
+  if(s.submittedAt&&s.teamKey){for(var k=0;k<savedSheets.length;k++){if(savedSheets[k].submittedAt===s.submittedAt&&savedSheets[k].teamKey===s.teamKey)return k}}
+  return -1;
 }
 function deleteSaved(i){showModal(t("confirm")||"Confirm",t("deleteConfirm")||"Delete this report?",()=>{savedSheets.splice(i,1);saveSaved();renderHistory();showToast(t("deleted"))},{danger:true,okText:t("delete")||"Delete"})}
 function viewSaved(i){openForm(savedSheets[i].teamKey,savedSheets[i])}
@@ -9264,6 +9286,9 @@ function renderSelfAttendanceDashboard(container,date){
   });
 }
 
+// ═══════════════════════════════════════════════════════════
+// CONFIRM / EDIT SELF-ATTENDANCE
+// ═══════════════════════════════════════════════════════════
 function confirmSelfAttendance(date,username){
   loadSelfAttendance(date,username).then(data=>{
     if(!data)return;
@@ -9271,36 +9296,39 @@ function confirmSelfAttendance(date,username){
     data.confirmedBy=currentUser.username;
     data.confirmedAt=Date.now();
     saveSelfAttendance(date,username,data);
-    // Re-render dashboard
-    const attDate=document.getElementById("attDate");
-    const d=attDate?attDate.value:date;
+    showToast("Confirmed "+username);
     const dashCont=document.getElementById("selfAttDashboard");
-    if(dashCont)renderSelfAttendanceDashboard(dashCont,d);
+    const attDate=document.getElementById("attDate");
+    if(dashCont)renderSelfAttendanceDashboard(dashCont,attDate?attDate.value:date);
   });
 }
 
-function editSelfAttendance(date,username,curIn,curOut){
-  // Build modal
+function editSelfAttendance(date,username,signIn,signOut){
   const modal=document.createElement("div");
   modal.className="modal-overlay";
-  modal.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999";
-  modal.innerHTML='<div style="background:white;border-radius:16px;padding:24px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2)">'
-    +'<h3 style="margin:0 0 4px;color:var(--navy)">✏️ Edit Time</h3>'
-    +'<p style="font-size:12px;color:var(--grey);margin:0 0 16px">'+username+' — '+date+'</p>'
-    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">Time In</label>'
-    +'<input type="time" id="editSelfIn" value="'+curIn+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box"></div>'
-    +'<div style="margin-bottom:16px"><label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">Time Out</label>'
-    +'<input type="time" id="editSelfOut" value="'+curOut+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box"></div>'
-    +'<div style="display:flex;gap:8px">'
-    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px">Cancel</button>'
-    +'<button onclick="saveSelfAttEdit(\''+date+'\',\''+username+'\')" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--teal);color:white;cursor:pointer;font-weight:600;font-size:13px">Save</button>'
-    +'</div></div>';
+  modal.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;box-sizing:border-box";
+  const box=document.createElement("div");
+  box.style.cssText="background:white;border-radius:16px;padding:24px;max-width:340px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3)";
+  box.innerHTML='<h3 style="margin:0 0 12px;color:var(--navy);font-size:16px">Edit Sign-In: '+username+'</h3>'
+    +'<label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">Sign In:</label>'
+    +'<input type="time" id="editSelfIn" value="'+(signIn||"")+'" style="width:100%;padding:10px;border:2px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:12px">'
+    +'<label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">Sign Out:</label>'
+    +'<input type="time" id="editSelfOut" value="'+(signOut||"")+'" style="width:100%;padding:10px;border:2px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:16px">'
+    +'<div style="display:flex;gap:10px">'
+    +'<button id="editSelfCancelBtn" style="flex:1;padding:12px;border:1px solid #ddd;border-radius:10px;background:white;cursor:pointer;font-size:14px">Cancel</button>'
+    +'<button id="editSelfSaveBtn" style="flex:1;padding:12px;border:none;border-radius:10px;background:var(--teal);color:white;cursor:pointer;font-weight:700;font-size:14px">Save</button>'
+    +'</div>';
+  modal.appendChild(box);
   document.body.appendChild(modal);
+  document.getElementById("editSelfCancelBtn").addEventListener("click",function(){modal.remove()});
+  document.getElementById("editSelfSaveBtn").addEventListener("click",function(){saveSelfAttEdit(date,username)});
+  modal.addEventListener("click",function(ev){if(ev.target===modal)modal.remove()});
 }
 
 function saveSelfAttEdit(date,username){
   const inVal=document.getElementById("editSelfIn").value;
   const outVal=document.getElementById("editSelfOut").value;
+  if(!inVal){showToast("Sign-in time required");return}
   loadSelfAttendance(date,username).then(data=>{
     if(!data)data={source:"admin-created",name:username,timestamp:Date.now()};
     data.signIn=inVal;
