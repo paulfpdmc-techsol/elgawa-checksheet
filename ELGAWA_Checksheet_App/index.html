@@ -2169,20 +2169,29 @@ function viewSaved(i){openForm(savedSheets[i].teamKey,savedSheets[i])}
 function reassignSheetDate(i,currentDate){
   const sheet=savedSheets[i];
   if(!sheet)return;
-  // Build date picker modal
+  // Build date picker modal — mobile-optimized
   const modal=document.createElement("div");
   modal.className="modal-overlay";
-  modal.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999";
-  modal.innerHTML='<div style="background:white;border-radius:16px;padding:24px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3)">'
-    +'<h3 style="margin:0 0 4px;color:var(--navy)">\u{1F4C5} Reassign Date</h3>'
+  modal.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;box-sizing:border-box";
+  const box=document.createElement("div");
+  box.style.cssText="background:white;border-radius:16px;padding:24px;max-width:340px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3)";
+  box.innerHTML='<h3 style="margin:0 0 4px;color:var(--navy);font-size:16px">Reassign Report Date</h3>'
     +'<p style="font-size:12px;color:var(--grey);margin:0 0 16px">Move this report from <b>'+currentDate+'</b> to a different date</p>'
-    +'<div style="margin-bottom:16px"><label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">New Date</label>'
-    +'<input type="date" id="reassignDatePicker" value="'+currentDate+'" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box"></div>'
-    +'<div style="display:flex;gap:8px">'
-    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px">Cancel</button>'
-    +'<button onclick="doReassignDate('+i+',\''+currentDate+'\')" style="flex:1;padding:10px;border:none;border-radius:8px;background:#6366f1;color:white;cursor:pointer;font-weight:600;font-size:13px">Move</button>'
-    +'</div></div>';
+    +'<label style="font-size:13px;color:var(--navy);display:block;margin-bottom:6px;font-weight:600">Select new date:</label>'
+    +'<input type="date" id="reassignDatePicker" value="'+currentDate+'" style="width:100%;padding:14px 12px;border:2px solid var(--navy);border-radius:10px;font-size:16px;box-sizing:border-box;background:white;color:var(--navy);-webkit-appearance:none;appearance:none">'
+    +'<div style="display:flex;gap:10px;margin-top:20px">'
+    +'<button id="reassignCancelBtn" style="flex:1;padding:14px;border:1px solid #ddd;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600">Cancel</button>'
+    +'<button id="reassignMoveBtn" style="flex:1;padding:14px;border:none;border-radius:10px;background:#6366f1;color:white;cursor:pointer;font-weight:700;font-size:14px">Move Report</button>'
+    +'</div>';
+  modal.appendChild(box);
   document.body.appendChild(modal);
+  // Wire buttons with JS (avoids inline onclick escaping issues on mobile)
+  document.getElementById("reassignCancelBtn").addEventListener("click",function(){modal.remove()});
+  document.getElementById("reassignMoveBtn").addEventListener("click",function(){doReassignDate(i,currentDate)});
+  // Tap outside to close
+  modal.addEventListener("click",function(ev){if(ev.target===modal)modal.remove()});
+  // Auto-focus date picker so mobile keyboard/picker opens
+  setTimeout(function(){var dp=document.getElementById("reassignDatePicker");if(dp)dp.focus()},300);
 }
 function doReassignDate(i,oldDate){
   const newDate=document.getElementById("reassignDatePicker").value;
