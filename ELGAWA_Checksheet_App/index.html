@@ -75,6 +75,8 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .flow-card.started .fc-badge{background:var(--warn);color:white}
 .card-expand{position:fixed;inset:0;background:white;z-index:200;overflow-y:auto;animation:slideUp .25s ease;padding-bottom:90px}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes pulseGlow{0%{box-shadow:0 0 0 0 rgba(29,158,117,0.6)}70%{box-shadow:0 0 0 18px rgba(29,158,117,0)}100%{box-shadow:0 0 0 0 rgba(29,158,117,0)}}
+@keyframes pulseGlowRed{0%{box-shadow:0 0 0 0 rgba(225,29,72,0.5)}70%{box-shadow:0 0 0 18px rgba(225,29,72,0)}100%{box-shadow:0 0 0 0 rgba(225,29,72,0)}}
 .card-expand-hdr{position:sticky;top:0;background:white;z-index:201;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);border-bottom:3px solid var(--navy-lt)}
 .card-expand-hdr .ce-back{background:none;border:none;font-size:24px;color:var(--navy);cursor:pointer;padding:4px 8px}
 .card-expand-hdr .ce-title{font-size:16px;font-weight:800;color:var(--navy)}
@@ -737,7 +739,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
   <div id="workerSignStatus" style="margin-bottom:16px"></div>
   <div id="workerSignActions" style="margin-bottom:20px"></div>
   <div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:16px">
-    <h3 style="color:var(--navy);font-size:14px;margin-bottom:12px">📋 My Recent History</h3>
+    <h3 style="color:var(--navy);font-size:14px;margin-bottom:12px" id="workerHistoryLabel">📋 My Recent History</h3>
     <div id="workerHistory" style="font-size:12px"></div>
   </div>
 </div>
@@ -1730,6 +1732,35 @@ const T={
   loginSubtitle:{en:"Pasha Global Hotel - Daily Checksheet",es:"Pasha Global Hotel - Registro Diario",nl:"Pasha Global Hotel - Dagelijkse Checklist"},
   reportError:{en:"Report error:",es:"Error de reporte:",nl:"Rapportfout:"},
   renderError:{en:"Render error:",es:"Error de renderizado:",nl:"Weergavefout:"},
+  wGoodMorning:{en:"Good Morning",es:"Buenos Días",nl:"Goedemorgen"},
+  wGoodAfternoon:{en:"Good Afternoon",es:"Buenas Tardes",nl:"Goedemiddag"},
+  wGoodEvening:{en:"Good Evening",es:"Buenas Noches",nl:"Goedenavond"},
+  wNotSignedIn:{en:"Not Signed In Yet",es:"Aún No Registrado",nl:"Nog Niet Aangemeld"},
+  wTapToStart:{en:"Tap the green button below to start your day",es:"Toca el botón verde abajo para comenzar tu día",nl:"Tik op de groene knop hieronder om je dag te beginnen"},
+  wTapSignIn:{en:"TAP TO SIGN IN",es:"TOCA PARA REGISTRARTE",nl:"TIK OM AAN TE MELDEN"},
+  wTapSignOut:{en:"TAP TO SIGN OUT",es:"TOCA PARA SALIR",nl:"TIK OM AF TE MELDEN"},
+  wOnSiteWorker:{en:"On Site",es:"En Sitio",nl:"Op Locatie"},
+  wSignedInAt:{en:"Signed in:",es:"Registrado:",nl:"Aangemeld:"},
+  wWorkingFor:{en:"Working for",es:"Trabajando por",nl:"Werkend voor"},
+  wDayComplete:{en:"Day Complete",es:"Día Completado",nl:"Dag Voltooid"},
+  wShiftsComplete:{en:"Shifts Complete",es:"Turnos Completados",nl:"Diensten Voltooid"},
+  wThisShift:{en:"This Shift",es:"Este Turno",nl:"Deze Dienst"},
+  wTotal:{en:"Total",es:"Total",nl:"Totaal"},
+  wIn:{en:"In",es:"Entrada",nl:"In"},
+  wOut:{en:"Out",es:"Salida",nl:"Uit"},
+  wConfirmedByAdmin:{en:"Confirmed by Admin",es:"Confirmado por Admin",nl:"Bevestigd door Admin"},
+  wPendingConfirm:{en:"Pending Admin Confirmation",es:"Pendiente Confirmación Admin",nl:"Wacht op Admin Bevestiging"},
+  wStartNewShift:{en:"Start New Shift (Double Shift)",es:"Iniciar Nuevo Turno (Turno Doble)",nl:"Nieuwe Dienst Starten (Dubbele Dienst)"},
+  wDoubleShiftHint:{en:"Tap above if you're working a second shift today",es:"Toca arriba si trabajas un segundo turno hoy",nl:"Tik hierboven als je vandaag een tweede dienst werkt"},
+  wStartShiftConfirm:{en:"Start a new shift? Your previous shift has been recorded.",es:"¿Iniciar un nuevo turno? Tu turno anterior ha sido registrado.",nl:"Nieuwe dienst starten? Je vorige dienst is geregistreerd."},
+  wMyRecentHistory:{en:"My Recent History",es:"Mi Historial Reciente",nl:"Mijn Recente Geschiedenis"},
+  wNoRecord:{en:"No record",es:"Sin registro",nl:"Geen registratie"},
+  wInProgress:{en:"In progress",es:"En progreso",nl:"Bezig"},
+  wSeeYouTomorrow:{en:"Your attendance has been recorded. See you tomorrow!",es:"Tu asistencia ha sido registrada. ¡Hasta mañana!",nl:"Je aanwezigheid is geregistreerd. Tot morgen!"},
+  wPrevious:{en:"Previous",es:"Anterior",nl:"Vorige"},
+  wShift:{en:"Shift",es:"Turno",nl:"Dienst"},
+  wGrandTotal:{en:"Grand Total",es:"Total General",nl:"Totaal"},
+  wStartNewShiftBtn:{en:"Start New Shift",es:"Iniciar Nuevo Turno",nl:"Nieuwe Dienst"},
 };
 function t(key){return(T[key]&&T[key][LANG])||T[key]&&T[key]["en"]||key}
 
@@ -8833,9 +8864,11 @@ function loadAllSelfAttendance(date){
 function renderWorkerSignIn(){
   const now=getGuyanaTimeNow();
   const hour=now.getHours();
-  const greeting=hour<12?"Good Morning":hour<17?"Good Afternoon":"Good Evening";
+  const greeting=hour<12?t("wGoodMorning"):hour<17?t("wGoodAfternoon"):t("wGoodEvening");
   document.getElementById("workerGreeting").textContent=greeting+", "+currentUser.name;
-  document.getElementById("workerDateLabel").textContent=now.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  document.getElementById("workerDateLabel").textContent=now.toLocaleDateString(LANG==="es"?"es":LANG==="nl"?"nl":"en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  const histLabel=document.getElementById("workerHistoryLabel");
+  if(histLabel)histLabel.textContent="📋 "+t("wMyRecentHistory");
   const date=getGuyanaDate();
   const username=currentUser.username;
   loadSelfAttendance(date,username).then(data=>{
@@ -8853,37 +8886,55 @@ function renderWorkerStatus(data,date){
 
   if(!data||!data.signIn){
     // Not signed in
-    statusEl.innerHTML='<div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:20px;text-align:center">'
-      +'<div style="font-size:36px;margin-bottom:8px">\u23f3</div>'
-      +'<h3 style="color:var(--grey);margin:0">Not Signed In</h3>'
-      +'<p style="font-size:12px;color:var(--grey);margin:4px 0">Tap below to start your day</p>'
+    statusEl.innerHTML='<div style="background:linear-gradient(135deg,#fef3c7,#fffbeb);border-radius:16px;box-shadow:var(--shadow);padding:24px;text-align:center;border:2px solid #f59e0b">'
+      +'<div style="font-size:48px;margin-bottom:8px">\u23f3</div>'
+      +'<h3 style="color:#d97706;margin:0;font-size:20px">'+t("wNotSignedIn")+'</h3>'
+      +'<p style="font-size:14px;color:#92400e;margin:8px 0;font-weight:600">\ud83d\udc47 '+t("wTapToStart")+'</p>'
       +'</div>';
-    actionsEl.innerHTML='<button onclick="workerSignIn()" style="width:100%;padding:16px;font-size:18px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,var(--teal),#0d9488);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(29,158,117,0.3)">\u2705 Sign In</button>';
+    actionsEl.innerHTML='<button onclick="workerSignIn()" style="width:100%;padding:22px;font-size:24px;font-weight:800;border:none;border-radius:16px;background:linear-gradient(135deg,#10b981,#059669,#047857);color:white;cursor:pointer;box-shadow:0 6px 24px rgba(16,185,129,0.45);animation:pulseGlow 2s infinite;letter-spacing:1px;text-transform:uppercase">\u261d\ufe0f '+t("wTapSignIn")+'</button>';
   }else if(data.signIn&&!data.signOut){
     // Signed in, working
     const minsElapsed=calcMinsBetween(data.signIn,timeStr);
+    const shiftNum=getShiftNumber(data);
+    const shiftLabel=shiftNum>1?' ('+t("wShift")+' '+shiftNum+')':'';
+    const prevShiftHtml=(data.shifts&&data.shifts.length>0)?'<div style="font-size:11px;color:var(--grey);margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb">'+t("wPrevious")+': '+data.shifts.map((s,i)=>t("wShift")+' '+(i+1)+': '+formatTime12(s.signIn)+'-'+formatTime12(s.signOut)+' ('+formatDuration(s.totalMins)+')').join(' | ')+'</div>':'';
     statusEl.innerHTML='<div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:20px;text-align:center;border-left:5px solid var(--teal)">'
       +'<div style="font-size:36px;margin-bottom:8px">\ud83d\udfe2</div>'
-      +'<h3 style="color:var(--teal);margin:0">On Site</h3>'
-      +'<p style="font-size:14px;margin:8px 0"><strong>Signed in:</strong> '+formatTime12(data.signIn)+'</p>'
-      +'<p style="font-size:12px;color:var(--grey)">Working for '+formatDuration(minsElapsed)+'</p>'
-      +(data.confirmed?'<p style="font-size:11px;color:var(--teal);margin-top:4px">\u2705 Confirmed by Admin</p>':'')
+      +'<h3 style="color:var(--teal);margin:0">'+t("wOnSiteWorker")+shiftLabel+'</h3>'
+      +'<p style="font-size:14px;margin:8px 0"><strong>'+t("wSignedInAt")+'</strong> '+formatTime12(data.signIn)+'</p>'
+      +'<p style="font-size:12px;color:var(--grey)">'+t("wWorkingFor")+' '+formatDuration(minsElapsed)+'</p>'
+      +prevShiftHtml
+      +(data.confirmed?'<p style="font-size:12px;color:var(--teal);margin-top:8px;font-weight:600">\u2705 '+t("wConfirmedByAdmin")+'</p>':'<p style="font-size:12px;color:#f59e0b;margin-top:8px;font-weight:600;background:#fff7ed;padding:6px 12px;border-radius:8px;border:1px solid #fbbf24">\u23f3 '+t("wPendingConfirm")+'</p>')
       +'</div>';
-    actionsEl.innerHTML='<button onclick="workerSignOut()" style="width:100%;padding:16px;font-size:18px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#e11d48,#fb7185);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(225,29,72,0.3)">\ud83d\udd34 Sign Out</button>';
+    actionsEl.innerHTML='<button onclick="workerSignOut()" style="width:100%;padding:22px;font-size:24px;font-weight:800;border:none;border-radius:16px;background:linear-gradient(135deg,#ef4444,#dc2626,#b91c1c);color:white;cursor:pointer;box-shadow:0 6px 24px rgba(239,68,68,0.45);animation:pulseGlowRed 2s infinite;letter-spacing:1px;text-transform:uppercase">\ud83d\udc4b '+t("wTapSignOut")+'</button>';
   }else{
-    // Day complete
-    const totalMins=calcMinsBetween(data.signIn,data.signOut);
+    // Day complete (current shift done)
+    const currentShiftMins=calcMinsBetween(data.signIn,data.signOut);
+    const shiftNum=getShiftNumber(data);
+    const grandTotal=getTotalShiftMins(data);
+    const hasMultiShifts=data.shifts&&data.shifts.length>0;
+    let shiftBreakdown='';
+    if(hasMultiShifts){
+      shiftBreakdown='<div style="font-size:11px;color:var(--grey);margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;text-align:left">';
+      data.shifts.forEach((s,i)=>{shiftBreakdown+='<div style="display:flex;justify-content:space-between;padding:2px 0"><span>'+t("wShift")+' '+(i+1)+':</span><span>'+formatTime12(s.signIn)+' - '+formatTime12(s.signOut)+' ('+formatDuration(s.totalMins)+')</span></div>'});
+      shiftBreakdown+='<div style="display:flex;justify-content:space-between;padding:2px 0"><span>'+t("wShift")+' '+shiftNum+':</span><span>'+formatTime12(data.signIn)+' - '+formatTime12(data.signOut)+' ('+formatDuration(currentShiftMins)+')</span></div>';
+      shiftBreakdown+='<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid #d1d5db;margin-top:4px;font-weight:700;color:var(--navy)"><span>'+t("wGrandTotal")+':</span><span>'+formatDuration(grandTotal)+'</span></div>';
+      shiftBreakdown+='</div>';
+    }
     statusEl.innerHTML='<div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:20px;text-align:center;border-left:5px solid #3b82f6">'
       +'<div style="font-size:36px;margin-bottom:8px">\u2705</div>'
-      +'<h3 style="color:#3b82f6;margin:0">Day Complete</h3>'
+      +'<h3 style="color:#3b82f6;margin:0">'+(hasMultiShifts?shiftNum+' '+t("wShiftsComplete"):t("wDayComplete"))+'</h3>'
       +'<div style="display:flex;justify-content:center;gap:24px;margin:12px 0">'
-      +'<div><div style="font-size:11px;color:var(--grey)">In</div><div style="font-weight:600">'+formatTime12(data.signIn)+'</div></div>'
-      +'<div><div style="font-size:11px;color:var(--grey)">Out</div><div style="font-weight:600">'+formatTime12(data.signOut)+'</div></div>'
-      +'<div><div style="font-size:11px;color:var(--grey)">Total</div><div style="font-weight:600">'+formatDuration(totalMins)+'</div></div>'
+      +'<div><div style="font-size:11px;color:var(--grey)">'+t("wIn")+'</div><div style="font-weight:600">'+formatTime12(data.signIn)+'</div></div>'
+      +'<div><div style="font-size:11px;color:var(--grey)">'+t("wOut")+'</div><div style="font-weight:600">'+formatTime12(data.signOut)+'</div></div>'
+      +'<div><div style="font-size:11px;color:var(--grey)">'+(hasMultiShifts?t("wThisShift"):t("wTotal"))+'</div><div style="font-weight:600">'+formatDuration(currentShiftMins)+'</div></div>'
       +'</div>'
-      +(data.confirmed?'<p style="font-size:11px;color:var(--teal);margin-top:4px">\u2705 Confirmed by Admin</p>':'')
+      +shiftBreakdown
+      +(data.confirmed?'<p style="font-size:12px;color:var(--teal);margin-top:8px;font-weight:600">\u2705 '+t("wConfirmedByAdmin")+'</p>':'<p style="font-size:12px;color:#f59e0b;margin-top:8px;font-weight:600;background:#fff7ed;padding:6px 12px;border-radius:8px;border:1px solid #fbbf24">\u23f3 '+t("wPendingConfirm")+'</p>')
       +'</div>';
-    actionsEl.innerHTML='<p style="text-align:center;font-size:12px;color:var(--grey)">Your attendance has been recorded. See you tomorrow!</p>';
+    // Show "Start New Shift" button for double shifts
+    actionsEl.innerHTML='<button onclick="startNewShift()" style="width:100%;padding:18px;font-size:18px;font-weight:700;border:none;border-radius:14px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:white;cursor:pointer;box-shadow:0 4px 16px rgba(99,102,241,0.35);margin-bottom:8px">\ud83d\udd04 '+t("wStartNewShift")+'</button>'
+      +'<p style="text-align:center;font-size:12px;color:var(--grey);margin-top:4px">'+t("wDoubleShiftHint")+'</p>';
   }
 }
 
@@ -8892,7 +8943,7 @@ function workerSignIn(){
   const date=getGuyanaDate();
   const username=currentUser.username;
   const timeStr=("0"+now.getHours()).slice(-2)+":"+("0"+now.getMinutes()).slice(-2);
-  const data={signIn:timeStr,signOut:null,source:"self",confirmed:false,name:currentUser.name,timestamp:Date.now()};
+  const data={signIn:timeStr,signOut:null,source:"self",confirmed:false,name:currentUser.name,timestamp:Date.now(),shifts:[]};
   saveSelfAttendance(date,username,data);
   renderWorkerStatus(data,date);
 }
@@ -8911,6 +8962,43 @@ function workerSignOut(){
   });
 }
 
+function startNewShift(){
+  const now=getGuyanaTimeNow();
+  const date=getGuyanaDate();
+  const username=currentUser.username;
+  const timeStr=("0"+now.getHours()).slice(-2)+":"+("0"+now.getMinutes()).slice(-2);
+  showModal(t("wStartNewShiftBtn"),t("wStartShiftConfirm"),()=>{
+    loadSelfAttendance(date,username).then(data=>{
+      if(!data)return;
+      // Save previous shift to shifts array
+      if(!data.shifts)data.shifts=[];
+      data.shifts.push({signIn:data.signIn,signOut:data.signOut,totalMins:data.totalMins||calcMinsBetween(data.signIn,data.signOut),confirmed:data.confirmed||false});
+      // Start new shift
+      data.signIn=timeStr;
+      data.signOut=null;
+      data.totalMins=0;
+      data.confirmed=false;
+      data.timestamp=Date.now();
+      saveSelfAttendance(date,username,data);
+      renderWorkerStatus(data,date);
+      showToast("Shift "+(data.shifts.length+1)+" started!");
+    });
+  });
+}
+
+function getTotalShiftMins(data){
+  let total=0;
+  if(data.shifts&&data.shifts.length>0){
+    data.shifts.forEach(s=>{total+=s.totalMins||calcMinsBetween(s.signIn,s.signOut)||0});
+  }
+  if(data.signIn&&data.signOut){total+=data.totalMins||calcMinsBetween(data.signIn,data.signOut)||0}
+  return total;
+}
+
+function getShiftNumber(data){
+  return (data.shifts&&data.shifts.length>0)?data.shifts.length+1:1;
+}
+
 function renderWorkerHistory(){
   const el=document.getElementById("workerHistory");
   if(!el)return;
@@ -8927,8 +9015,12 @@ function renderWorkerHistory(){
     results.forEach(r=>{
       const dayLabel=new Date(r.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
       if(r.data&&r.data.signIn){
-        const totalMins=r.data.signOut?calcMinsBetween(r.data.signIn,r.data.signOut):0;
-        const status=r.data.signOut?'<span style="color:var(--teal)">\u2705 '+formatDuration(totalMins)+'</span>':'<span style="color:#f59e0b">\ud83d\udfe1 In progress</span>';
+        const grandTotal=getTotalShiftMins(r.data);
+        const currentMins=r.data.signOut?calcMinsBetween(r.data.signIn,r.data.signOut):0;
+        const displayMins=grandTotal||currentMins;
+        const shiftCount=getShiftNumber(r.data);
+        const shiftBadge=shiftCount>1?'<span style="font-size:9px;background:#6366f1;color:white;padding:1px 4px;border-radius:4px;margin-left:3px">x'+shiftCount+'</span>':'';
+        const status=r.data.signOut?'<span style="color:var(--teal)">\u2705 '+formatDuration(displayMins)+'</span>'+shiftBadge:'<span style="color:#f59e0b">\ud83d\udfe1 '+t("wInProgress")+'</span>';
         const confirmed=r.data.confirmed?'<span style="font-size:10px;color:var(--teal)"> \u2713</span>':'';
         html+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0">'
           +'<span>'+dayLabel+'</span>'
@@ -8936,7 +9028,7 @@ function renderWorkerHistory(){
           +'<span>'+status+confirmed+'</span></div>';
       }else{
         html+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;color:#ccc">'
-          +'<span>'+dayLabel+'</span><span>\u2014</span><span>No record</span></div>';
+          +'<span>'+dayLabel+'</span><span>\u2014</span><span>'+t("wNoRecord")+'</span></div>';
       }
     });
     el.innerHTML=html||'<p style="color:var(--grey)">No history yet</p>';
@@ -8985,6 +9077,139 @@ function renderSelfAttendanceDashboard(container,date){
       html+='<div style="flex:1;min-width:80px;text-align:center;background:#e6f7f2;border-radius:8px;padding:8px"><div style="font-size:18px;font-weight:700;color:var(--teal)">'+confirmedCount+'</div><div style="font-size:10px;color:var(--grey)">Confirmed</div></div>';
       html+='<div style="flex:1;min-width:80px;text-align:center;background:#fff7ed;border-radius:8px;padding:8px"><div style="font-size:18px;font-weight:700;color:#f59e0b">'+pendingCount+'</div><div style="font-size:10px;color:var(--grey)">Pending</div></div>';
       html+='</div>';
+
+      if(selfCount===0){
+        html+='<p style="text-align:center;color:var(--grey);padding:16px;font-size:12px">No self sign-ins for this date</p>';
+      }else{
+        // Table header
+        html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px 60px;gap:4px;padding:6px 4px;background:#f7f7f7;border-radius:6px;font-weight:600;color:var(--grey);margin-bottom:4px">'
+          +'<span>Worker</span><span>In</span><span>Out</span><span>Hours</span><span>Status</span><span>Action</span></div>';
+
+        Object.entries(allData).forEach(([username,d])=>{
+          const name=d.name||username;
+          const grandTotal=getTotalShiftMins(d);
+          const currentMins=d.signOut?calcMinsBetween(d.signIn,d.signOut):0;
+          const displayMins=grandTotal||currentMins;
+          const hrs=d.signOut?formatDuration(displayMins):'...';
+          const shiftCount=getShiftNumber(d);
+          const shiftBadge=shiftCount>1?' <span style="font-size:9px;background:#6366f1;color:white;padding:1px 4px;border-radius:4px">x'+shiftCount+'</span>':'';
+
+          // Check if team lead also marked this worker
+          const tlWorker=tlData&&tlData.workers?tlData.workers[name]:null;
+          const tlPresent=tlWorker&&tlWorker.present;
+
+          let statusBadge,statusColor;
+          if(d.confirmed){
+            statusBadge='✅ OK';statusColor='var(--teal)';
+          }else if(tlPresent){
+            statusBadge='📋 TL✓';statusColor='#3b82f6';
+          }else{
+            statusBadge='⏳ Pend';statusColor='#f59e0b';
+          }
+
+          html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px 60px;gap:4px;padding:8px 4px;border-bottom:1px solid #f0f0f0;align-items:center">';
+          html+='<span style="font-weight:500">'+name+'</span>';
+          html+='<span>'+formatTime12(d.signIn)+'</span>';
+          html+='<span>'+(d.signOut?formatTime12(d.signOut):'...')+'</span>';
+          html+='<span>'+hrs+shiftBadge+'</span>';
+          html+='<span style="color:'+statusColor+';font-weight:600;font-size:10px">'+statusBadge+'</span>';
+          html+='<span style="display:flex;gap:2px">';
+          if(!d.confirmed){
+            html+='<button onclick="confirmSelfAttendance(\''+date+'\',\''+username+'\')" style="border:none;background:var(--teal);color:white;border-radius:4px;padding:2px 5px;font-size:10px;cursor:pointer" title="Confirm">✓</button>';
+          }
+          html+='<button onclick="editSelfAttendance(\''+date+'\',\''+username+'\',\''+( d.signIn||"")+'\',\''+(d.signOut||"")+'\')" style="border:none;background:#3b82f6;color:white;border-radius:4px;padding:2px 5px;font-size:10px;cursor:pointer" title="Edit">✏️</button>';
+          html+='</span></div>';
+        });
+      }
+
+      // Team-lead confirmed section
+      html+='<div style="margin-top:16px;padding-top:12px;border-top:2px solid #e5e7eb">';
+      html+='<h4 style="color:var(--navy);font-size:13px;margin-bottom:8px">📋 Team Lead Records <span style="font-size:10px;color:var(--teal);font-weight:400">(Confirmed)</span></h4>';
+      if(tlData&&tlData.workers&&Object.keys(tlData.workers).length>0){
+        let tlPresent=0;
+        html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px;gap:4px;padding:6px 4px;background:#e6f7f2;border-radius:6px;font-weight:600;color:var(--grey);margin-bottom:4px">'
+          +'<span>Worker</span><span>In</span><span>Out</span><span>Shift</span><span>Status</span></div>';
+        Object.entries(tlData.workers).forEach(([wname,w])=>{
+          if(!w.present)return;
+          tlPresent++;
+          const shift=w.shift==="night"?"🌙 Night":"☀️ Day";
+          html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px;gap:4px;padding:6px 4px;border-bottom:1px solid #f0f0f0">';
+          html+='<span>'+wname+'</span>';
+          html+='<span>'+(w.timeIn?formatTime12(w.timeIn):'—')+'</span>';
+          html+='<span>'+(w.timeOut?formatTime12(w.timeOut):'—')+'</span>';
+          html+='<span style="font-size:10px">'+shift+'</span>';
+          html+='<span style="color:var(--teal);font-weight:600;font-size:10px">✅ Actual</span></div>';
+        });
+        if(tlPresent===0)html+='<p style="text-align:center;color:var(--grey);font-size:11px;padding:8px">No workers marked present by team leads</p>';
+      }else{
+        html+='<p style="text-align:center;color:var(--grey);font-size:11px;padding:8px">No team lead attendance data for this date</p>';
+      }
+      html+='</div>';
+
+      html+='</div>';
+      container.innerHTML=html;
+    });
+  });
+}
+
+function confirmSelfAttendance(date,username){
+  loadSelfAttendance(date,username).then(data=>{
+    if(!data)return;
+    data.confirmed=true;
+    data.confirmedBy=currentUser.username;
+    data.confirmedAt=Date.now();
+    saveSelfAttendance(date,username,data);
+    // Re-render dashboard
+    const attDate=document.getElementById("attDate");
+    const d=attDate?attDate.value:date;
+    const dashCont=document.getElementById("selfAttDashboard");
+    if(dashCont)renderSelfAttendanceDashboard(dashCont,d);
+  });
+}
+
+function editSelfAttendance(date,username,curIn,curOut){
+  // Build modal
+  const modal=document.createElement("div");
+  modal.className="modal-overlay";
+  modal.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999";
+  modal.innerHTML='<div style="background:white;border-radius:16px;padding:24px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2)">'
+    +'<h3 style="margin:0 0 4px;color:var(--navy)">✏️ Edit Time</h3>'
+    +'<p style="font-size:12px;color:var(--grey);margin:0 0 16px">'+username+' — '+date+'</p>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">Time In</label>'
+    +'<input type="time" id="editSelfIn" value="'+curIn+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box"></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">Time Out</label>'
+    +'<input type="time" id="editSelfOut" value="'+curOut+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box"></div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px">Cancel</button>'
+    +'<button onclick="saveSelfAttEdit(\''+date+'\',\''+username+'\')" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--teal);color:white;cursor:pointer;font-weight:600;font-size:13px">Save</button>'
+    +'</div></div>';
+  document.body.appendChild(modal);
+}
+
+function saveSelfAttEdit(date,username){
+  const inVal=document.getElementById("editSelfIn").value;
+  const outVal=document.getElementById("editSelfOut").value;
+  loadSelfAttendance(date,username).then(data=>{
+    if(!data)data={source:"admin-created",name:username,timestamp:Date.now()};
+    data.signIn=inVal;
+    data.signOut=outVal||null;
+    if(outVal)data.totalMins=calcMinsBetween(inVal,outVal);
+    data.editedBy=currentUser.username;
+    data.editedAt=Date.now();
+    saveSelfAttendance(date,username,data);
+    // Close modal
+    const m=document.querySelector(".modal-overlay");if(m)m.remove();
+    // Re-render
+    const dashCont=document.getElementById("selfAttDashboard");
+    const attDate=document.getElementById("attDate");
+    if(dashCont)renderSelfAttendanceDashboard(dashCont,attDate?attDate.value:date);
+  });
+}
+
+</script>
+</body>
+</html></div></div>';
+      html+='</div>';
       
       if(selfCount===0){
         html+='<p style="text-align:center;color:var(--grey);padding:16px;font-size:12px">No self sign-ins for this date</p>';
@@ -8995,8 +9220,12 @@ function renderSelfAttendanceDashboard(container,date){
         
         Object.entries(allData).forEach(([username,d])=>{
           const name=d.name||username;
-          const totalMins=d.signOut?calcMinsBetween(d.signIn,d.signOut):0;
-          const hrs=d.signOut?formatDuration(totalMins):'...';
+          const grandTotal=getTotalShiftMins(d);
+          const currentMins=d.signOut?calcMinsBetween(d.signIn,d.signOut):0;
+          const displayMins=grandTotal||currentMins;
+          const hrs=d.signOut?formatDuration(displayMins):'...';
+          const shiftCount=getShiftNumber(d);
+          const shiftBadge=shiftCount>1?' <span style="font-size:9px;background:#6366f1;color:white;padding:1px 4px;border-radius:4px">x'+shiftCount+'</span>':'';
           
           // Check if team lead also marked this worker
           const tlWorker=tlData&&tlData.workers?tlData.workers[name]:null;
@@ -9015,7 +9244,7 @@ function renderSelfAttendanceDashboard(container,date){
           html+='<span style="font-weight:500">'+name+'</span>';
           html+='<span>'+formatTime12(d.signIn)+'</span>';
           html+='<span>'+(d.signOut?formatTime12(d.signOut):'...')+'</span>';
-          html+='<span>'+hrs+'</span>';
+          html+='<span>'+hrs+shiftBadge+'</span>';
           html+='<span style="color:'+statusColor+';font-weight:600;font-size:10px">'+statusBadge+'</span>';
           html+='<span style="display:flex;gap:2px">';
           if(!d.confirmed){
@@ -9106,6 +9335,142 @@ function saveSelfAttEdit(date,username){
     // Re-render
     const dashCont=document.getElementById("selfAttDashboard");
     const attDate=document.getElementById("attDate");
+    if(dashCont)renderSelfAttendanceDashboard(dashCont,attDate?attDate.value:date);
+  });
+}
+
+</script>
+</body>
+</html>
+</div></div>';
+      html+='</div>';
+
+      if(selfCount===0){
+        html+='<p style="text-align:center;color:var(--grey);padding:16px;font-size:12px">No self sign-ins for this date</p>';
+      }else{
+        // Table header
+        html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px 60px;gap:4px;padding:6px 4px;background:#f7f7f7;border-radius:6px;font-weight:600;color:var(--grey);margin-bottom:4px">'
+          +'<span>Worker</span><span>In</span><span>Out</span><span>Hours</span><span>Status</span><span>Action</span></div>';
+
+        Object.entries(allData).forEach(([username,d])=>{
+          const name=d.name||username;
+          const grandTotal=getTotalShiftMins(d);
+          const currentMins=d.signOut?calcMinsBetween(d.signIn,d.signOut):0;
+          const displayMins=grandTotal||currentMins;
+          const hrs=d.signOut?formatDuration(displayMins):'...';
+          const shiftCount=getShiftNumber(d);
+          const shiftBadge=shiftCount>1?' <span style="font-size:9px;background:#6366f1;color:white;padding:1px 4px;border-radius:4px">x'+shiftCount+'</span>':'';
+
+          const tlWorker=tlData&&tlData.workers?tlData.workers[name]:null;
+          const tlPresent=tlWorker&&tlWorker.present;
+
+          let statusBadge,statusColor;
+          if(d.confirmed){
+            statusBadge='✅ OK';statusColor='var(--teal)';
+          }else if(tlPresent){
+            statusBadge='📋 TL✓';statusColor='#3b82f6';
+          }else{
+            statusBadge='⏳ Pend';statusColor='#f59e0b';
+          }
+
+          html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px 60px;gap:4px;padding:8px 4px;border-bottom:1px solid #f0f0f0;align-items:center">';
+          html+='<span style="font-weight:500">'+name+'</span>';
+          html+='<span>'+formatTime12(d.signIn)+'</span>';
+          html+='<span>'+(d.signOut?formatTime12(d.signOut):'...')+'</span>';
+          html+='<span>'+hrs+shiftBadge+'</span>';
+          html+='<span style="color:'+statusColor+';font-weight:600;font-size:10px">'+statusBadge+'</span>';
+          html+='<span style="display:flex;gap:2px">';
+          if(!d.confirmed){
+            html+='<button onclick="confirmSelfAttendance(\''+date+'\',\''+username+'\')" style="border:none;background:var(--teal);color:white;border-radius:4px;padding:2px 5px;font-size:10px;cursor:pointer" title="Confirm">✓</button>';
+          }
+          html+='<button onclick="editSelfAttendance(\''+date+'\',\''+username+'\',\''+(d.signIn||"")+'\',\''+(d.signOut||"")+'\')" style="border:none;background:#3b82f6;color:white;border-radius:4px;padding:2px 5px;font-size:10px;cursor:pointer" title="Edit">✏️</button>';
+          html+='</span></div>';
+        });
+      }
+
+      html+='<div style="margin-top:16px;padding-top:12px;border-top:2px solid #e5e7eb">';
+      html+='<h4 style="color:var(--navy);font-size:13px;margin-bottom:8px">📋 Team Lead Records <span style="font-size:10px;color:var(--teal);font-weight:400">(Confirmed)</span></h4>';
+      if(tlData&&tlData.workers&&Object.keys(tlData.workers).length>0){
+        let tlPresent=0;
+        html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px;gap:4px;padding:6px 4px;background:#e6f7f2;border-radius:6px;font-weight:600;color:var(--grey);margin-bottom:4px">'
+          +'<span>Worker</span><span>In</span><span>Out</span><span>Shift</span><span>Status</span></div>';
+        Object.entries(tlData.workers).forEach(([wname,w])=>{
+          if(!w.present)return;
+          tlPresent++;
+          const shift=w.shift==="night"?"🌙 Night":"☀️ Day";
+          html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px;gap:4px;padding:6px 4px;border-bottom:1px solid #f0f0f0">';
+          html+='<span>'+wname+'</span>';
+          html+='<span>'+(w.timeIn?formatTime12(w.timeIn):'—')+'</span>';
+          html+='<span>'+(w.timeOut?formatTime12(w.timeOut):'—')+'</span>';
+          html+='<span style="font-size:10px">'+shift+'</span>';
+          html+='<span style="color:var(--teal);font-weight:600;font-size:10px">✅ Actual</span></div>';
+        });
+        if(tlPresent===0)html+='<p style="text-align:center;color:var(--grey);font-size:11px;padding:8px">No workers marked present by team leads</p>';
+      }else{
+        html+='<p style="text-align:center;color:var(--grey);font-size:11px;padding:8px">No team lead attendance data for this date</p>';
+      }
+      html+='</div>';
+
+      html+='</div>';
+      container.innerHTML=html;
+    });
+  });
+}
+
+function confirmSelfAttendance(date,username){
+  loadSelfAttendance(date,username).then(data=>{
+    if(!data)return;
+    data.confirmed=true;
+    data.confirmedBy=currentUser.username;
+    data.confirmedAt=Date.now();
+    saveSelfAttendance(date,username,data);
+    const attDate=document.getElementById("attDate");
+    const d=attDate?attDate.value:date;
+    const dashCont=document.getElementById("selfAttDashboard");
+    if(dashCont)renderSelfAttendanceDashboard(dashCont,d);
+  });
+}
+
+function editSelfAttendance(date,username,curIn,curOut){
+  const modal=document.createElement("div");
+  modal.className="modal-overlay";
+  modal.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999";
+  modal.innerHTML='<div style="background:white;border-radius:16px;padding:24px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2)">'
+    +'<h3 style="margin:0 0 4px;color:var(--navy)">✏️ Edit Time</h3>'
+    +'<p style="font-size:12px;color:var(--grey);margin:0 0 16px">'+username+' — '+date+'</p>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">Time In</label>'
+    +'<input type="time" id="editSelfIn" value="'+curIn+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box"></div>'
+    +'<div style="margin-bottom:16px"><label style="font-size:12px;color:var(--grey);display:block;margin-bottom:4px">Time Out</label>'
+    +'<input type="time" id="editSelfOut" value="'+curOut+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box"></div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="this.closest(\x27.modal-overlay\x27).remove()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px">Cancel</button>'
+    +'<button onclick="saveSelfAttEdit(\x27'+date+'\x27,\x27'+username+'\x27)" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--teal);color:white;cursor:pointer;font-weight:600;font-size:13px">Save</button>'
+    +'</div></div>';
+  document.body.appendChild(modal);
+}
+
+function saveSelfAttEdit(date,username){
+  const inVal=document.getElementById("editSelfIn").value;
+  const outVal=document.getElementById("editSelfOut").value;
+  loadSelfAttendance(date,username).then(data=>{
+    if(!data)data={source:"admin-created",name:username,timestamp:Date.now()};
+    data.signIn=inVal;
+    data.signOut=outVal||null;
+    if(outVal)data.totalMins=calcMinsBetween(inVal,outVal);
+    data.editedBy=currentUser.username;
+    data.editedAt=Date.now();
+    saveSelfAttendance(date,username,data);
+    const m=document.querySelector(".modal-overlay");if(m)m.remove();
+    const dashCont=document.getElementById("selfAttDashboard");
+    const attDate=document.getElementById("attDate");
+    if(dashCont)renderSelfAttendanceDashboard(dashCont,attDate?attDate.value:date);
+  });
+}
+
+</script>
+</body>
+</html>
+ttDate=document.getElementById("attDate");
     if(dashCont)renderSelfAttendanceDashboard(dashCont,attDate?attDate.value:date);
   });
 }
