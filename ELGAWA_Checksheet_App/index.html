@@ -1956,10 +1956,45 @@ function switchTab(tab,btn){
   if(tab==="analysis"){switchTab("hub");switchHubTab("analysis");return}
   if(tab==="hub"){document.getElementById("hubSubTabsWrap").classList.remove("hidden");document.getElementById("hubView").classList.remove("hidden");switchHubTab(typeof _hubActiveTab!=="undefined"?_hubActiveTab:"overview");initHubSwipe()}
   if(tab==="settings"){showSettings();return}
-  // Persist active tab
+  // Persist active tab + push browser history for back button
   try{localStorage.setItem("elg_active_tab",tab)}catch(e){}
+  if(!window._skipHistPush)history.pushState({tab:tab},"",location.pathname);
+  window._skipHistPush=false;
   initMainSwipe();
 }
+
+// Phone back button: navigate within app instead of exiting
+window.addEventListener("popstate",function(e){
+  // If a modal is open, close it
+  const modal=document.querySelector(".modal-overlay");
+  if(modal){modal.remove();history.pushState({tab:"modal"},"",location.pathname);return}
+  // If form is open, go back to dashboard
+  const fv=document.getElementById("formView");
+  if(fv&&!fv.classList.contains("hidden")){
+    fv.classList.add("hidden");
+    document.getElementById("dashView").classList.remove("hidden");
+    history.pushState({tab:"forms"},"",location.pathname);
+    return;
+  }
+  // If settings is open, go back to forms
+  const sv=document.getElementById("settingsView");
+  if(sv&&!sv.classList.contains("hidden")){
+    window._skipHistPush=true;switchTab("forms");
+    history.pushState({tab:"forms"},"",location.pathname);
+    return;
+  }
+  // If on a non-forms tab, go back to forms (home)
+  const curTab=localStorage.getItem("elg_active_tab")||"forms";
+  if(curTab!=="forms"){
+    window._skipHistPush=true;switchTab("forms");
+    history.pushState({tab:"forms"},"",location.pathname);
+    return;
+  }
+  // Already on forms/home — push state back so next press also stays in app
+  history.pushState({tab:"forms"},"",location.pathname);
+});
+// Seed initial history state
+history.replaceState({tab:"forms"},"",location.pathname);
 
 function getTeamSubtitle(key){
   const map={ducting:"ductworkInstall",copper:"refrigerantCW",ahu:"ahuInstall",insulation:"thermalAcoustic",general:"siteSupportMat",refrigerant:"refrigerantSupport",drainage:"drainageCondensate",controls:"controlsElectrical",commissioning:"commissioningTesting"};
@@ -2082,6 +2117,10 @@ function renderHistoryForDate(date){
     cloudLoadSheets(date).then(cloudSheets=>{
       console.log("History cloud sheets for "+date+": "+cloudSheets.length);
       const allSheets=mergeSheets(localForDate,cloudSheets.map(s=>({...s,date:s.date||date})));
+      // Cache cloud-only sheets locally so action buttons (PDF, Reassign, View) work
+      let changed=false;
+      allSheets.forEach(s=>{if(savedSheets.indexOf(s)<0){savedSheets.push(s);changed=true}});
+      if(changed)saveSaved();
       _renderHistoryCards(list,allSheets,date);
     }).catch(err=>{
       console.error("History cloud load error for "+date+":",err);
@@ -5232,6 +5271,7 @@ function openForm(teamKey,prefill){
   if(!prefill)_editingIndex=-1; // reset edit mode for new forms
   _formPhotos=(prefill&&prefill.photos)||[];
   const tm=TEAMS[teamKey],v=document.getElementById("formView");
+  history.pushState({tab:"form",team:teamKey},"",location.pathname);
   ["dashView","settingsView","reportView"].forEach(id=>document.getElementById(id).classList.add("hidden"));
   v.classList.remove("hidden");
   const today=getGuyanaDate();
