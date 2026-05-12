@@ -554,10 +554,10 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
       <button class="lang-btn" onclick="setLang('nl')">Nederlands</button>
     </div>
     <label id="lbl_user">Username</label>
-    <input type="text" id="loginUser" autocomplete="username" autocapitalize="none">
+    <input type="text" id="loginUser" autocomplete="off" autocapitalize="none">
     <label id="lbl_pass">Password</label>
     <div style="position:relative">
-      <input type="password" id="loginPass" autocomplete="current-password" style="padding-right:42px">
+      <input type="password" id="loginPass" autocomplete="off" style="padding-right:42px">
       <button type="button" onclick="togglePeek('loginPass',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button>
     </div>
     <button class="primary" onclick="doLogin()" id="loginBtn">Sign In</button>
@@ -783,7 +783,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
         <input type="text" id="newUsername" placeholder="Username" autocapitalize="none">
         <input type="text" id="newFullName" placeholder="Full Name">
         <div style="position:relative"><input type="password" id="newPassword" placeholder="Password" style="padding-right:42px;width:100%;box-sizing:border-box"><button type="button" onclick="togglePeek('newPassword',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button></div>
-        <select id="newRole"><option value="Worker" class="optWorker">Worker</option><option value="Team Lead" class="optTeamLead">Team Lead</option><option value="Supervisor" class="optSupervisor">Supervisor</option><option value="Engineer" class="optEngineer">Engineer</option></select>
+        <select id="newRole"><option value="Worker" class="optWorker">Worker</option><option value="Lead Worker" class="optLeadWorker">Lead Worker</option><option value="Team Lead" class="optTeamLead">Team Lead</option><option value="Supervisor" class="optSupervisor">Supervisor</option><option value="Engineer" class="optEngineer">Engineer</option></select>
         <button class="btn btn-success full" onclick="addNewUser()" id="addUserBtn"></button>
       </div>
       <button class="btn btn-primary full" onclick="saveUserChanges()" style="margin-top:10px;font-weight:700;font-size:14px" id="saveUsersBtn">💾 Save Changes</button>
@@ -890,7 +890,6 @@ const BASE_USERS={
   joser:{pass:"joser2026",name:"Jose Rojas",role:"Worker",teams:"all"},
   juan:{pass:"juan2026",name:"Juan Lopez",role:"Worker",teams:"all"},
   josea:{pass:"josea2026",name:"Jose Wilfredo Arevalo",role:"Worker",teams:"all"},
-  guan:{pass:"guan2026",name:"Guan Marquez",role:"Worker",teams:"all"},
   daymith:{pass:"daymith2026",name:"Daymith Garcia",role:"Worker",teams:"all"},
   marlon:{pass:"marlon2026",name:"Marlon Cedeno",role:"Worker",teams:"all"},
   wilfredo:{pass:"wilfredo2026",name:"Wilfredo Delgado",role:"Worker",teams:"all"},
@@ -909,7 +908,7 @@ const BASE_WORKER_ROSTER=[
   "Luis Miguel","John Peter Jaspe","Yosvani Pavon Fuentes","Yajandri Martinez",
   "Yoanis Osorio","Jose N. Queipo","Yoandi Osorio","Frank Gonzalez Quintana",
   "Gregorio Enrique","Jose Rojas","Juan Lopez","Jose Wilfredo Arevalo",
-  "Guan Marquez","Julio Caraballo","Jose Gonzalez","Daymith Garcia",
+  "Julio Caraballo","Jose Gonzalez","Daymith Garcia",
   "Marlon Cedeno","Wilfredo Delgado","Reinaldo Anasco","Wilfred Arevalo",
   "Alfredo Vinas","Romario Barron","Johnny Tjon","Kenneth Soerowidjojo",
   "Sayad Jayat","Rajiv Poeran","Shaheed Laismohamedkhan","Ashishkumar Moti",
@@ -1190,6 +1189,13 @@ const TEAMS={
     workLabels:["Task","Area","System","Reading","% Done","Status"],
     materials:["Balancing Hood","Anemometer","Manometer","Thermometer","Pressure Gauge","Test Forms","Punch List Forms","Calibration Tools","Balancing Dampers","TAB Report Forms"],
     checklist:["Pre-commissioning checks done","Airflow balanced to spec","Temperature delta verified","Pressure test passed","Punch items documented","Client witness if required","TAB report completed","System handed over"]
+  },
+  welding:{name:"Welding & Fabrication",icon:"\u{1F525}",color:"#D4380D",css:"welding",subtitle:"Welding & Metal Fabrication",
+    extraFields:[{id:"weldType",label:"Weld Type",options:["MIG","TIG","Stick/SMAW","Oxy-Acetylene"]},{id:"jointType",label:"Joint Type",options:["Butt","Fillet","Lap","Tee","Corner","Edge"]},{id:"materialSpec",label:"Material / Thickness"},{id:"rodWire",label:"Rod / Wire Used"},{id:"inspectionResult",label:"Inspection",options:["Pending","Pass","Fail","N/A"]}],
+    workKeys:["task","area","weldDetail","joints","pctDone","status"],
+    workLabels:["Task","Area","Weld Detail","Joints","% Done","Status"],
+    materials:["Welding Rod (6011)","Welding Rod (7018)","MIG Wire","TIG Filler Rod","Flux Core Wire","Grinding Discs","Cutting Discs","Wire Brush","Anti-Spatter Spray","Welding Gas (Argon)","Welding Gas (CO2)","Welding Gas (Oxy-Acetylene)","Steel Plate","Steel Angle","Steel Channel","Steel Pipe","Welding Blanket","Soapstone/Marker"],
+    checklist:["Hot work permit obtained","Fire watch in place","Welding area clear of combustibles","PPE worn (helmet/gloves/leathers)","Machine settings correct","Ground clamp secure","Joints cleaned before welding","Welds visually inspected","Slag removed","Grinding completed","Inspection marked","Area cleaned & secured"]
   }
 };
 
@@ -1360,6 +1366,9 @@ const T={
   ppePartial:{en:"Partial",es:"Parcial",nl:"Gedeeltelijk"},
   saveDraft:{en:"Save Draft",es:"Guardar Borrador",nl:"Concept Opslaan"},
   submitShare:{en:"Submit & Share",es:"Enviar y Compartir",nl:"Indienen & Delen"},
+  submitOnly:{en:"Submit",es:"Enviar",nl:"Indienen"},
+  shareOnly:{en:"Share",es:"Compartir",nl:"Delen"},
+  editForm:{en:"Edit",es:"Editar",nl:"Bewerken"},
   importData:{en:"Import Team Data",es:"Importar Datos del Equipo",nl:"Teamgegevens Importeren"},
   importPlaceholder:{en:"Paste import code here...",es:"Pegar código de importación aquí...",nl:"Plak importcode hier..."},
   importSuccess:{en:"Checksheet imported successfully!",es:"¡Hoja importada con éxito!",nl:"Checklist succesvol geïmporteerd!"},
@@ -1648,6 +1657,7 @@ const T={
   notifBody:{en:"Time to fill in your daily checksheet!",es:"¡Es hora de llenar tu registro diario!",nl:"Tijd om je dagelijkse checklist in te vullen!"},
   // Roles
   roleWorker:{en:"Worker",es:"Trabajador",nl:"Werknemer"},
+  roleLeadWorker:{en:"Lead Worker",es:"Trabajador Líder",nl:"Hoofdwerknemer"},
   roleTeamLead:{en:"Team Lead",es:"Líder de Equipo",nl:"Teamleider"},
   roleSupervisor:{en:"Supervisor",es:"Supervisor",nl:"Supervisor"},
   roleEngineer:{en:"Engineer",es:"Ingeniero",nl:"Ingenieur"},
@@ -1761,6 +1771,10 @@ const T={
   wShift:{en:"Shift",es:"Turno",nl:"Dienst"},
   wGrandTotal:{en:"Grand Total",es:"Total General",nl:"Totaal"},
   wStartNewShiftBtn:{en:"Start New Shift",es:"Iniciar Nuevo Turno",nl:"Nieuwe Dienst"},
+  wBtnSignIn:{en:"SIGN IN",es:"ENTRADA",nl:"AANMELDEN"},
+  wBtnSignOut:{en:"SIGN OUT",es:"SALIDA",nl:"AFMELDEN"},
+  wConfirmSignIn:{en:"Sign in for today?",es:"¿Registrar entrada para hoy?",nl:"Aanmelden voor vandaag?"},
+  wConfirmSignOut:{en:"Sign out and end your shift?",es:"¿Registrar salida y terminar tu turno?",nl:"Afmelden en dienst beëindigen?"},
 };
 function t(key){return(T[key]&&T[key][LANG])||T[key]&&T[key]["en"]||key}
 
@@ -1821,6 +1835,7 @@ function applyLang(){
   const fph=document.getElementById("newFullName");if(fph)fph.placeholder=t("fullName");
   const pph=document.getElementById("newPassword");if(pph)pph.placeholder=t("password");
   document.querySelectorAll(".optWorker").forEach(el=>{el.textContent=t("roleWorker")});
+  document.querySelectorAll(".optLeadWorker").forEach(el=>{el.textContent=t("roleLeadWorker")});
   document.querySelectorAll(".optTeamLead").forEach(el=>{el.textContent=t("roleTeamLead")});
   document.querySelectorAll(".optSupervisor").forEach(el=>{el.textContent=t("roleSupervisor")});
   document.querySelectorAll(".optEngineer").forEach(el=>{el.textContent=t("roleEngineer")});
@@ -2147,9 +2162,11 @@ function _renderHistoryCards(list,sheets,date){
   var html='<div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">'+sorted.length+' report'+(sorted.length>1?'s':'')+' for '+date+'</div>';
   sorted.forEach(function(s){
     var ri=_findSheetIndex(s);
+    // If sheet still not in savedSheets, force-push it now
+    if(ri<0){savedSheets.push(s);saveSaved();ri=savedSheets.length-1}
     var tm=TEAMS[s.teamKey];
     var isOwner=currentUser&&(s.submittedBy===currentUser.name||s.teamLead===currentUser.name||s.savedBy===currentUser.name);
-    var canEdit=(isOwner||isAdmin)&&ri>=0;
+    var canEdit=isOwner||isAdmin;
     var areaTag=s.location?' — '+escHtml(s.location)+(s.floor?' '+escHtml(s.floor):''):'';
     var subTime=s.submittedAt?new Date(s.submittedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Guyana'}):'';
     var photoCount=(s.photos||[]).length;
@@ -2185,8 +2202,8 @@ function _findSheetIndex(s){
   if(s.submittedAt&&s.teamKey){for(var k=0;k<savedSheets.length;k++){if(savedSheets[k].submittedAt===s.submittedAt&&savedSheets[k].teamKey===s.teamKey)return k}}
   return -1;
 }
-function deleteSaved(i){showModal(t("confirm")||"Confirm",t("deleteConfirm")||"Delete this report?",()=>{savedSheets.splice(i,1);saveSaved();renderHistory();showToast(t("deleted"))},{danger:true,okText:t("delete")||"Delete"})}
-function viewSaved(i){openForm(savedSheets[i].teamKey,savedSheets[i])}
+function deleteSaved(i){var s=savedSheets[i];if(!s){showToast("⚠️ Report not found — please refresh");return}showModal(t("confirm")||"Confirm",t("deleteConfirm")||"Delete this report?",()=>{savedSheets.splice(i,1);saveSaved();renderHistory();showToast(t("deleted"))},{danger:true,okText:t("delete")||"Delete"})}
+function viewSaved(i){var s=savedSheets[i];if(!s){showToast("⚠️ Report not found — please refresh");return}openForm(s.teamKey,s)}
 // Reassign a submission to a different date (admin only)
 function reassignSheetDate(i,currentDate){
   const sheet=savedSheets[i];
@@ -2243,24 +2260,34 @@ function doReassignDate(i,oldDate){
     fetch(fb+"/checksheets/"+newDate+".json",{method:"POST",body:JSON.stringify(sheet),headers:{"Content-Type":"application/json"}})
       .catch(()=>{});
   }
-  // Close modal and refresh
+  // Close modal and navigate to the new date
   const m=document.querySelector(".modal-overlay");if(m)m.remove();
   showToast("✅ Report moved to "+newDate);
-  renderHistoryForDate(oldDate);
+  // Update date picker and render the new date so admin sees the moved report
+  const picker=document.getElementById("histDatePicker");
+  if(picker)picker.value=newDate;
+  renderHistoryForDate(newDate);
 }
 // Edit mode — re-open submitted checksheet for correction
 let _editingIndex=-1; // tracks which savedSheet index we're editing (-1 = new)
 function editSaved(i){
-  _editingIndex=i;
   const sheet=savedSheets[i];
+  if(!sheet){showToast("⚠️ Report not found — please refresh");return}
+  _editingIndex=i;
   openForm(sheet.teamKey,sheet);
   // Swap submit button to "Update & Re-share"
   setTimeout(()=>{
     const submitBtn=document.querySelector(".btn-submit");
     if(submitBtn){
-      submitBtn.textContent=t("updateReshare");
+      submitBtn.textContent="✏️ "+t("updateReshare");
       submitBtn.onclick=function(){updateAndReshare(sheet.teamKey)};
       submitBtn.style.background="#e67e22";
+    }
+    const shareBtn=document.querySelector(".btn-submit-share");
+    if(shareBtn){
+      shareBtn.textContent="📤 "+t("updateReshare")+" & "+t("shareOnly");
+      shareBtn.onclick=function(){updateAndReshare(sheet.teamKey)};
+      shareBtn.style.background="#e67e22";
     }
     // Show edit banner at top
     const formView=document.getElementById("formView");
@@ -5041,6 +5068,37 @@ function addCopperRow(){
   cont.insertAdjacentHTML("beforeend",buildCopperRow(idx,{}));
 }
 
+// ============ WELDING & FABRICATION TRACKING ============
+const WELD_TYPES=["MIG","TIG","Stick/SMAW","Oxy-Acetylene","Flux Core"];
+const WELD_JOINTS=["Butt","Fillet","Lap","Tee","Corner","Edge"];
+const WELD_MATERIALS=["Mild Steel","Stainless Steel","Galvanized","Aluminium","Copper"];
+const WELD_ROD_WIRE=["6011","6013","7018","ER70S-6 (MIG)","ER308L (TIG SS)","ER4043 (TIG Al)"];
+const WELD_INSPECT=["Pending","Visual Pass","Visual Fail","NDT Pass","NDT Fail","N/A"];
+const WELD_STATUS=["Not Started","10%","20%","30%","40%","50%","60%","70%","80%","90%","Completed","Rework"];
+function buildWeldRow(i,row){
+  const typeOpts=WELD_TYPES.map(w=>`<option value="${w}" ${row.weldType===w?"selected":""}>${w}</option>`).join("");
+  const jointOpts=WELD_JOINTS.map(j=>`<option value="${j}" ${row.jointType===j?"selected":""}>${j}</option>`).join("");
+  const matOpts=WELD_MATERIALS.map(m=>`<option value="${m}" ${row.weldMaterial===m?"selected":""}>${m}</option>`).join("");
+  const rodOpts=WELD_ROD_WIRE.map(r=>`<option value="${r}" ${row.rodWire===r?"selected":""}>${r}</option>`).join("");
+  const inspOpts=WELD_INSPECT.map(x=>`<option value="${x}" ${row.inspection===x?"selected":""}>${x}</option>`).join("");
+  const statusOpts=WELD_STATUS.map(s=>`<option value="${s}" ${row.weldStatus===s?"selected":""}>${s}</option>`).join("");
+  return`<div class="entry-card" data-weld-row="${i}"><div class="row-head"><span class="row-num">${i+1}</span></div>
+  <div class="fields"><div class="mini-field"><label>Weld Type</label><select data-weld="${i}" data-key="weldType"><option value="">--</option>${typeOpts}</select></div>
+  <div class="mini-field"><label>Joint Type</label><select data-weld="${i}" data-key="jointType"><option value="">--</option>${jointOpts}</select></div>
+  <div class="mini-field"><label>Material</label><select data-weld="${i}" data-key="weldMaterial"><option value="">--</option>${matOpts}</select></div>
+  <div class="mini-field"><label>Thickness</label><input data-weld="${i}" data-key="thickness" value="${row.thickness||""}" placeholder="e.g. 6mm"></div>
+  <div class="mini-field"><label>Rod/Wire</label><select data-weld="${i}" data-key="rodWire"><option value="">--</option>${rodOpts}</select></div>
+  <div class="mini-field"><label>Joints #</label><input data-weld="${i}" data-key="jointsCount" value="${row.jointsCount||""}" type="number"></div>
+  <div class="mini-field"><label>Inspection</label><select data-weld="${i}" data-key="inspection"><option value="">--</option>${inspOpts}</select></div>
+  <div class="mini-field"><label>Status</label><select data-weld="${i}" data-key="weldStatus"><option value="">--</option>${statusOpts}</select></div>
+  <div class="mini-field"><label>Area</label><select data-weld="${i}" data-key="weldArea"><option value="">--</option>${COMMON_LOCATIONS.map(l=>`<option value="${l}" ${row.weldArea===l?"selected":""}>${l}</option>`).join("")}</select></div></div></div>`;
+}
+function addWeldRow(){
+  const cont=document.getElementById("weldRowsCont");
+  const idx=cont.querySelectorAll("[data-weld-row]").length;
+  cont.insertAdjacentHTML("beforeend",buildWeldRow(idx,{}));
+}
+
 // ============ AHU EQUIPMENT TRACKING ============
 const AHU_TASKS_SPECIFIC=["Unit Positioning","Mounting/Leveling","Duct Connection","Piping Connection","Electrical Connection","Filter Install","Condensate Connection","Commissioning","Vibration Check"];
 const AHU_CAPACITIES=["1 Ton","1.5 Ton","2 Ton","2.5 Ton","3 Ton","4 Ton","5 Ton","7.5 Ton","10 Ton","12.5 Ton","15 Ton","20 Ton","25 Ton","30 Ton","40 Ton","50 Ton","60 Ton","80 Ton","100 Ton"];
@@ -5298,6 +5356,7 @@ function _collectFormData(){
   }catch(e){return null}
 }
 function openForm(teamKey,prefill){
+  _submitting=false; // reset submit lock when opening a form
   _formTeamKey=teamKey;
   if(!prefill)_editingIndex=-1; // reset edit mode for new forms
   _formPhotos=(prefill&&prefill.photos)||[];
@@ -5384,6 +5443,13 @@ function openForm(teamKey,prefill){
   <div class="collapse-body open" id="cb_copper"><div class="inner">
     <div id="copperRowsCont">${Array.from({length:(pf.copperRows||[{},{},{}]).length},(_,i)=>{const row=(pf.copperRows&&pf.copperRows[i])||{};return buildCopperRow(i,row)}).join("")}</div>
     <button class="add-btn" type="button" onclick="addCopperRow()">+ Add Pipe Entry</button>
+  </div></div>`:""}
+
+  ${teamKey==="welding"?`
+  <div class="collapse-hdr open" data-collapse="weld" onclick="toggleCollapse('weld')"><h3>🔥 Welding & Fabrication <span class="collapse-count">(${(pf.weldRows||[{},{},{}]).length})</span></h3><span class="arrow">▼</span></div>
+  <div class="collapse-body open" id="cb_weld"><div class="inner">
+    <div id="weldRowsCont">${Array.from({length:(pf.weldRows||[{},{},{}]).length},(_,i)=>{const row=(pf.weldRows&&pf.weldRows[i])||{};return buildWeldRow(i,row)}).join("")}</div>
+    <button class="add-btn" type="button" onclick="addWeldRow()">+ Add Weld Entry</button>
   </div></div>`:""}
 
   ${teamKey==="ahu"?`
@@ -5479,9 +5545,14 @@ function openForm(teamKey,prefill){
     <input type="file" id="photoUpload" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this,'${teamKey}')">
   </div></div>
 
-  <div class="action-bar">
-    <button class="btn btn-success btn-submit" onclick="submitAndShare('${teamKey}')">${t("submitShare")}</button>
-    <button class="btn btn-outline" onclick="clearForm()">${t("clear")}</button>
+  <div class="action-bar" style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-success btn-submit" onclick="submitOnlyBtn('${teamKey}')" style="flex:1;font-weight:700">✅ ${t("submitOnly")}</button>
+      <button class="btn btn-success btn-submit-share" onclick="submitAndShare('${teamKey}')" style="flex:1;font-weight:700;background:#25D366">📤 ${t("submitShare")}</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="clearForm()" style="flex:1">${t("clear")}</button>
+    </div>
   </div>`;
   v.innerHTML=html;
   // Render Card Flow overlay on the form
@@ -5511,7 +5582,7 @@ function getCardSections(teamKey){
     {id:"work",icon:"⚡",title:t("workCompleted"),required:true,checkFn:()=>{const c=document.getElementById("workRowsCont");if(!c)return 0;let filled=0;c.querySelectorAll("[data-work-row]").forEach((_,i)=>{const s=document.querySelector(`[data-work="${i}"][data-key="task"]`);const st=document.querySelector(`[data-work="${i}"][data-key="status"]`);if(s&&s.value&&st&&st.value)filled++});return filled>0?2:0}},
   ];
   // Team-specific card
-  const specMap={ducting:{id:"duct",icon:"🏗️",title:t("ductFabrication")||"Duct Fabrication"},copper:{id:"copper",icon:"🔩",title:t("copperPiping")||"Copper Piping"},ahu:{id:"ahuspec",icon:"❄️",title:"AHU Equipment"},insulation:{id:"insspec",icon:"🧱",title:"Insulation"},general:{id:"genspec",icon:"👷",title:"Labour Tasks"},refrigerant:{id:"refspec",icon:"🧊",title:"Refrigerant"},drainage:{id:"drainspec",icon:"💧",title:"Drainage"},controls:{id:"ctrlspec",icon:"⚡",title:"Controls/Electrical"},commissioning:{id:"commspec",icon:"✅",title:"Commissioning"}};
+  const specMap={ducting:{id:"duct",icon:"🏗️",title:t("ductFabrication")||"Duct Fabrication"},copper:{id:"copper",icon:"🔩",title:t("copperPiping")||"Copper Piping"},ahu:{id:"ahuspec",icon:"❄️",title:"AHU Equipment"},insulation:{id:"insspec",icon:"🧱",title:"Insulation"},general:{id:"genspec",icon:"👷",title:"Labour Tasks"},refrigerant:{id:"refspec",icon:"🧊",title:"Refrigerant"},drainage:{id:"drainspec",icon:"💧",title:"Drainage"},controls:{id:"ctrlspec",icon:"⚡",title:"Controls/Electrical"},commissioning:{id:"commspec",icon:"✅",title:"Commissioning"},welding:{id:"weld",icon:"🔥",title:"Welding & Fabrication"}};
   if(specMap[teamKey]){
     const sp=specMap[teamKey];
     cards.push({id:sp.id,icon:sp.icon,title:sp.title,required:false,checkFn:()=>{const contId=sp.id==="duct"?"ductRowsCont":sp.id==="copper"?"copperRowsCont":sp.id+"RowsCont".replace("spec","");const c=document.getElementById(contId||sp.id+"RowsCont");return c&&c.children.length>0?2:0}});
@@ -5576,8 +5647,11 @@ function renderCardFlow(teamKey){
       </div>
     </div>
     ${renderFormModeToggle()}<div class="card-stack" id="cardStack">${cardsHtml}</div>
-    <div class="submit-bar">
-      <button class="btn btn-success btn-submit" onclick="submitAndShare('${teamKey}')" ${pct<60?"disabled":""}>${t("submitShare")}</button>
+    <div class="submit-bar" style="display:flex;flex-direction:column;gap:8px;padding:0 16px">
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-success btn-submit" onclick="submitOnlyBtn('${teamKey}')" ${pct<60?"disabled":""} style="flex:1;font-weight:700">✅ ${t("submitOnly")}</button>
+        <button class="btn btn-success btn-submit-share" onclick="submitAndShare('${teamKey}')" ${pct<60?"disabled":""} style="flex:1;font-weight:700;background:#25D366">📤 ${t("submitShare")}</button>
+      </div>
     </div>`;
   
   // We need to keep the hidden form content in the DOM for data collection
@@ -5783,7 +5857,7 @@ function showSubmitConfirmation(teamName,teamColor){
       <strong>${t("reminderTitle")||"Reminder"}</strong><br>
       ${t("reminderFill")||"Please ensure ALL sections are filled accurately every day."}
     </div>
-    <button class="confirm-btn" style="background:${teamColor}" onclick="this.closest('.confirm-overlay').remove();showDash()">Done</button>
+    <button class="confirm-btn" style="background:${teamColor}" onclick="_submitting=false;this.closest('.confirm-overlay').remove();showDash()">Done</button>
   </div>`;
   document.body.appendChild(overlay);
   // Trigger animation
@@ -6221,6 +6295,10 @@ function collectForm(teamKey){
     const iCont=document.getElementById("insRowsCont");
     if(iCont){d.insRows=[];iCont.querySelectorAll("[data-ins-row]").forEach((_,i)=>{const r={};["insSystem","insThickness","insLength","insArea","insStatus"].forEach(k=>{const el=document.querySelector(`[data-ins="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});if(r.insThickness==="Other"){const oth=document.querySelector(`[data-ins="${i}"][data-key="_otherInsThickness"]`);if(oth&&oth.value)r.insThickness=oth.value}d.insRows.push(r)})}
   }
+  if(teamKey==="welding"){
+    const wCont=document.getElementById("weldRowsCont");
+    if(wCont){d.weldRows=[];wCont.querySelectorAll("[data-weld-row]").forEach((_,i)=>{const r={};["weldType","jointType","weldMaterial","thickness","rodWire","jointsCount","inspection","weldStatus","weldArea"].forEach(k=>{const el=document.querySelector(`[data-weld="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});d.weldRows.push(r)})}
+  }
   if(teamKey==="general"){
     const gCont=document.getElementById("genRowsCont");
     if(gCont){d.genRows=[];gCont.querySelectorAll("[data-gen-row]").forEach((_,i)=>{const r={};["genTask","genArea","genQty","genNotes"].forEach(k=>{const el=document.querySelector(`[data-gen="${i}"][data-key="${k}"]`);if(el)r[k]=el.value});d.genRows.push(r)})}
@@ -6321,73 +6399,78 @@ function restoreDraft(tk){
 function clearDraft(tk){
   try{localStorage.removeItem("elg_draft_"+tk)}catch(e){}
 }
-function submitAndShare(tk){
-  // Prevent double-tap
+// Shared validation + duplicate check before any submit
+function _validateAndSubmit(tk,mode){
   if(_submitting){showToast(t("submissionInProgress"));return}
-  // Validate required fields
   const valErrors=validateForm(tk);
   if(valErrors.length){
     showToast("⚠️ "+valErrors[0]);
     showModal(t("requiredFields")||"Required Fields",valErrors.map(e=>"• "+e).join("<br>"),null,{okText:"OK"});
     return;
   }
-  // Check for existing submissions (same team + same date)
   const dateVal=document.getElementById("f_date").value;
   const existing=getExistingSubmissions(tk,dateVal);
   if(existing.length){
     const details=existing.map((s,i)=>`${i+1}. ${s.location||"?"} ${s.floor||""} — ${s.submittedBy||s.teamLead||"?"}`).join("<br>");
     showModal(t("dupTitle")||"Duplicate Submission",
       `${existing.length} report(s) for ${dateVal}:<br><br>${details}<br><br>${t("dupCorrection")||"OK = correction"}<br>${t("dupNewArea")||""}`,
-      ()=>{_doFinalSubmit(tk)},{okText:t("submit")||"Submit"});
+      ()=>{_doFinalSubmit(tk,mode)},{okText:t("submit")||"Submit"});
     return;
   }
-  _doFinalSubmit(tk);
+  _doFinalSubmit(tk,mode);
 }
-function _doFinalSubmit(tk){
+function submitAndShare(tk){_validateAndSubmit(tk,"share")}
+function submitOnlyBtn(tk){_validateAndSubmit(tk,"save")}
+function _doFinalSubmit(tk,mode){
   _submitting=true;
+  // Disable all submit buttons
+  document.querySelectorAll(".btn-submit,.btn-submit-share").forEach(btn=>{btn.disabled=true;btn.style.pointerEvents="none"});
   const submitBtn=document.querySelector(".btn-submit");
-  if(submitBtn){submitBtn.disabled=true;submitBtn.innerHTML='<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px"></span>'+t("submitting");}
+  if(submitBtn){submitBtn.innerHTML='<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px"></span>'+t("submitting");}
   const d=collectForm(tk);
   autoCorrectSheet(d);
   d._id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  // Duplicate check — prevent same team+date+lead from submitting again within 30 seconds
+  const recentDup=savedSheets.find(s=>s.teamKey===d.teamKey&&s.date===d.date&&s.teamLead===d.teamLead&&s._id&&(Date.now()-parseInt(s._id,36))<30000);
+  if(recentDup){_submitting=false;document.querySelectorAll(".btn-submit,.btn-submit-share").forEach(btn=>{btn.disabled=false;btn.style.pointerEvents=""});if(submitBtn)submitBtn.textContent=t("submitOnly");showToast("Already submitted — please wait");return;}
   savedSheets.push(d);saveSaved();
-  clearDraft(tk); // Clear local auto-save after successful submit
-  // Cloud sync
+  clearDraft(tk);
   autoRegisterAttendance(d);
   cloudSaveSheet(d).then(ok=>{
     if(ok)showToast(t("synced"));
   }).catch(()=>{
     _syncQueue.push(d);showToast("📡 Saved locally — will sync when online");
-  }).finally(()=>{_submitting=false;if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=t("submitShare");}});
+  }).finally(()=>{});
   const tm=TEAMS[d.teamKey];
-  const fn=`Checksheet_${tm.name.replace(/\s/g,"_")}_${d.date||"undated"}.pdf`;
-  const pdfDoc=buildPDFDoc(d);
-  // Generate import code (strip photos to keep size manageable)
-  const importData={...d,photos:[]};
-  const importCode=generateImportCode(importData);
-  // Build summary with key highlights
-  const workDone=(d.workRows||[]).filter(r=>r.task&&r.status==="C").map(r=>r.task).join(", ");
-  const blocked=(d.workRows||[]).filter(r=>r.task&&r.status==="BL").map(r=>r.task).join(", ");
-  const issues=(d.issueRows||[]).filter(r=>r.issue).map(r=>`[${r.impact||"?"}] ${r.issue}`).join(", ");
-  const toolAlerts=(d.toolRows||[]).filter(r=>r.condition==="Damaged"||r.condition==="Lost"||r.returnStatus==="Not Returned").map(r=>`${r.toolName} (${r.condition||r.returnStatus})`).join(", ");
-  let msg=`${t("whatsappChecksheet")}\n━━━━━━━━━━━━━━━━━━\n${t("whatsappTeam")} ${tm.name}\n${t("whatsappLead")} ${d.teamLead}\n${t("whatsappDate")} ${d.date}\n${t("whatsappArea")} ${d.location} ${d.floor}\n${t("whatsappWeather")} ${d.weather||"-"}\n\n${t("whatsappManpowerLabel")} ${d.totalMan||"-"} ${t("workers")} | ${d.totalHrs||"-"} ${t("hrs")} | ${t("otColon")} ${d.totalOT||"0"}\n`;
-  if(workDone)msg+=`\n${t("whatsappCompleted")} ${workDone}`;
-  if(blocked)msg+=`\n🚨 ${t("whatsappBlocked")} ${blocked}`;
-  if(issues)msg+=`\n⚠️ ${t("whatsappIssuesLabel")} ${issues}`;
-  if(toolAlerts)msg+=`\n🔧 ${t("whatsappToolAlerts")} ${toolAlerts}`;
-  msg+=`\n\n📋 ${t("whatsappImportCode")}:\n${importCode}`;
-  if(navigator.share&&navigator.canShare){
-    const blob=pdfDoc.output("blob");
-    const file=new File([blob],fn,{type:"application/pdf"});
-    navigator.share({title:`ELGAWA ${tm.name}`,text:msg,files:[file]}).catch(()=>{
+  // Share via WhatsApp only if mode is "share"
+  if(mode==="share"){
+    const fn=`Checksheet_${tm.name.replace(/\s/g,"_")}_${d.date||"undated"}.pdf`;
+    const pdfDoc=buildPDFDoc(d);
+    const importData={...d,photos:[]};
+    const importCode=generateImportCode(importData);
+    const workDone=(d.workRows||[]).filter(r=>r.task&&r.status==="C").map(r=>r.task).join(", ");
+    const blocked=(d.workRows||[]).filter(r=>r.task&&r.status==="BL").map(r=>r.task).join(", ");
+    const issues=(d.issueRows||[]).filter(r=>r.issue).map(r=>`[${r.impact||"?"}] ${r.issue}`).join(", ");
+    const toolAlerts=(d.toolRows||[]).filter(r=>r.condition==="Damaged"||r.condition==="Lost"||r.returnStatus==="Not Returned").map(r=>`${r.toolName} (${r.condition||r.returnStatus})`).join(", ");
+    let msg=`${t("whatsappChecksheet")}\n━━━━━━━━━━━━━━━━━━\n${t("whatsappTeam")} ${tm.name}\n${t("whatsappLead")} ${d.teamLead}\n${t("whatsappDate")} ${d.date}\n${t("whatsappArea")} ${d.location} ${d.floor}\n${t("whatsappWeather")} ${d.weather||"-"}\n\n${t("whatsappManpowerLabel")} ${d.totalMan||"-"} ${t("workers")} | ${d.totalHrs||"-"} ${t("hrs")} | ${t("otColon")} ${d.totalOT||"0"}\n`;
+    if(workDone)msg+=`\n${t("whatsappCompleted")} ${workDone}`;
+    if(blocked)msg+=`\n🚨 ${t("whatsappBlocked")} ${blocked}`;
+    if(issues)msg+=`\n⚠️ ${t("whatsappIssuesLabel")} ${issues}`;
+    if(toolAlerts)msg+=`\n🔧 ${t("whatsappToolAlerts")} ${toolAlerts}`;
+    msg+=`\n\n📋 ${t("whatsappImportCode")}:\n${importCode}`;
+    if(navigator.share&&navigator.canShare){
+      const blob=pdfDoc.output("blob");
+      const file=new File([blob],fn,{type:"application/pdf"});
+      navigator.share({title:`ELGAWA ${tm.name}`,text:msg,files:[file]}).catch(()=>{
+        pdfDoc.save(fn);window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+      });
+    }else{
       pdfDoc.save(fn);window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
-    });
-  }else{
-    pdfDoc.save(fn);window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+    }
   }
   showToast(t("saved"));
   showSubmitConfirmation(tm.name,tm.color);
-  _editingIndex=-1; // reset edit mode after fresh submit
+  _editingIndex=-1;
 }
 
 // UPDATE existing checksheet (edit mode)
@@ -6703,10 +6786,11 @@ function buildPDFDoc(data){
   return pdf;
 }
 function clearForm(){showModal(t("confirm")||"Confirm",t("clearConfirm")||"Clear all form data?",()=>{document.querySelectorAll("#formView input:not([type=date]),#formView textarea").forEach(el=>{if(el.type!=="date"&&!el.readOnly)el.value=""});document.querySelectorAll("#formView select").forEach(el=>el.selectedIndex=0);document.querySelectorAll(".other-input").forEach(el=>el.style.display="none");if(_formTeamKey)clearDraft(_formTeamKey)},{danger:true,okText:t("clear")||"Clear"})}
-function downloadPDF(i){generatePDF(savedSheets[i],"preview")}
-function sharePDF(i){generatePDF(savedSheets[i],"share")}
+function downloadPDF(i){var s=savedSheets[i];if(!s){showToast("⚠️ Report not found — please refresh");return}generatePDF(s,"preview")}
+function sharePDF(i){var s=savedSheets[i];if(!s){showToast("⚠️ Report not found — please refresh");return}generatePDF(s,"share")}
 
 function generatePDF(data,mode){
+  if(!data||!data.teamKey){showToast("⚠️ Cannot generate PDF — report data missing");return}
   const tm=TEAMS[data.teamKey];
   const fn=`Checksheet_${tm.name.replace(/\s/g,"_")}_${data.date||"undated"}.pdf`;
   const pdf=buildPDFDoc(data);
@@ -6833,7 +6917,7 @@ function renderUserList(){
   const list=document.getElementById("userList");
   USERS=getUsers();
   const cu=getCustomUsers();
-  const roles=["Worker","Team Lead","Supervisor","Engineer","Project Lead"];
+  const roles=["Worker","Lead Worker","Team Lead","Supervisor","Engineer","Project Lead"];
   const userKeys=Object.keys(USERS).filter(u=>USERS[u]&&USERS[u].name&&USERS[u].pass);
   list.innerHTML=`<div style="text-align:right;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;padding:4px 12px;background:var(--lt-grey);border-radius:8px">Total Users: ${userKeys.length}</div>`+userKeys.map((u,i)=>{
     const isBase=!!BASE_USERS[u];
@@ -7170,7 +7254,10 @@ function swipeMove(e,el){
   if(!_swipeActive)return;
   const dx=e.touches[0].clientX-_swipeX0;
   const inner=el.querySelector(".h-item-inner");
-  if(inner&&dx<-20){inner.style.transform=`translateX(${Math.max(dx,-80)}px)`;inner.style.transition="none"}
+  if(inner&&dx<-20){
+    e.stopPropagation(); // Prevent main page swipe from firing
+    inner.style.transform=`translateX(${Math.max(dx,-80)}px)`;inner.style.transition="none";
+  }
 }
 function swipeEnd(e,el){
   if(!_swipeActive)return;_swipeActive=false;
@@ -7178,7 +7265,7 @@ function swipeEnd(e,el){
   if(!inner)return;
   const tx=parseFloat(inner.style.transform.replace(/[^-\d.]/g,"")||0);
   inner.style.transition="transform .2s ease";
-  if(tx<-40){el.classList.add("swiped");inner.style.transform="translateX(-80px)"}
+  if(tx<-40){el.classList.add("swiped");inner.style.transform="translateX(-80px)";e.stopPropagation();}
   else{el.classList.remove("swiped");inner.style.transform="translateX(0)"}
 }
 // Tap anywhere to close swiped cards
@@ -7775,21 +7862,52 @@ applyLang();
 document.querySelectorAll(".lang-btn").forEach(b=>b.classList.toggle("active",b.textContent.includes(LANG==="en"?"Eng":LANG==="es"?"Esp":"Ned")));
 document.getElementById("loginPass").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
 document.getElementById("loginUser").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("loginPass").focus()});
+// Force-clear login fields on page load to prevent browser autofill with wrong credentials
+setTimeout(()=>{document.getElementById("loginUser").value="";document.getElementById("loginPass").value=""},50);
 try{const u=localStorage.getItem("elg_user");if(u){currentUser=JSON.parse(u);
   if(!currentUser.username){
     const USERS=getUsers();
     const match=Object.keys(USERS).find(k=>USERS[k].name===currentUser.name);
     if(match){currentUser.username=match;try{localStorage.setItem("elg_user",JSON.stringify(currentUser))}catch(e){}}
   }
-  showDash();
-  // Restore last active tab on refresh (slight delay to ensure DOM ready)
-  setTimeout(()=>{
-    try{
-      const savedTab=localStorage.getItem("elg_active_tab");
-      console.log("Restoring tab:",savedTab);
-      if(savedTab&&savedTab!=="forms")switchTab(savedTab);
-    }catch(e){console.error("Tab restore error:",e)}
-  },100);
+  // Show identity confirmation on login screen so shared-phone users see who is logged in
+  const loginScr=document.getElementById("loginScreen");
+  const existingConfirm=document.getElementById("identityConfirm");
+  if(existingConfirm)existingConfirm.remove();
+  const confirmDiv=document.createElement("div");
+  confirmDiv.id="identityConfirm";
+  confirmDiv.style.cssText="text-align:center;margin:16px auto;max-width:340px;background:white;border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,0.15)";
+  confirmDiv.innerHTML='<div style="font-size:40px;margin-bottom:8px">\u{1F44B}</div>'
+    +'<p style="font-size:14px;color:var(--grey);margin:0 0 4px">'+({en:"Welcome back",es:"Bienvenido de nuevo",nl:"Welkom terug"}[LANG]||"Welcome back")+'</p>'
+    +'<h3 style="color:var(--navy);margin:0 0 4px;font-size:20px">'+currentUser.name+'</h3>'
+    +'<p style="font-size:11px;color:var(--grey);margin:0 0 2px">@'+currentUser.username+'</p>'
+    +'<p style="font-size:12px;color:var(--teal);margin:0 0 16px;font-weight:600">'+currentUser.role+'</p>'
+    +'<button id="continueAsBtn" style="width:100%;padding:14px;font-size:16px;font-weight:700;border:none;border-radius:12px;background:var(--teal);color:white;cursor:pointer;margin-bottom:10px">'+({en:"Continue as ",es:"Continuar como ",nl:"Doorgaan als "}[LANG]||"Continue as ")+currentUser.name.split(" ")[0]+'</button>'
+    +'<button id="notYouBtn" style="width:100%;padding:12px;font-size:14px;font-weight:600;border:2px solid #e5e7eb;border-radius:12px;background:white;color:var(--navy);cursor:pointer">'+({en:"Not you? Sign in with a different account",es:"No eres tu? Inicia sesion con otra cuenta",nl:"Niet jij? Log in met een ander account"}[LANG]||"Not you? Sign in with a different account")+'</button>';
+  loginScr.querySelector(".login-box").style.display="none";
+  loginScr.appendChild(confirmDiv);
+  loginScr.classList.remove("hidden");
+  document.getElementById("continueAsBtn").addEventListener("click",function(){
+    confirmDiv.remove();
+    loginScr.querySelector(".login-box").style.display="";
+    loginScr.classList.add("hidden");
+    showDash();
+    // Restore last active tab on refresh
+    setTimeout(()=>{
+      try{
+        const savedTab=localStorage.getItem("elg_active_tab");
+        if(savedTab&&savedTab!=="forms")switchTab(savedTab);
+      }catch(e){}
+    },100);
+  });
+  document.getElementById("notYouBtn").addEventListener("click",function(){
+    confirmDiv.remove();
+    currentUser=null;try{localStorage.removeItem("elg_user")}catch(e){}
+    loginScr.querySelector(".login-box").style.display="";
+    document.getElementById("loginUser").value="";
+    document.getElementById("loginPass").value="";
+    document.getElementById("loginUser").focus();
+  });
 }}catch(e){}
 setTimeout(()=>{document.getElementById("splash").classList.add("hide");setTimeout(()=>document.getElementById("splash").style.display="none",500)},1200);
 if("serviceWorker" in navigator){
@@ -7822,7 +7940,6 @@ const DEFAULT_PAY_ROSTER = {
   "Jose Rojas":{group:"ducting",rate:7000},
   "Juan Lopez":{group:"ducting",rate:7000},
   "Jose Wilfredo Arevalo":{group:"ducting",rate:7000},
-  "Guan Marquez":{group:"ducting",rate:7000},
   "Julio Caraballo":{group:"ducting",rate:7000},
   "Jose Gonzalez":{group:"ducting",rate:7000},
   "Daymith Garcia":{group:"ducting",rate:7000},
@@ -8293,6 +8410,8 @@ function addSwipeNav(element, onLeft, onRight, threshold){
   threshold=threshold||50;
   let _sx=0,_sy=0,_swiping=false;
   element.addEventListener("touchstart",function(e){
+    // Don't start main swipe if touching a history card (those have their own swipe)
+    if(e.target.closest&&e.target.closest(".h-item")){_swiping=false;return}
     const t=e.touches[0];_sx=t.clientX;_sy=t.clientY;_swiping=true;
   },{passive:true});
   element.addEventListener("touchmove",function(e){
@@ -9025,7 +9144,11 @@ function renderWorkerStatus(data,date){
       +'<h3 style="color:#d97706;margin:0;font-size:20px">'+t("wNotSignedIn")+'</h3>'
       +'<p style="font-size:14px;color:#92400e;margin:8px 0;font-weight:600">\ud83d\udc47 '+t("wTapToStart")+'</p>'
       +'</div>';
-    actionsEl.innerHTML='<button onclick="workerSignIn()" style="width:100%;padding:22px;font-size:24px;font-weight:800;border:none;border-radius:16px;background:linear-gradient(135deg,#10b981,#059669,#047857);color:white;cursor:pointer;box-shadow:0 6px 24px rgba(16,185,129,0.45);animation:pulseGlow 2s infinite;letter-spacing:1px;text-transform:uppercase">\u261d\ufe0f '+t("wTapSignIn")+'</button>';
+    // Two buttons: Sign In (active) and Sign Out (disabled)
+    actionsEl.innerHTML='<div style="display:flex;gap:12px">'
+      +'<button onclick="confirmWorkerSignIn()" style="flex:1;padding:22px;font-size:20px;font-weight:800;border:none;border-radius:16px;background:linear-gradient(135deg,#10b981,#059669,#047857);color:white;cursor:pointer;box-shadow:0 6px 24px rgba(16,185,129,0.45);animation:pulseGlow 2s infinite;letter-spacing:1px;text-transform:uppercase">\u261d\ufe0f '+t("wBtnSignIn")+'</button>'
+      +'<button disabled style="flex:1;padding:22px;font-size:20px;font-weight:800;border:none;border-radius:16px;background:#d1d5db;color:#9ca3af;cursor:not-allowed;letter-spacing:1px;text-transform:uppercase">\ud83d\udc4b '+t("wBtnSignOut")+'</button>'
+      +'</div>';
   }else if(data.signIn&&!data.signOut){
     // Signed in, working
     const minsElapsed=calcMinsBetween(data.signIn,timeStr);
@@ -9040,7 +9163,11 @@ function renderWorkerStatus(data,date){
       +prevShiftHtml
       +(data.confirmed?'<p style="font-size:12px;color:var(--teal);margin-top:8px;font-weight:600">\u2705 '+t("wConfirmedByAdmin")+'</p>':'<p style="font-size:12px;color:#f59e0b;margin-top:8px;font-weight:600;background:#fff7ed;padding:6px 12px;border-radius:8px;border:1px solid #fbbf24">\u23f3 '+t("wPendingConfirm")+'</p>')
       +'</div>';
-    actionsEl.innerHTML='<button onclick="workerSignOut()" style="width:100%;padding:22px;font-size:24px;font-weight:800;border:none;border-radius:16px;background:linear-gradient(135deg,#ef4444,#dc2626,#b91c1c);color:white;cursor:pointer;box-shadow:0 6px 24px rgba(239,68,68,0.45);animation:pulseGlowRed 2s infinite;letter-spacing:1px;text-transform:uppercase">\ud83d\udc4b '+t("wTapSignOut")+'</button>';
+    // Two buttons: Sign In (disabled) and Sign Out (active)
+    actionsEl.innerHTML='<div style="display:flex;gap:12px">'
+      +'<button disabled style="flex:1;padding:22px;font-size:20px;font-weight:800;border:none;border-radius:16px;background:#d1d5db;color:#9ca3af;cursor:not-allowed;letter-spacing:1px;text-transform:uppercase">\u261d\ufe0f '+t("wBtnSignIn")+'</button>'
+      +'<button onclick="confirmWorkerSignOut()" style="flex:1;padding:22px;font-size:20px;font-weight:800;border:none;border-radius:16px;background:linear-gradient(135deg,#ef4444,#dc2626,#b91c1c);color:white;cursor:pointer;box-shadow:0 6px 24px rgba(239,68,68,0.45);animation:pulseGlowRed 2s infinite;letter-spacing:1px;text-transform:uppercase">\ud83d\udc4b '+t("wBtnSignOut")+'</button>'
+      +'</div>';
   }else{
     // Day complete (current shift done)
     const currentShiftMins=calcMinsBetween(data.signIn,data.signOut);
@@ -9070,6 +9197,13 @@ function renderWorkerStatus(data,date){
     actionsEl.innerHTML='<button onclick="startNewShift()" style="width:100%;padding:18px;font-size:18px;font-weight:700;border:none;border-radius:14px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:white;cursor:pointer;box-shadow:0 4px 16px rgba(99,102,241,0.35);margin-bottom:8px">\ud83d\udd04 '+t("wStartNewShift")+'</button>'
       +'<p style="text-align:center;font-size:12px;color:var(--grey);margin-top:4px">'+t("wDoubleShiftHint")+'</p>';
   }
+}
+
+function confirmWorkerSignIn(){
+  showModal(t("wBtnSignIn"),t("wConfirmSignIn"),()=>{workerSignIn()});
+}
+function confirmWorkerSignOut(){
+  showModal(t("wBtnSignOut"),t("wConfirmSignOut"),()=>{workerSignOut()});
 }
 
 function workerSignIn(){
