@@ -144,10 +144,12 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .h-btn{padding:5px 10px;border:1px solid var(--border);background:white;border-radius:6px;cursor:pointer;font-size:11px}
 .h-btn:active{background:var(--lt-grey)}
 .h-btn.del{color:var(--danger);border-color:var(--danger)}
-.user-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--lt-grey);border-radius:10px;margin-bottom:6px}
-.user-info{display:flex;align-items:center;gap:1px}
-.user-info .uname{font-weight:700;font-size:13px;color:var(--navy)}
-.user-info .ufull{font-size:11px;color:var(--grey)}
+.user-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--lt-grey);border-radius:10px;margin-bottom:2px;-webkit-tap-highlight-color:transparent}
+.user-row.expanded{border-radius:10px 10px 0 0;margin-bottom:0;background:var(--lt-grey);border:1.5px solid var(--navy);border-bottom:none}
+.user-info{display:flex;align-items:center;gap:4px;flex:1;min-width:0;cursor:pointer}
+.user-info .uname{font-weight:700;font-size:13px;color:var(--navy);display:block}
+.user-info .ufull{font-size:11px;color:var(--grey);display:block}
+.user-info .edit-hint{font-size:10px;color:var(--primary);font-weight:600;margin-left:auto;padding:2px 8px;background:rgba(15,110,86,0.08);border-radius:10px;white-space:nowrap}
 .user-actions{display:flex;align-items:center;gap:6px}
 .role-select{padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:11px;font-weight:600;background:white;min-width:90px}
 .rm-btn{width:36px;height:36px;min-width:36px;min-height:36px;border-radius:50%;border:2px solid var(--danger);color:white;background:var(--danger);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:rgba(0,0,0,0.1);touch-action:manipulation;z-index:2;flex-shrink:0}
@@ -6664,7 +6666,12 @@ function cloudLoadUsers(){
       const cloudCU=data.customUsers||{};
       const merged={...localCU,...cloudCU};
       saveCustomUsers(merged);
-      if(data.disabledUsers&&Array.isArray(data.disabledUsers)){saveDisabledUsers(data.disabledUsers)}
+      if(data.disabledUsers&&Array.isArray(data.disabledUsers)){
+        // Merge: union of local + cloud disabled lists so removals are never lost
+        const localDis=getDisabledUsers();
+        const merged=[...new Set([...localDis,...data.disabledUsers])];
+        saveDisabledUsers(merged);
+      }
       USERS=getUsers();
       return true;
     })
@@ -6944,19 +6951,19 @@ function renderUserList(){
     const usr=USERS[u];
     const num=i+1;
     const roleOpts=roles.map(r=>`<option value="${r}" ${usr.role===r?"selected":""}>${r}</option>`).join("");
-    return`<div class="user-row" id="urow_${u}"><div class="user-info" onclick="toggleUserActions('${u}')" style="cursor:pointer"><span style="font-size:11px;font-weight:700;color:white;background:var(--navy);border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;flex-shrink:0">${num}</span><div><span class="uname">${u}</span><span class="ufull">${usr.name}</span></div></div>
-    <div class="user-actions"><select class="role-select" onchange="changeUserRole('${u}',this.value)">${roleOpts}</select></div></div>
-    <div class="user-action-panel" id="upanel_${u}" style="display:none;padding:10px 12px;background:#f0f4ff;border-radius:0 0 10px 10px;margin-top:-6px;margin-bottom:6px;border:1.5px solid var(--navy);border-top:none;animation:fadeIn 0.2s">
-    <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">✏️ Edit ${u}</div>
+    return`<div class="user-row" id="urow_${u}" onclick="toggleUserActions('${u}')"><div class="user-info"><span style="font-size:11px;font-weight:700;color:white;background:var(--navy);border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;flex-shrink:0">${num}</span><div style="min-width:0"><span class="uname">${u}</span><span class="ufull">${usr.name}</span></div><span class="edit-hint">Tap to edit</span></div>
+    <div class="user-actions" onclick="event.stopPropagation()"><select class="role-select" onchange="changeUserRole('${u}',this.value)">${roleOpts}</select></div></div>
+    <div class="user-action-panel" id="upanel_${u}" style="display:none;padding:12px;background:#f0f4ff;border-radius:0 0 10px 10px;margin-bottom:8px;border:1.5px solid var(--navy);border-top:none;animation:fadeIn 0.2s">
+    <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px">Edit ${u}</div>
     <div class="admin-add" style="margin-bottom:8px">
-      <input type="text" id="edit_name_${u}" value="${usr.name}" placeholder="Full Name" class="full" style="font-size:12px">
-      <input type="password" id="edit_pass_${u}" placeholder="New password (leave blank to keep)" class="full" style="font-size:12px">
-      <button class="btn btn-success full" style="font-size:12px;padding:8px" onclick="saveUserEdit('${u}')">💾 Save Edit</button>
+      <input type="text" id="edit_name_${u}" value="${usr.name}" placeholder="Full Name" class="full" style="font-size:13px;padding:10px">
+      <input type="password" id="edit_pass_${u}" placeholder="New password (leave blank to keep)" class="full" style="font-size:13px;padding:10px">
+      <button class="btn btn-success full" style="font-size:13px;padding:10px;font-weight:700" onclick="event.stopPropagation();saveUserEdit('${u}')">Save Changes</button>
     </div>
-    <div style="border-top:1px solid #ddd;padding-top:8px;margin-top:4px">
-      <button class="btn full" style="background:var(--danger);color:white;font-size:12px;font-weight:700;padding:8px" onclick="removeUser('${u}')">🗑️ Remove ${u}</button>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn full" style="background:var(--danger);color:white;font-size:13px;font-weight:700;padding:10px;flex:1" onclick="event.stopPropagation();removeUser('${u}')">Remove User</button>
+      <button class="btn full" style="background:var(--grey);color:white;font-size:13px;padding:10px;flex:1" onclick="event.stopPropagation();toggleUserActions('${u}')">Cancel</button>
     </div>
-    <button class="btn full" style="background:var(--grey);color:white;font-size:11px;padding:6px;margin-top:4px" onclick="toggleUserActions('${u}')">Cancel</button>
     </div>`;
   }).join("");
 }
@@ -6998,10 +7005,24 @@ function addNewUser(){
   const fname=document.getElementById("newFullName").value.trim();
   const pass=document.getElementById("newPassword").value;
   const role=document.getElementById("newRole").value;
-  if(!uname||!fname||!pass){return}
-  // Re-enable if it was a disabled base user
+  if(!uname||!fname||!pass){showToast("Please fill in all fields");return}
+  // Check if this is a disabled base user being re-added
   const dis=getDisabledUsers();
-  if(dis.includes(uname)){saveDisabledUsers(dis.filter(u=>u!==uname))}
+  if(dis.includes(uname)){
+    showModal("Re-enable User","User \""+uname+"\" was previously removed. Re-enable this account?",()=>{
+      saveDisabledUsers(dis.filter(u=>u!==uname));
+      // Apply new details as custom override
+      const cu=getCustomUsers();
+      cu[uname]={pass:pass,name:fname,role:role,teams:"all"};
+      saveCustomUsers(cu);
+      USERS=getUsers();cloudSaveUsers();
+      document.getElementById("newUsername").value="";
+      document.getElementById("newFullName").value="";
+      document.getElementById("newPassword").value="";
+      renderUserList();showToast("✅ "+uname+" re-enabled!");
+    });
+    return;
+  }
   USERS=getUsers();
   if(USERS[uname]){showToast(t("userExists"));return}
   const cu=getCustomUsers();
@@ -7015,10 +7036,16 @@ function addNewUser(){
 }
 function toggleUserActions(uname){
   const panel=document.getElementById("upanel_"+uname);
+  const row=document.getElementById("urow_"+uname);
   if(!panel)return;
   // Close all other panels first
-  document.querySelectorAll(".user-action-panel").forEach(p=>{if(p.id!=="upanel_"+uname)p.style.display="none"});
-  panel.style.display=panel.style.display==="none"?"block":"none";
+  document.querySelectorAll(".user-action-panel").forEach(p=>{if(p.id!=="upanel_"+uname){p.style.display="none"}});
+  document.querySelectorAll(".user-row.expanded").forEach(r=>{if(r.id!=="urow_"+uname)r.classList.remove("expanded")});
+  const isOpen=panel.style.display!=="none";
+  panel.style.display=isOpen?"none":"block";
+  if(row)row.classList.toggle("expanded",!isOpen);
+  // Scroll panel into view when opening
+  if(!isOpen)setTimeout(()=>{panel.scrollIntoView({behavior:"smooth",block:"nearest"})},100);
 }
 function removeUser(uname){
   if(uname==="admin"){showToast("Cannot remove admin account");return}
