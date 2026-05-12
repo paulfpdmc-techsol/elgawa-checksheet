@@ -596,7 +596,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
       <button class="tab-btn active" onclick="switchReportTab('main',this)" id="rptTabMain"></button>
       <button class="tab-btn" onclick="switchReportTab('tools',this)" id="rptTabTools"></button>
       <button class="tab-btn" onclick="switchReportTab('attendance',this)" id="rptTabAttend"></button>
-      <button class="tab-btn" onclick="switchReportTab('monthly',this)" id="rptTabMonthly" style="background:#e67e22;color:white" id="rptTabMonthlyBtn">📊 </button>
+      <button class="tab-btn" onclick="switchReportTab('monthly',this)" id="rptTabMonthly">📊 </button>
       <button class="tab-btn" onclick="switchReportTab('analysis',this)" id="rptTabAnalysis" style="display:none">📈 </button>
     </div>
     <div id="lastUpdated" class="last-updated"></div>
@@ -835,12 +835,12 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
         </div>
       </div>
       <div style="border-top:1px solid var(--border);padding-top:10px">
-        <h4 style="font-size:12px;margin-bottom:4px;color:#e67e22" id="monthlyAccessTitle"></h4>
+        <h4 style="font-size:12px;margin-bottom:4px;color:var(--navy)" id="monthlyAccessTitle"></h4>
         <p style="font-size:10px;color:var(--grey);margin-bottom:6px" id="monthlyAccessDesc"></p>
         <div class="admin-users" id="monthlyAccessList"></div>
         <div class="admin-add">
           <select id="addMonthlyAccessSel" class="full"><option value="" class="selectUserOpt"></option></select>
-          <button class="btn btn-success full" onclick="addReportAccess('monthly')" style="background:#e67e22" id="grantMonthlyBtn"></button>
+          <button class="btn btn-success full" onclick="addReportAccess('monthly')" id="grantMonthlyBtn"></button>
         </div>
       </div>
     </div>
@@ -2211,12 +2211,21 @@ function _findSheetIndex(s){
 function deleteSaved(i){var s=savedSheets[i];if(!s){showToast("⚠️ Report not found — please refresh");return}showModal(t("confirm")||"Confirm",t("deleteConfirm")||"Delete this report?",()=>{
   // Delete from Firebase too so it doesn't come back
   const fb=getFirebaseUrl();
-  if(fb&&s._id&&s.date){
-    fetch(fb+"/checksheets/"+s.date+'.json?orderBy="_id"&equalTo="'+s._id+'"')
+  if(fb&&s.date){
+    // Fetch all entries for this date and find matching ones
+    fetch(fb+"/checksheets/"+s.date+".json")
       .then(r=>r.json()).then(obj=>{
-        if(obj&&typeof obj==="object"){Object.keys(obj).forEach(k=>{
-          fetch(fb+"/checksheets/"+s.date+"/"+k+".json",{method:"DELETE"}).catch(()=>{});
-        })}
+        if(obj&&typeof obj==="object"){
+          Object.keys(obj).forEach(k=>{
+            const entry=obj[k];
+            // Match by _id, or by submitter+timestamp signature
+            const idMatch=s._id&&entry&&entry._id===s._id;
+            const sigMatch=!s._id&&entry&&entry.submittedAt===s.submittedAt&&entry.teamKey===s.teamKey&&(entry.submittedBy||entry.teamLead)===(s.submittedBy||s.teamLead);
+            if(idMatch||sigMatch){
+              fetch(fb+"/checksheets/"+s.date+"/"+k+".json",{method:"DELETE"}).catch(()=>{});
+            }
+          });
+        }
       }).catch(()=>{});
   }
   savedSheets.splice(i,1);saveSaved();renderHistory();showToast(t("deleted"));
@@ -3501,7 +3510,7 @@ function renderDailyAnalysis(date){
     html+=_renderTeamCards(analyses,agg);
     html+=_renderBlockerSection(agg);
     html+=_renderNarrative(agg,date,"daily");
-    html+=`<div style="text-align:center;margin:12px 0"><button class="btn btn-primary" onclick="downloadAnalysisPDF('daily','${date}')" style="padding:10px 24px">📄 ${t("anDownloadAnalysis")}</button></div>`;
+    html+=`<div style="text-align:center;margin:12px 0"><button class="btn btn-primary" onclick="downloadAnalysisPDF('daily','${date}')" style="padding:10px 24px">📄 Preview PDF</button></div>`;
     res.innerHTML=html;
   });
 }
@@ -3559,7 +3568,7 @@ function renderWeeklyAnalysis(monday){
     html+=_renderTeamCards(analyses,agg);
     html+=_renderBlockerSection(agg);
     html+=_renderNarrative(agg,`${monday} - ${sundayStr}`,"weekly");
-    html+=`<div style="text-align:center;margin:12px 0"><button class="btn btn-primary" onclick="downloadAnalysisPDF('weekly','${monday}')" style="padding:10px 24px">📄 ${t("anDownloadAnalysis")}</button></div>`;
+    html+=`<div style="text-align:center;margin:12px 0"><button class="btn btn-primary" onclick="downloadAnalysisPDF('weekly','${monday}')" style="padding:10px 24px">📄 Preview PDF</button></div>`;
     res.innerHTML=html;
   });
 }
@@ -3619,7 +3628,7 @@ function renderMonthlyAnalysisView(monthVal){
     html+=_renderTeamCards(analyses,agg);
     html+=_renderBlockerSection(agg);
     html+=_renderNarrative(agg,monthName,"monthly");
-    html+=`<div style="text-align:center;margin:12px 0"><button class="btn btn-primary" onclick="downloadAnalysisPDF('monthly','${monthVal}')" style="padding:10px 24px">📄 ${t("anDownloadAnalysis")}</button></div>`;
+    html+=`<div style="text-align:center;margin:12px 0"><button class="btn btn-primary" onclick="downloadAnalysisPDF('monthly','${monthVal}')" style="padding:10px 24px">📄 Preview PDF</button></div>`;
     res.innerHTML=html;
   });
 }
@@ -4329,7 +4338,6 @@ function _buildAnalysisPDF(mode,periodLabel,analyses){
 
   const dateStr=mode==="daily"?periodLabel:(mode==="weekly"?periodLabel.replace("Week of ","W"):periodLabel.replace(/\s+/g,"_"));
   showPDFPreview(pdf,`ELGAWA_${modeLabel}_Analysis_${dateStr}.pdf`);
-  showToast("Analysis PDF downloaded!");
 }
 
 function buildReportPDF(date,extraSheets){
@@ -7074,9 +7082,8 @@ function renderWorkerRoster(){
   const allWorkers=getWorkerRoster();
   list.innerHTML=`<div style="text-align:right;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;padding:4px 12px;background:var(--lt-grey);border-radius:8px">Total Workers: ${allWorkers.length}</div>`+allWorkers.map((name,i)=>{
     const isCustom=custom.includes(name);
-    const isBase=BASE_WORKER_ROSTER.includes(name);
     const num=i+1;
-    return`<div class="user-row"><div style="display:flex;align-items:center"><span style="font-size:10px;font-weight:700;color:white;background:#e67e22;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;flex-shrink:0">${num}</span><span class="uname">${name}</span>${isCustom?`<span class="urole"> (${t("edit")})</span>`:""}</div>${isCustom?`<button onclick="removeWorker('${name.replace(/'/g,"\\'")}')">${t("removeUser")}</button>`:""}</div>`;
+    return`<div class="user-row" style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center"><span style="font-size:10px;font-weight:700;color:white;background:var(--navy);border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;flex-shrink:0">${num}</span><span class="uname">${name}</span></div><button class="rm-btn" onclick="removeWorker('${name.replace(/'/g,"\\'")}')" style="width:28px;height:28px;min-width:28px;min-height:28px;font-size:14px">✕</button></div>`;
   }).join("");
 }
 function addWorkerToRoster(){
@@ -7094,9 +7101,15 @@ function addWorkerToRoster(){
 }
 function removeWorker(name){
   showModal(t("confirm")||"Confirm",(t("removeWorkerConfirm")||"Remove worker %s?").replace("%s",name),()=>{
+    // Remove from custom workers if present
     let custom=getCustomWorkers();
     custom=custom.filter(n=>n!==name);
     saveCustomWorkers(custom);
+    // Also add to base-removed list if it's a base worker
+    if(BASE_WORKER_ROSTER.includes(name)){
+      let removed=[];try{removed=JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]")}catch(e){}
+      if(!removed.includes(name)){removed.push(name);localStorage.setItem("elg_base_workers_removed",JSON.stringify(removed))}
+    }
     renderWorkerRoster();
     showToast(t("workerRemoved"));
   },{danger:true,okText:t("remove")||"Remove"});
