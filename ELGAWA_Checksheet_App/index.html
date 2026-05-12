@@ -387,10 +387,12 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .sync-badge.has-items{display:inline-block}
 
 /* Swipe-to-delete on history cards */
-.h-item{position:relative;overflow:hidden;touch-action:pan-y}
-.h-item-inner{position:relative;z-index:1;background:white;transition:transform .2s ease}
-.h-item-del-bg{position:absolute;right:0;top:0;bottom:0;width:80px;background:#dc3545;display:flex;align-items:center;justify-content:center;color:white;font-size:13px;font-weight:700;z-index:0}
-.h-item.swiped .h-item-inner{transform:translateX(-80px)}
+.h-item{position:relative;overflow:hidden;touch-action:pan-y;border-radius:12px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.h-item-inner{position:relative;z-index:1;background:white;transition:transform .2s ease;border-radius:12px}
+.h-item-del-bg{position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;z-index:0}
+.h-item-del-bg>div{display:flex;align-items:center;padding:0 18px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.h-item.swiped .h-item-inner{transform:translateX(-140px)}
+.h-item.swiped-single .h-item-inner{transform:translateX(-70px)}
 
 /* Firebase expiry warning */
 .fb-expiry-warn{background:#fff3cd;border:2px solid #ffc107;border-radius:12px;padding:12px 16px;margin:8px 0;font-size:12px;color:#856404;display:none}
@@ -2157,8 +2159,10 @@ function _renderHistoryCards(list,sheets,date){
       +'</div>';return;
   }
   var sorted=[...sheets].sort(function(a,b){return new Date(b.submittedAt||b.savedAt||0)-new Date(a.submittedAt||a.savedAt||0)});
-  // Ensure every sheet has a valid index in savedSheets
-  sorted.forEach(function(s){if(_findSheetIndex(s)<0){savedSheets.push(s);saveSaved()}});
+  // Ensure every sheet has a valid index in savedSheets (but avoid duplicates)
+  let _pushCount=0;
+  sorted.forEach(function(s){if(_findSheetIndex(s)<0){savedSheets.push(s);_pushCount++}});
+  if(_pushCount>0)saveSaved();
   var html='<div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px">'+sorted.length+' report'+(sorted.length>1?'s':'')+' for '+date+'</div>';
   sorted.forEach(function(s){
     var ri=_findSheetIndex(s);
@@ -2180,16 +2184,16 @@ function _renderHistoryCards(list,sheets,date){
     btns+='<button class="h-btn" onclick="viewSaved('+ri+')">\u{1F441}️ '+t('view')+'</button>';
     if(isAdmin)btns+='<button class="h-btn" onclick="reassignSheetDate('+ri+',\''+date+'\')" style="background:#6366f1;color:white">\u{1F4C5} Date</button>';
     btns+='<button class="h-btn del" onclick="deleteSaved('+ri+')">\u{1F5D1}️</button>';
-    var swipeBg='<div class="h-item-del-bg" style="display:flex;gap:0">';
-    if(canEdit)swipeBg+='<div onclick="editSaved('+ri+')" style="background:var(--navy);color:white;display:flex;align-items:center;padding:0 16px;font-size:12px;font-weight:600;cursor:pointer">✏️ Edit</div>';
-    swipeBg+='<div onclick="deleteSaved('+ri+')" style="background:var(--danger);color:white;display:flex;align-items:center;padding:0 16px;font-size:12px;font-weight:600;cursor:pointer">\u{1F5D1}️ Delete</div>';
+    var swipeBg='<div class="h-item-del-bg">';
+    if(canEdit)swipeBg+='<div onclick="editSaved('+ri+')" style="background:var(--navy);color:white">✏️ Edit</div>';
+    swipeBg+='<div onclick="deleteSaved('+ri+')" style="background:var(--danger);color:white">\u{1F5D1}️</div>';
     swipeBg+='</div>';
     html+='<div class="h-item" style="border-left:4px solid '+(tm?tm.color:'#999')+'" ontouchstart="swipeStart(event,this)" ontouchmove="swipeMove(event,this)" ontouchend="swipeEnd(event,this)">'
       +swipeBg
-      +'<div class="h-item-inner" style="background:white;padding:10px">'
+      +'<div class="h-item-inner" style="padding:12px">'
       +'<div class="top"><span class="h-badge" style="background:'+(tm?tm.color:'#999')+'">'+(tm?tm.icon:'')+' '+(s.teamName||'?')+'</span><span class="meta">'+(subTime||'')+' '+photoTag+'</span></div>'
       +'<div class="meta" style="margin:4px 0"><b>'+escHtml(s.submittedBy||s.teamLead||'Unknown')+'</b>'+areaTag+editedTag+reassignTag+'</div>'
-      +'<div class="h-actions" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">'+btns+'</div>'
+      +'<div class="h-actions" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">'+btns+'</div>'
       +'</div></div>';
   });
   list.innerHTML=html;
@@ -2202,7 +2206,19 @@ function _findSheetIndex(s){
   if(s.submittedAt&&s.teamKey){for(var k=0;k<savedSheets.length;k++){if(savedSheets[k].submittedAt===s.submittedAt&&savedSheets[k].teamKey===s.teamKey)return k}}
   return -1;
 }
-function deleteSaved(i){var s=savedSheets[i];if(!s){showToast("⚠️ Report not found — please refresh");return}showModal(t("confirm")||"Confirm",t("deleteConfirm")||"Delete this report?",()=>{savedSheets.splice(i,1);saveSaved();renderHistory();showToast(t("deleted"))},{danger:true,okText:t("delete")||"Delete"})}
+function deleteSaved(i){var s=savedSheets[i];if(!s){showToast("⚠️ Report not found — please refresh");return}showModal(t("confirm")||"Confirm",t("deleteConfirm")||"Delete this report?",()=>{
+  // Delete from Firebase too so it doesn't come back
+  const fb=getFirebaseUrl();
+  if(fb&&s._id&&s.date){
+    fetch(fb+"/checksheets/"+s.date+'.json?orderBy="_id"&equalTo="'+s._id+'"')
+      .then(r=>r.json()).then(obj=>{
+        if(obj&&typeof obj==="object"){Object.keys(obj).forEach(k=>{
+          fetch(fb+"/checksheets/"+s.date+"/"+k+".json",{method:"DELETE"}).catch(()=>{});
+        })}
+      }).catch(()=>{});
+  }
+  savedSheets.splice(i,1);saveSaved();renderHistory();showToast(t("deleted"));
+},{danger:true,okText:t("delete")||"Delete"})}
 function viewSaved(i){var s=savedSheets[i];if(!s){showToast("⚠️ Report not found — please refresh");return}openForm(s.teamKey,s)}
 // Reassign a submission to a different date (admin only)
 function reassignSheetDate(i,currentDate){
@@ -2335,8 +2351,12 @@ function _doGenerateReport(date,cont,fb){
 }
 function mergeSheets(local,cloud){
   const seen=new Set();const merged=[];
-  local.forEach(s=>{if(s._id)seen.add(s._id);merged.push(s)});
-  cloud.forEach(s=>{if(!s._id||!seen.has(s._id)){if(s._id)seen.add(s._id);merged.push(s)}});
+  function sheetKey(s){
+    if(s._id)return "id:"+s._id;
+    return "sig:"+(s.submittedAt||"")+"_"+(s.teamKey||"")+"_"+(s.submittedBy||s.teamLead||"");
+  }
+  local.forEach(s=>{const k=sheetKey(s);if(!seen.has(k)){seen.add(k);merged.push(s)}});
+  cloud.forEach(s=>{const k=sheetKey(s);if(!seen.has(k)){seen.add(k);merged.push(s)}});
   return merged;
 }
 function renderReportData(date,daySheets){
@@ -7248,15 +7268,17 @@ let _swipeX0=0,_swipeActive=false;
 function swipeStart(e,el){
   const t=e.touches[0];_swipeX0=t.clientX;_swipeActive=true;
   // Close any other swiped items
-  document.querySelectorAll(".h-item.swiped").forEach(item=>{if(item!==el)item.classList.remove("swiped")});
+  document.querySelectorAll(".h-item.swiped,.h-item.swiped-single").forEach(item=>{if(item!==el){item.classList.remove("swiped","swiped-single");const inn=item.querySelector(".h-item-inner");if(inn){inn.style.transform="translateX(0)"}}});
 }
 function swipeMove(e,el){
   if(!_swipeActive)return;
   const dx=e.touches[0].clientX-_swipeX0;
   const inner=el.querySelector(".h-item-inner");
+  const hasEdit=el.querySelector(".h-item-del-bg").children.length>1;
+  const maxSwipe=hasEdit?-140:-70;
   if(inner&&dx<-20){
-    e.stopPropagation(); // Prevent main page swipe from firing
-    inner.style.transform=`translateX(${Math.max(dx,-80)}px)`;inner.style.transition="none";
+    e.stopPropagation();
+    inner.style.transform=`translateX(${Math.max(dx,maxSwipe)}px)`;inner.style.transition="none";
   }
 }
 function swipeEnd(e,el){
@@ -7264,14 +7286,19 @@ function swipeEnd(e,el){
   const inner=el.querySelector(".h-item-inner");
   if(!inner)return;
   const tx=parseFloat(inner.style.transform.replace(/[^-\d.]/g,"")||0);
+  const hasEdit=el.querySelector(".h-item-del-bg").children.length>1;
+  const threshold=hasEdit?-50:-30;
+  const snapDist=hasEdit?-140:-70;
   inner.style.transition="transform .2s ease";
-  if(tx<-40){el.classList.add("swiped");inner.style.transform="translateX(-80px)";e.stopPropagation();}
-  else{el.classList.remove("swiped");inner.style.transform="translateX(0)"}
+  if(tx<threshold){
+    el.classList.add(hasEdit?"swiped":"swiped-single");
+    inner.style.transform="translateX("+snapDist+"px)";e.stopPropagation();
+  }else{el.classList.remove("swiped","swiped-single");inner.style.transform="translateX(0)"}
 }
 // Tap anywhere to close swiped cards
 document.addEventListener("touchstart",e=>{
-  if(!e.target.closest(".h-item.swiped")&&!e.target.closest(".h-item-del-bg")){
-    document.querySelectorAll(".h-item.swiped").forEach(el=>{el.classList.remove("swiped");const inner=el.querySelector(".h-item-inner");if(inner)inner.style.transform="translateX(0)"});
+  if(!e.target.closest(".h-item.swiped")&&!e.target.closest(".h-item.swiped-single")&&!e.target.closest(".h-item-del-bg")){
+    document.querySelectorAll(".h-item.swiped,.h-item.swiped-single").forEach(el=>{el.classList.remove("swiped","swiped-single");const inner=el.querySelector(".h-item-inner");if(inner){inner.style.transition="transform .2s ease";inner.style.transform="translateX(0)"}});
   }
 });
 
@@ -7870,44 +7897,17 @@ try{const u=localStorage.getItem("elg_user");if(u){currentUser=JSON.parse(u);
     const match=Object.keys(USERS).find(k=>USERS[k].name===currentUser.name);
     if(match){currentUser.username=match;try{localStorage.setItem("elg_user",JSON.stringify(currentUser))}catch(e){}}
   }
-  // Show identity confirmation on login screen so shared-phone users see who is logged in
+  // Auto-resume session — skip login screen entirely on refresh
   const loginScr=document.getElementById("loginScreen");
-  const existingConfirm=document.getElementById("identityConfirm");
-  if(existingConfirm)existingConfirm.remove();
-  const confirmDiv=document.createElement("div");
-  confirmDiv.id="identityConfirm";
-  confirmDiv.style.cssText="text-align:center;margin:16px auto;max-width:340px;background:white;border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,0.15)";
-  confirmDiv.innerHTML='<div style="font-size:40px;margin-bottom:8px">\u{1F44B}</div>'
-    +'<p style="font-size:14px;color:var(--grey);margin:0 0 4px">'+({en:"Welcome back",es:"Bienvenido de nuevo",nl:"Welkom terug"}[LANG]||"Welcome back")+'</p>'
-    +'<h3 style="color:var(--navy);margin:0 0 4px;font-size:20px">'+currentUser.name+'</h3>'
-    +'<p style="font-size:11px;color:var(--grey);margin:0 0 2px">@'+currentUser.username+'</p>'
-    +'<p style="font-size:12px;color:var(--teal);margin:0 0 16px;font-weight:600">'+currentUser.role+'</p>'
-    +'<button id="continueAsBtn" style="width:100%;padding:14px;font-size:16px;font-weight:700;border:none;border-radius:12px;background:var(--teal);color:white;cursor:pointer;margin-bottom:10px">'+({en:"Continue as ",es:"Continuar como ",nl:"Doorgaan als "}[LANG]||"Continue as ")+currentUser.name.split(" ")[0]+'</button>'
-    +'<button id="notYouBtn" style="width:100%;padding:12px;font-size:14px;font-weight:600;border:2px solid #e5e7eb;border-radius:12px;background:white;color:var(--navy);cursor:pointer">'+({en:"Not you? Sign in with a different account",es:"No eres tu? Inicia sesion con otra cuenta",nl:"Niet jij? Log in met een ander account"}[LANG]||"Not you? Sign in with a different account")+'</button>';
-  loginScr.querySelector(".login-box").style.display="none";
-  loginScr.appendChild(confirmDiv);
-  loginScr.classList.remove("hidden");
-  document.getElementById("continueAsBtn").addEventListener("click",function(){
-    confirmDiv.remove();
-    loginScr.querySelector(".login-box").style.display="";
-    loginScr.classList.add("hidden");
-    showDash();
-    // Restore last active tab on refresh
-    setTimeout(()=>{
-      try{
-        const savedTab=localStorage.getItem("elg_active_tab");
-        if(savedTab&&savedTab!=="forms")switchTab(savedTab);
-      }catch(e){}
-    },100);
-  });
-  document.getElementById("notYouBtn").addEventListener("click",function(){
-    confirmDiv.remove();
-    currentUser=null;try{localStorage.removeItem("elg_user")}catch(e){}
-    loginScr.querySelector(".login-box").style.display="";
-    document.getElementById("loginUser").value="";
-    document.getElementById("loginPass").value="";
-    document.getElementById("loginUser").focus();
-  });
+  loginScr.classList.add("hidden");
+  showDash();
+  // Restore last active tab on refresh
+  setTimeout(()=>{
+    try{
+      const savedTab=localStorage.getItem("elg_active_tab");
+      if(savedTab&&savedTab!=="forms")switchTab(savedTab);
+    }catch(e){}
+  },100);
 }}catch(e){}
 setTimeout(()=>{document.getElementById("splash").classList.add("hide");setTimeout(()=>document.getElementById("splash").style.display="none",500)},1200);
 if("serviceWorker" in navigator){
