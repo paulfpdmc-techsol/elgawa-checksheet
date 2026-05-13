@@ -333,21 +333,27 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .team-grid.grid-view .t-card p{display:none}
 @media(min-width:500px){.info-grid{grid-template-columns:1fr 1fr}.target-grid{grid-template-columns:1fr 1fr 1fr}.team-grid{grid-template-columns:1fr 1fr}.team-grid.grid-view{grid-template-columns:repeat(3,1fr)!important}}
 
-.att-card{background:white;border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
-.att-card h3{font-size:14px;color:var(--navy);margin-bottom:10px}
-.att-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.att-card{background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.att-card h3{font-size:15px;color:var(--navy);margin-bottom:10px;font-weight:700}
+.att-row{display:flex;align-items:center;gap:6px;padding:10px 8px;border-bottom:1px solid #f0f0f0;transition:background 0.15s}
 .att-row:last-child{border-bottom:none}
-.att-name{flex:1;font-size:13px;font-weight:500;min-width:120px}
-.att-check{width:20px;height:20px;accent-color:var(--success);cursor:pointer}
-.att-time{width:70px;padding:4px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:center}
-.att-status{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.att-row:nth-child(even){background:#fafbfc}
+.att-row.att-row-absent{background:#fff5f5}
+.att-name{flex:1;font-size:12.5px;font-weight:600;min-width:100px;color:#1a1a2e}
+.att-check{width:22px;height:22px;accent-color:var(--teal);cursor:pointer;flex-shrink:0}
+.att-time{width:68px;padding:5px 4px;border:1px solid #e0e0e0;border-radius:8px;font-size:11.5px;text-align:center;background:#fafbfc;transition:border-color 0.2s}
+.att-time:focus{border-color:var(--teal);outline:none;background:white}
+.att-status{font-size:10px;padding:3px 8px;border-radius:12px;font-weight:700;letter-spacing:0.3px;text-transform:uppercase;flex-shrink:0}
 .att-present{background:#d4edda;color:#155724}
 .att-absent{background:#f8d7da;color:#721c24}
 .att-verified{background:#cce5ff;color:#004085}
-.att-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.att-stat{background:white;border-radius:var(--radius);padding:12px;text-align:center;box-shadow:var(--shadow)}
-.att-stat .num{font-size:24px;font-weight:700;color:var(--navy)}
-.att-stat .lbl{font-size:11px;color:var(--grey);margin-top:2px}
+.att-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.att-stat{background:linear-gradient(135deg,#fafbfc,white);border-radius:var(--radius);padding:12px 8px;text-align:center;border:1px solid #eee}
+.att-stat .num{font-size:22px;font-weight:800;color:var(--navy)}
+.att-stat .lbl{font-size:10px;color:var(--grey);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:0.3px}
+.att-shift-btn{border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;transition:all 0.15s;font-weight:600;flex-shrink:0}
+.att-remove-btn{border:none;background:#fee;color:#c0392b;border-radius:50%;width:22px;height:22px;font-size:11px;cursor:pointer;line-height:1;padding:0;flex-shrink:0;transition:background 0.15s}
+.att-remove-btn:hover{background:#fcc}
 .att-week-grid{overflow-x:auto}
 .att-week-grid table{width:100%;border-collapse:collapse;font-size:11px}
 .att-week-grid th,.att-week-grid td{padding:6px 4px;border:1px solid var(--border);text-align:center}
@@ -625,12 +631,19 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
     <!-- Existing sign-in content wrapper -->
     <div id="paySignInView">
     <div class="att-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <h3 id="attTitle">Daily Attendance</h3>
-        <div class="f-field" style="margin:0;width:auto"><input type="date" id="attDate" style="padding:6px;font-size:12px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h3 id="attTitle" style="margin:0;font-size:15px">Daily Attendance</h3>
+      </div>
+      <div class="att-date-nav" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px">
+        <button onclick="attDateNav(-1)" style="border:none;background:var(--navy);color:white;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">◀</button>
+        <div style="text-align:center;flex:1">
+          <div id="attDaySub" style="font-size:11px;color:var(--grey);font-weight:600"></div>
+          <input type="date" id="attDate" style="padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:8px;text-align:center;font-weight:600;color:var(--navy)">
+        </div>
+        <button onclick="attDateNav(1)" style="border:none;background:var(--navy);color:white;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">▶</button>
       </div>
       <div class="att-summary" id="attSummary"></div>
-      <div id="attActions" style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"></div>
+      <div id="attActions" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;justify-content:center"></div>
       <div id="attList"></div>
     </div>
     <div class="att-card" id="moversCard">
@@ -5407,9 +5420,10 @@ function openForm(teamKey,prefill){
     }else{
       const lastForTeam=savedSheets.filter(s=>s.teamKey===teamKey).sort((a,b)=>new Date(b.savedAt||0)-new Date(a.savedAt||0))[0];
       if(lastForTeam){
-        pf={teamLead:lastForTeam.teamLead,location:lastForTeam.location,floor:lastForTeam.floor,
+        pf={location:lastForTeam.location,floor:lastForTeam.floor,
           manRows:(lastForTeam.manRows||[]).map(r=>({name:r.name,trade:r.trade})),
           toolRows:(lastForTeam.toolRows||[]).map(r=>({toolName:r.toolName,toolCode:r.toolCode,assignedTo:r.assignedTo}))};
+        // Never carry over teamLead from previous submissions
       }
     }
   }
@@ -5431,7 +5445,7 @@ function openForm(teamKey,prefill){
   <div class="section"><h3>${t("projectInfo")}</h3>
     <div class="info-grid">
       <div class="f-field"><label>${t("date")}</label><input type="date" id="f_date" value="${pf.date||today}"></div>
-      <div class="f-field"><label>${t("teamLead")}</label><input id="f_teamLead" value="${pf.teamLead||currentUser.name}" readonly style="background:#f0f0f0"></div>
+      <div class="f-field"><label>${t("teamLead")}</label><select id="f_teamLead">${(()=>{const u=getUsers();const defVal=currentUser.name;const eligible=Object.entries(u).filter(([k,v])=>["Team Lead","Supervisor","Engineer","Lead Worker","Project Lead"].includes(v.role)).map(([k,v])=>v.name);if(!eligible.includes(defVal))eligible.unshift(defVal);return eligible.map(n=>`<option value="${n}" ${n===defVal?"selected":""}>${n}</option>`).join("")})()}</select></div>
       <div class="f-field"><label>${t("locationArea")}</label><select id="f_location" onchange="onDropChange(this,'other_location')"><option value="">${t("selectLocationArea")}</option>${COMMON_LOCATIONS.map(l=>`<option value="${l}" ${pf.location===l?"selected":""}>${l}</option>`).join("")}<option value="Other" ${pf.location&&!COMMON_LOCATIONS.includes(pf.location)?"selected":""}>${t("otherMaterial")}</option></select>
         <div id="other_location" class="other-input" style="display:${pf.location&&!COMMON_LOCATIONS.includes(pf.location)&&pf.location!=="Other"?"block":"none"}"><input id="f_location_other" value="${pf.location&&!COMMON_LOCATIONS.includes(pf.location)?pf.location:""}" placeholder="${t("otherDesc")}"></div>
       </div>
@@ -7080,11 +7094,33 @@ function renderWorkerRoster(){
   const list=document.getElementById("workerRosterList");
   const custom=getCustomWorkers();
   const allWorkers=getWorkerRoster();
-  list.innerHTML=`<div style="text-align:right;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;padding:4px 12px;background:var(--lt-grey);border-radius:8px">Total Workers: ${allWorkers.length}</div>`+allWorkers.map((name,i)=>{
-    const isCustom=custom.includes(name);
-    const num=i+1;
-    return`<div class="user-row" style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center"><span style="font-size:10px;font-weight:700;color:white;background:var(--navy);border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;flex-shrink:0">${num}</span><span class="uname">${name}</span></div><button class="rm-btn" onclick="removeWorker('${name.replace(/'/g,"\\'")}')" style="width:28px;height:28px;min-width:28px;min-height:28px;font-size:14px">✕</button></div>`;
-  }).join("");
+  const payRoster=getPayRoster();
+  const groupColors={installation:"var(--navy)",ducting:"var(--ducting,#2196F3)",suriname:"#E67E22"};
+  const groupLabels={installation:"Installation Crew",ducting:"Ducting / Movers",suriname:"Suriname Team"};
+  const grouped={installation:[],ducting:[],suriname:[],unassigned:[]};
+  allWorkers.forEach(name=>{
+    const pr=payRoster[name];
+    if(pr&&grouped[pr.group])grouped[pr.group].push(name);
+    else grouped.unassigned.push(name);
+  });
+  let html=`<div style="text-align:right;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;padding:4px 12px;background:var(--lt-grey);border-radius:8px">Total Workers: ${allWorkers.length}</div>`;
+  let num=0;
+  const groupOrder=["installation","ducting","suriname","unassigned"];
+  groupOrder.forEach(g=>{
+    const workers=grouped[g];
+    if(!workers||workers.length===0)return;
+    const color=groupColors[g]||"#888";
+    const label=groupLabels[g]||"Unassigned";
+    html+=`<div style="margin-top:10px;margin-bottom:4px;padding:6px 10px;background:${g==="unassigned"?"#f0f0f0":color+"15"};border-left:3px solid ${color};border-radius:0 8px 8px 0;font-weight:700;font-size:12px;color:${color}">${label} <span style="font-weight:400;font-size:11px">(${workers.length})</span></div>`;
+    workers.forEach(name=>{
+      num++;
+      const tagColor=groupColors[g]||"#888";
+      const tagLabel=g==="unassigned"?"—":(g==="installation"?"INST":g==="ducting"?"DUCT":"SUR");
+      const esc=name.replace(/'/g,"\\'");
+      html+=`<div class="user-row" style="display:flex;align-items:center;justify-content:space-between;gap:4px"><div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0"><span style="font-size:10px;font-weight:700;color:white;background:${tagColor};border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${num}</span><span class="uname" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span><span style="font-size:9px;font-weight:700;color:${tagColor};background:${tagColor}15;border:1px solid ${tagColor}40;padding:1px 6px;border-radius:10px;white-space:nowrap">${tagLabel}</span></div><div style="display:flex;gap:4px;flex-shrink:0"><button onclick="editWorkerName('${esc}')" style="border:none;background:var(--teal);color:white;border-radius:6px;width:26px;height:26px;font-size:12px;cursor:pointer" title="Edit">✎</button><button onclick="editWorkerGroup('${esc}')" style="border:none;background:var(--navy);color:white;border-radius:6px;width:26px;height:26px;font-size:11px;cursor:pointer" title="Change group">⇄</button><button onclick="removeWorker('${esc}')" style="border:none;background:#fee;color:#c0392b;border-radius:6px;width:26px;height:26px;font-size:13px;cursor:pointer" title="Remove">✕</button></div></div>`;
+    });
+  });
+  list.innerHTML=html;
 }
 function addWorkerToRoster(){
   const inp=document.getElementById("newWorkerName");
@@ -7114,6 +7150,45 @@ function removeWorker(name){
     showToast(t("workerRemoved"));
   },{danger:true,okText:t("remove")||"Remove"});
 }
+// Edit worker name (rename)
+function editWorkerName(oldName){
+  showModal("Edit Worker Name",'<input id="_editWName" value="'+escHtml(oldName)+'" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px">',function(){
+    const newName=document.getElementById("_editWName").value.trim();
+    if(!newName||newName===oldName)return;
+    const roster=getWorkerRoster();
+    if(roster.includes(newName)){showToast("Name already exists");return}
+    // Update custom workers list
+    let custom=getCustomWorkers();
+    const cidx=custom.indexOf(oldName);
+    if(cidx>=0){custom[cidx]=newName;saveCustomWorkers(custom)}
+    // If base worker, remove old + add new as custom
+    if(BASE_WORKER_ROSTER.includes(oldName)){
+      let removed=[];try{removed=JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]")}catch(e){}
+      if(!removed.includes(oldName)){removed.push(oldName);localStorage.setItem("elg_base_workers_removed",JSON.stringify(removed))}
+      custom=getCustomWorkers();if(!custom.includes(newName)){custom.push(newName);saveCustomWorkers(custom)}
+    }
+    // Update pay roster
+    const payR=getPayRoster();
+    if(payR[oldName]){payR[newName]=payR[oldName];delete payR[oldName];savePayRosterData(payR)}
+    renderWorkerRoster();showToast("Renamed to "+newName);
+  });
+}
+
+// Change worker's payment group
+function editWorkerGroup(name){
+  const payR=getPayRoster();
+  const current=payR[name]?payR[name].group:"unassigned";
+  const groups=[{id:"installation",label:"Installation Crew",rate:7000},{id:"ducting",label:"Ducting / Movers",rate:7000},{id:"suriname",label:"Suriname Team",rate:6000}];
+  let optHtml=groups.map(g=>'<option value="'+g.id+'" '+(current===g.id?'selected':'')+'>'+g.label+' ($'+g.rate.toLocaleString()+'/day)</option>').join("");
+  optHtml+='<option value="_remove" '+(current==="unassigned"?"selected":"")+'>Unassigned (remove from pay roster)</option>';
+  showModal("Change Group — "+name,'<select id="_editWGroup" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px">'+optHtml+'</select>',function(){
+    const sel=document.getElementById("_editWGroup").value;
+    if(sel==="_remove"){delete payR[name]}
+    else{const g=groups.find(x=>x.id===sel);payR[name]={group:sel,rate:g?g.rate:7000}}
+    savePayRosterData(payR);renderWorkerRoster();showToast("Updated "+name);
+  });
+}
+
 // OT Eligible management
 function renderOTEligible(){
   const card=document.getElementById("adminOTCard");
@@ -7448,11 +7523,21 @@ function cloudLoadAttendance(date){
     .then(r=>r.json()).then(d=>d||null).catch(()=>null);
 }
 
+function attDateNav(dir){
+  const dp=document.getElementById("attDate");
+  const d=new Date(dp.value||getGuyanaDate());d.setDate(d.getDate()+dir);
+  const todayStr=getGuyanaDate();const dStr=d.toISOString().slice(0,10);
+  if(dStr>todayStr)return;
+  dp.value=dStr;_attData=null;_attDate=null;renderAttendanceTab();
+}
 function renderAttendanceTab(){
   const datePicker=document.getElementById("attDate");
   if(!datePicker.value)datePicker.value=getGuyanaDate();
-  datePicker.onchange=renderAttendanceTab;
+  datePicker.onchange=function(){_attData=null;_attDate=null;renderAttendanceTab()};
   const date=datePicker.value;
+  // Update day label
+  const dayEl=document.getElementById("attDaySub");
+  if(dayEl){const days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];const dd=new Date(date);dayEl.textContent=days[dd.getDay()]}
   const roster=getWorkerRoster();
   const container=document.getElementById("attList");
   const actions=document.getElementById("attActions");
@@ -7498,32 +7583,7 @@ function renderAttendanceTab(){
 function _renderAttendanceUI(date,roster,data,container,actions,summary){
   const isAdmin=currentUser&&currentUser.role==="Project Lead";
   const locked=data.verified===true;
-  
-  // Summary stats
-  let presentCount=0,absentCount=0,nightCount=0;
-  roster.forEach(name=>{
-    const w=data.workers[name];
-    if(w&&w._removed)return; // Skip removed workers from counts
-    if(w&&w.present){presentCount++;if(w.shift==="night")nightCount++}else absentCount++;
-  });
-  summary.innerHTML=
-    '<div class="att-stat"><div class="num">'+presentCount+'</div><div class="lbl">'+t("present")+'</div></div>'+
-    '<div class="att-stat"><div class="num">'+nightCount+'</div><div class="lbl">🌙 '+t("nightShift")+'</div></div>'+
-    '<div class="att-stat"><div class="num">'+(locked?'✅':'⏳')+'</div><div class="lbl">'+(locked?t("verified"):t("attNotSubmitted"))+'</div></div>';
-  
-  // Action buttons
-  let actHtml='';
-  if(!locked){
-    actHtml+='<button class="btn btn-success" onclick="markAllAttendance(true)">'+t("markAllPresent")+'</button>';
-    actHtml+='<button class="btn" onclick="markAllAttendance(false)" style="background:var(--grey);color:white">'+t("clearAll")+'</button>';
-    actHtml+='<button class="btn btn-primary" onclick="saveAttendanceNow()">'+t("saveAttendance")+'</button>';
-    if(isAdmin)actHtml+='<button class="btn" onclick="verifyAttendance()" style="background:#17a2b8;color:white">🔒 '+t("verifyAttendance")+'</button>';
-  }else{
-    actHtml+='<div class="att-status att-verified" style="padding:8px 16px;font-size:13px">🔒 '+t("attLocked")+' — '+( data.verifiedBy||"admin")+'</div>';
-    if(isAdmin)actHtml+='<button class="btn" onclick="unlockAttendance()" style="background:#e67e22;color:white;font-size:12px;padding:6px 14px">🔓 Unlock for Editing</button>';
-  }
-  actions.innerHTML=actHtml;
-  
+
   // Build combined list: roster + any manually-added workers in data not on roster
   const allNames=[...roster];
   if(data.workers){
@@ -7532,60 +7592,96 @@ function _renderAttendanceUI(date,roster,data,container,actions,summary){
     });
   }
 
-  // Worker list
-  let html='';
+  // Summary stats
+  let presentCount=0,totalCount=0,nightCount=0;
+  allNames.forEach(name=>{
+    const w=data.workers[name];
+    if(w&&w._removed)return;
+    totalCount++;
+    if(w&&w.present){presentCount++;if(w.shift==="night")nightCount++}
+  });
+  const absentCount=totalCount-presentCount;
+  summary.innerHTML=
+    '<div class="att-stat"><div class="num" style="color:var(--teal)">'+presentCount+'</div><div class="lbl">Present</div></div>'+
+    '<div class="att-stat"><div class="num" style="color:#e74c3c">'+absentCount+'</div><div class="lbl">Absent</div></div>'+
+    '<div class="att-stat"><div class="num">'+(locked?'✅':'⏳')+'</div><div class="lbl">'+(locked?'Verified':'Pending')+'</div></div>';
+
+  // Action buttons — cleaner pill style
+  let actHtml='';
+  if(!locked){
+    actHtml+='<button onclick="markAllAttendance(true)" style="border:none;background:var(--teal);color:white;border-radius:20px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer">✓ All Present</button>';
+    actHtml+='<button onclick="markAllAttendance(false)" style="border:none;background:#eee;color:#666;border-radius:20px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer">Clear</button>';
+    actHtml+='<button onclick="saveAttendanceNow()" style="border:none;background:var(--navy);color:white;border-radius:20px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer">💾 Save</button>';
+    if(isAdmin)actHtml+='<button onclick="verifyAttendance()" style="border:none;background:#17a2b8;color:white;border-radius:20px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer">🔒 Verify</button>';
+  }else{
+    actHtml+='<div style="padding:8px 16px;font-size:12px;background:#cce5ff;color:#004085;border-radius:20px;font-weight:700">🔒 Verified — '+(data.verifiedBy||"admin")+'</div>';
+    if(isAdmin)actHtml+='<button onclick="unlockAttendance()" style="border:none;background:#e67e22;color:white;border-radius:20px;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer">🔓 Unlock</button>';
+  }
+  actions.innerHTML=actHtml;
+
+  // Worker list — clean table-like layout
+  let html='<div style="background:#f8f9fa;padding:6px 8px;display:flex;align-items:center;gap:6px;border-radius:8px 8px 0 0;border-bottom:2px solid var(--teal);font-size:10px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.5px"><span style="width:22px"></span><span style="flex:1">Name</span><span style="width:30px;text-align:center">Shift</span><span style="width:68px;text-align:center">In</span><span style="width:68px;text-align:center">Out</span><span style="width:52px;text-align:center">Status</span>'+(isAdmin&&!locked?'<span style="width:22px"></span>':'')+'</div>';
   allNames.forEach(name=>{
     const w=data.workers[name]||{present:false,timeIn:"",timeOut:"",shift:"day"};
-    if(w._removed)return; // Skip workers removed by admin
+    if(w._removed)return;
     const checked=w.present?'checked':'';
     const disabled=locked?'disabled':'';
     const isNight=w.shift==="night";
     const isManual=w._manualAdd;
-    const statusClass=w.present?(isNight?'att-present" style="background:#2c3e50;color:white':'att-present'):'att-absent';
-    const statusText=w.present?(isNight?'🌙 '+t("nightShift"):t("present")):t("absent");
-    html+='<div class="att-row"'+(isNight?' style="background:#f0f3f7"':'')+'>';
+    const rowClass='att-row'+(w.present?'':' att-row-absent');
+    html+='<div class="'+rowClass+'"'+(isNight?' style="background:#eef2f7"':'')+'>';
     html+='<input type="checkbox" class="att-check" data-worker="'+escHtml(name)+'" '+checked+' '+disabled+' onchange="updateAttWorker(this)">';
-    html+='<span class="att-name">'+escHtml(name)+(isManual?' <span style="font-size:9px;color:var(--teal);font-weight:600">(added)</span>':'')+'</span>';
-    if(!locked)html+='<button onclick="toggleShift(\''+name.replace(/'/g,"\\'")+'\')" style="border:none;background:'+(isNight?'#2c3e50':'#eee')+';color:'+(isNight?'white':'#666')+';border-radius:6px;padding:2px 6px;font-size:11px;cursor:pointer" title="'+t("toggleShift")+'">'+(isNight?'🌙':'☀️')+'</button>';
+    html+='<span class="att-name">'+escHtml(name)+(isManual?' <span style="font-size:9px;color:var(--teal);font-weight:600">+</span>':'')+'</span>';
+    if(!locked)html+='<button class="att-shift-btn" onclick="toggleShift(\''+name.replace(/'/g,"\\'")+'\')" style="background:'+(isNight?'#2c3e50':'#f0f0f0')+';color:'+(isNight?'white':'#888')+'">'+(isNight?'🌙':'☀️')+'</button>';
     else html+='<span style="font-size:11px">'+(isNight?'🌙':'☀️')+'</span>';
-    html+='<input type="time" class="att-time" data-worker="'+escHtml(name)+'" data-field="timeIn" value="'+(w.timeIn||"")+'" '+disabled+' onchange="updateAttTime(this)" title="'+t("timeIn")+'">';
-    html+='<input type="time" class="att-time" data-worker="'+escHtml(name)+'" data-field="timeOut" value="'+(w.timeOut||"")+'" '+disabled+' onchange="updateAttTime(this)" title="'+t("timeOut")+'">';
-    html+='<span class="att-status '+statusClass+'">'+statusText+'</span>';
-    if(isAdmin&&!locked)html+='<button onclick="attRemoveWorker(\''+name.replace(/'/g,"\\'")+'\')" style="border:none;background:#e74c3c;color:white;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1;padding:0" title="Remove from attendance">✕</button>';
+    html+='<input type="time" class="att-time" data-worker="'+escHtml(name)+'" data-field="timeIn" value="'+(w.timeIn||"")+'" '+disabled+' onchange="updateAttTime(this)" placeholder="In">';
+    html+='<input type="time" class="att-time" data-worker="'+escHtml(name)+'" data-field="timeOut" value="'+(w.timeOut||"")+'" '+disabled+' onchange="updateAttTime(this)" placeholder="Out">';
+    const statusClass=w.present?'att-status att-present':'att-status att-absent';
+    const statusText=w.present?(isNight?'Night':'In'):'Out';
+    html+='<span class="'+statusClass+'">'+statusText+'</span>';
+    if(isAdmin&&!locked)html+='<button class="att-remove-btn" onclick="attRemoveWorker(\''+name.replace(/'/g,"\\'")+'\')" title="Remove">✕</button>';
     html+='</div>';
   });
   // Admin: Add worker button
   if(isAdmin&&!locked){
-    html+='<div style="text-align:center;margin-top:10px"><button onclick="attAddWorker()" class="btn" style="background:var(--teal);color:white;font-size:12px;padding:6px 16px">➕ Add Worker to Attendance</button></div>';
+    html+='<div style="text-align:center;margin-top:12px;display:flex;gap:8px;justify-content:center"><button onclick="attAddWorker()" style="border:none;background:var(--teal);color:white;border-radius:20px;padding:8px 16px;font-size:11px;font-weight:700;cursor:pointer">+ Add Worker</button><button onclick="attAddAllWorkers()" style="border:none;background:var(--navy);color:white;border-radius:20px;padding:8px 16px;font-size:11px;font-weight:700;cursor:pointer">+ Add All Roster</button></div>';
   }
   container.innerHTML=html;
 }
 
-// Admin: manually add a worker to today's attendance
+// Admin: manually add a worker to today's attendance via dropdown
 function attAddWorker(){
-  const allPersonnel=getAllPersonnel();
   const data=_getCurrentAttData();
-  // Show a prompt with name entry
-  const name=prompt("Enter worker name to add to attendance:");
-  if(!name||!name.trim())return;
-  const trimmed=name.trim();
-  // Check if already in attendance
   const roster=getWorkerRoster();
-  if(roster.includes(trimmed)){
-    showToast(trimmed+" is already on the roster");
-    return;
-  }
-  if(data.workers[trimmed]&&data.workers[trimmed]._manualAdd){
-    showToast(trimmed+" is already added");
-    return;
-  }
-  // Add to attendance data with manual flag
-  const now=getGuyanaDateTime();
-  const timeNow=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-  data.workers[trimmed]={present:true,timeIn:timeNow,timeOut:"",shift:"day",_manualAdd:true};
+  const users=getUsers();
+  // Collect all known names not already in roster/attendance
+  const allKnown=new Set([...roster,...Object.values(users).map(u=>u.name)]);
+  const existing=new Set(roster);
+  if(data.workers)Object.keys(data.workers).forEach(n=>{if(data.workers[n]._manualAdd&&!data.workers[n]._removed)existing.add(n)});
+  const available=[...allKnown].filter(n=>!existing.has(n)).sort();
+  if(available.length===0){showToast("All known workers already added");return}
+  let optHtml=available.map(n=>'<option value="'+escHtml(n)+'">'+escHtml(n)+'</option>').join("");
+  showModal("Add Worker",'<select id="_attAddSel" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px"><option value="">Select worker...</option>'+optHtml+'</select><div style="margin-top:8px"><input id="_attAddCustom" placeholder="Or type a new name..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px"></div>',function(){
+    const sel=document.getElementById("_attAddSel");const inp=document.getElementById("_attAddCustom");
+    const name=(sel&&sel.value)?sel.value:(inp?inp.value.trim():"");
+    if(!name)return;
+    const now=getGuyanaDateTime();const timeNow=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+    data.workers[name]={present:true,timeIn:timeNow,timeOut:"",shift:"day",_manualAdd:true};
+    saveAttendanceLocal(_attDate,data);showToast("Added "+name);renderAttendanceTab();
+  });
+}
+// Admin: add ALL roster workers to attendance at once
+function attAddAllWorkers(){
+  const data=_getCurrentAttData();const roster=getWorkerRoster();
+  const now=getGuyanaDateTime();const timeNow=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  let added=0;
+  roster.forEach(name=>{
+    if(!data.workers[name]||data.workers[name]._removed){
+      data.workers[name]={present:true,timeIn:timeNow,timeOut:"",shift:"day"};added++;
+    }
+  });
   saveAttendanceLocal(_attDate,data);
-  showToast("Added "+trimmed+" to attendance");
-  renderAttendanceTab();
+  showToast("Added "+added+" workers");renderAttendanceTab();
 }
 
 // Admin: remove a worker from today's attendance
@@ -8108,29 +8204,39 @@ function renderSurinameEntry(){
   loadSurinameData(weekKey).then(data=>{_surData=data||{workers:{},foodAllowance:198000};renderSurinameWorkers();document.getElementById("surFoodAllowance").value=_surData.foodAllowance||198000});
 }
 function renderSurinameWorkers(){
-  const workers=getPayGroupWorkers("suriname");const container=document.getElementById("surWorkerList");let html="";
-  workers.forEach(w=>{
-    const wd=_surData.workers[w.name]||{present:true,saturday:6000,travel:0};const isAbsent=wd.present===false;
-    html+='<div class="sur-worker-card '+(isAbsent?"absent":"")+'">';
-    html+='<div class="sur-worker-hdr"><span class="sur-worker-name" style="'+(isAbsent?"color:var(--danger)":"")+'">'+w.name+'</span>';
-    html+='<div class="sur-toggle-btns">';
-    html+='<button class="sur-toggle-btn '+(!isAbsent?"present":"")+'" onclick="setSurPresent(\''+w.name.replace(/'/g,"\\'")+'\',true)">Present</button>';
-    html+='<button class="sur-toggle-btn '+(isAbsent?"absent-active":"")+'" onclick="setSurPresent(\''+w.name.replace(/'/g,"\\'")+'\',false)">Absent</button>';
-    html+='</div></div>';
-    if(!isAbsent){
-      const weekly=5*w.rate;
-      html+='<div class="sur-fields">';
-      html+='<div class="sur-field"><label>Weekly ('+w.rate.toLocaleString()+'/day)</label><div class="sur-val">$'+weekly.toLocaleString()+'</div></div>';
-      html+='<div class="sur-field"><label>Saturday</label><input type="number" value="'+(wd.saturday||0)+'" onchange="updateSurWorker(\''+w.name.replace(/'/g,"\\'")+'\',\'saturday\',this.value)"></div>';
-      html+='<div class="sur-field"><label>Travel</label><input type="number" value="'+(wd.travel||0)+'" onchange="updateSurWorker(\''+w.name.replace(/'/g,"\\'")+'\',\'travel\',this.value)"></div>';
-      html+='</div>';
-    }else{html+='<span style="font-size:12px;color:var(--grey)">Not included in payment</span>'}
-    html+='</div>';
+  const workers=getPayGroupWorkers("suriname");const container=document.getElementById("surWorkerList");
+  const dayLabels=["Mon","Tue","Wed","Thu","Fri","Sat"];
+  let html='<div style="overflow-x:auto;border-radius:10px;border:1px solid #eee"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:480px">';
+  html+='<thead><tr style="background:var(--navy);color:white"><th style="padding:8px;text-align:left;font-size:11px;font-weight:700">Worker</th>';
+  dayLabels.forEach(d=>{html+='<th style="padding:8px;text-align:center;font-size:10px;font-weight:600;min-width:52px">'+d+'</th>'});
+  html+='<th style="padding:8px;text-align:center;font-size:10px;font-weight:600">Travel</th><th style="padding:8px;text-align:right;font-size:10px;font-weight:600">Total</th></tr></thead><tbody>';
+  let grandTotal=0;
+  workers.forEach((w,wi)=>{
+    const wd=_surData.workers[w.name]||{present:true,days:{},travel:0};
+    // Migrate old format: if no days object, create from present/saturday
+    if(!wd.days){wd.days={};if(wd.present!==false){for(let i=0;i<5;i++)wd.days[i]=w.rate;wd.days[5]=wd.saturday||0}}
+    let rowTotal=0;
+    html+='<tr style="border-bottom:1px solid #f0f0f0;'+(wi%2===1?'background:#fafbfc':'')+'"><td style="padding:6px 8px;font-weight:600;font-size:11.5px;white-space:nowrap">'+w.name+'</td>';
+    for(let d=0;d<6;d++){
+      const val=wd.days[d]!==undefined?wd.days[d]:(d<5?w.rate:0);
+      rowTotal+=val;
+      html+='<td style="padding:4px 2px;text-align:center"><input type="number" value="'+val+'" onchange="updateSurDay(\''+w.name.replace(/'/g,"\\'")+'\','+d+',this.value)" style="width:48px;padding:4px;border:1px solid #e0e0e0;border-radius:6px;font-size:11px;text-align:center"></td>';
+    }
+    const travel=wd.travel||0;rowTotal+=travel;grandTotal+=rowTotal;
+    html+='<td style="padding:4px 2px;text-align:center"><input type="number" value="'+travel+'" onchange="updateSurWorker(\''+w.name.replace(/'/g,"\\'")+'\',\'travel\',this.value)" style="width:48px;padding:4px;border:1px solid #e0e0e0;border-radius:6px;font-size:11px;text-align:center"></td>';
+    html+='<td style="padding:6px 8px;text-align:right;font-weight:700;font-size:11px;color:var(--navy)">'+rowTotal.toLocaleString()+'</td></tr>';
   });
+  html+='<tr style="background:#f0f8f5;border-top:2px solid var(--teal)"><td style="padding:8px;font-weight:700;color:var(--navy)">Total</td><td colspan="7" style="padding:8px;text-align:right;font-weight:800;font-size:13px;color:var(--teal)">$'+grandTotal.toLocaleString()+'</td></tr>';
+  html+='</tbody></table></div>';
   container.innerHTML=html;
 }
-function setSurPresent(name,present){if(!_surData.workers[name])_surData.workers[name]={present:true,saturday:6000,travel:0};_surData.workers[name].present=present;renderSurinameWorkers()}
-function updateSurWorker(name,field,val){if(!_surData.workers[name])_surData.workers[name]={present:true,saturday:6000,travel:0};_surData.workers[name][field]=parseInt(val)||0}
+function setSurPresent(name,present){if(!_surData.workers[name])_surData.workers[name]={present:true,days:{},travel:0};_surData.workers[name].present=present;renderSurinameWorkers()}
+function updateSurDay(name,dayIdx,val){
+  if(!_surData.workers[name])_surData.workers[name]={present:true,days:{},travel:0};
+  if(!_surData.workers[name].days)_surData.workers[name].days={};
+  _surData.workers[name].days[dayIdx]=parseInt(val)||0;
+}
+function updateSurWorker(name,field,val){if(!_surData.workers[name])_surData.workers[name]={present:true,days:{},travel:0};_surData.workers[name][field]=parseInt(val)||0}
 function updateSurData(){_surData.foodAllowance=parseInt(document.getElementById("surFoodAllowance").value)||0}
 function saveSurinameEntry(){
   updateSurData();const weekStart=getSurWeekStart();const weekKey=getISOWeek(weekStart);
@@ -8182,13 +8288,14 @@ function renderPaySheet(){
       content+='<th>Total</th></tr></thead><tbody>';
       let groupTotal=0;
       workers.forEach(w=>{
-        let rowTotal=0;content+='<tr><td>'+w.name+'</td>';
+        let rowTotal=0;content+='<tr><td style="cursor:pointer" onclick="paySheetEditWorker(\''+w.name.replace(/'/g,"\\'")+'\',\''+group+'\')">'+w.name+' <span style="font-size:9px;color:var(--teal)">✎</span></td>';
         days.forEach((day,i)=>{
           const dd=dayData[i];const shifts=dd?.[w.name]!==undefined?dd[w.name]:null;const fee=shifts?shifts*w.rate:0;rowTotal+=fee;
-          if(!shifts){content+='<td class="'+(i===5?"sat-cell":"")+'">—</td>'}
-          else{const feeK=fee>=1000?(fee/1000)+"k":fee;const cls=(shifts>1?"double-shift ":"")+(i===5?"sat-cell":"");content+='<td class="'+cls+'">'+feeK+'</td>'}
+          const cellId='ps_'+group+'_'+w.name.replace(/\s/g,'_')+'_'+i;
+          if(!shifts){content+='<td class="'+(i===5?"sat-cell":"")+'" id="'+cellId+'" onclick="paySheetEditCell(\''+w.name.replace(/'/g,"\\'")+'\','+i+',\''+day+'\',this)" style="cursor:pointer">—</td>'}
+          else{const feeK=fee>=1000?(fee/1000)+"k":fee;const cls=(shifts>1?"double-shift ":"")+(i===5?"sat-cell":"");content+='<td class="'+cls+'" id="'+cellId+'" onclick="paySheetEditCell(\''+w.name.replace(/'/g,"\\'")+'\','+i+',\''+day+'\',this)" style="cursor:pointer">'+feeK+'</td>'}
         });
-        content+='<td>'+rowTotal.toLocaleString()+'</td></tr>';groupTotal+=rowTotal;
+        content+='<td style="font-weight:600">'+rowTotal.toLocaleString()+'</td></tr>';groupTotal+=rowTotal;
       });
       content+='<tr class="subtotal-row"><td>Subtotal</td><td colspan="5" style="text-align:center;font-size:10px;color:var(--grey)">'+workers.length+' workers</td><td class="sat-cell" style="font-size:10px;color:#854F0B">sep.</td><td style="text-align:right;padding-right:10px">'+groupTotal.toLocaleString()+'</td></tr>';
       content+='</tbody></table></div>';
@@ -8199,10 +8306,18 @@ function renderPaySheet(){
     content+='<div class="paysheet-table-wrap"><table class="paysheet-table"><thead><tr><th>Suriname Team</th><th>Weekly</th><th class="sat-col">Sat</th><th>Travel</th><th>Total</th></tr></thead><tbody>';
     let surGroupTotal=0;
     surWorkers.forEach(w=>{
-      const wd=surData.workers?.[w.name]||{present:true,saturday:6000,travel:0};
-      if(wd.present===false){content+='<tr style="color:var(--grey)"><td>'+w.name+'</td><td colspan="3" style="text-align:center">Absent</td><td>0</td></tr>';return}
-      const weekly=5*w.rate;const sat=wd.saturday||0;const travel=wd.travel||0;const tot=weekly+sat+travel;surGroupTotal+=tot;
-      content+='<tr><td>'+w.name+'</td><td style="text-align:center">'+weekly.toLocaleString()+'</td><td class="sat-cell" style="text-align:center">'+(sat>0?sat.toLocaleString():"—")+'</td><td style="text-align:center">'+(travel>0?travel.toLocaleString():"—")+'</td><td style="text-align:right;padding-right:10px;font-weight:600">'+tot.toLocaleString()+'</td></tr>';
+      const wd=surData.workers?.[w.name]||{present:true,days:{},saturday:6000,travel:0};
+      // Support new daily format
+      let tot=0;
+      if(wd.days&&Object.keys(wd.days).length>0){
+        for(let d=0;d<6;d++)tot+=(wd.days[d]||0);
+      }else if(wd.present===false){
+        content+='<tr style="color:var(--grey)"><td>'+w.name+'</td><td colspan="3" style="text-align:center">Absent</td><td>0</td></tr>';return;
+      }else{
+        tot=5*w.rate+(wd.saturday||0);
+      }
+      const travel=wd.travel||0;tot+=travel;surGroupTotal+=tot;
+      content+='<tr><td style="cursor:pointer" onclick="paySheetEditSur(\''+w.name.replace(/'/g,"\\'")+'\')">'+w.name+' <span style="font-size:9px;color:var(--teal)">✎</span></td><td style="text-align:center">'+(tot-travel).toLocaleString()+'</td><td class="sat-cell" style="text-align:center">'+(travel>0?travel.toLocaleString():"—")+'</td><td style="text-align:center">—</td><td style="text-align:right;padding-right:10px;font-weight:600">'+tot.toLocaleString()+'</td></tr>';
     });
     const food=surData.foodAllowance||0;surGroupTotal+=food;
     content+='<tr><td>Food allowance</td><td colspan="3"></td><td style="text-align:right;padding-right:10px;font-weight:600">'+food.toLocaleString()+'</td></tr>';
@@ -8214,6 +8329,59 @@ function renderPaySheet(){
     document.getElementById("paysheetGrand").innerHTML='<div><div class="paysheet-grand-label">Grand total</div><div class="paysheet-grand-val">'+grand.toLocaleString()+'</div></div>';
     window._paySheetData={installTotal,ductTotal,surTotal,grand,days,dayLabels,dayData,surData,range};
   });
+}
+
+// Pay sheet inline cell editing
+function paySheetEditCell(workerName,dayIdx,dateStr,td){
+  const roster=getPayRoster();const pr=roster[workerName];if(!pr)return;
+  const rate=pr.rate||7000;
+  const weekKey=getISOWeek(dateStr);
+  // Quick toggle: tap cycles 0→1→2→3→0
+  loadPayDayData(weekKey,dateStr).then(data=>{
+    if(!data)data={};
+    const cur=data[workerName]!==undefined?data[workerName]:0;
+    const next=cur>=3?0:cur+1;
+    data[workerName]=next;
+    // Save
+    try{const l=JSON.parse(localStorage.getItem("elg_payroll")||"{}");if(!l[weekKey])l[weekKey]={};l[weekKey][dateStr]=data;localStorage.setItem("elg_payroll",JSON.stringify(l))}catch(e){}
+    const fb=getFirebaseUrl();
+    if(fb)fetch(fb+"/payroll/"+weekKey+"/"+dateStr+".json",{method:"PUT",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}}).catch(()=>{});
+    renderPaySheet();
+  });
+}
+
+// Pay sheet: edit entire worker row via modal
+function paySheetEditWorker(workerName,group){
+  const d=window._paySheetData;if(!d)return;
+  const roster=getPayRoster();const pr=roster[workerName];if(!pr)return;
+  const rate=pr.rate||7000;
+  let html='<div style="font-size:12px;margin-bottom:8px;color:var(--navy);font-weight:700">'+workerName+' — $'+rate.toLocaleString()+'/shift</div>';
+  html+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">';
+  d.dayLabels.forEach((dl,i)=>{
+    const dd=d.dayData[i];const shifts=dd?.[workerName]!==undefined?dd[workerName]:0;
+    html+='<div style="text-align:center"><div style="font-size:10px;font-weight:600;color:var(--grey);margin-bottom:2px">'+dl+'</div><input type="number" min="0" max="3" value="'+shifts+'" id="_psEdit'+i+'" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:8px;text-align:center;font-size:13px;font-weight:600"></div>';
+  });
+  html+='</div>';
+  showModal("Edit Shifts",html,function(){
+    const promises=[];
+    d.days.forEach((day,i)=>{
+      const inp=document.getElementById("_psEdit"+i);const val=parseInt(inp.value)||0;
+      const weekKey=getISOWeek(day);
+      loadPayDayData(weekKey,day).then(data=>{
+        if(!data)data={};data[workerName]=val;
+        try{const l=JSON.parse(localStorage.getItem("elg_payroll")||"{}");if(!l[weekKey])l[weekKey]={};l[weekKey][day]=data;localStorage.setItem("elg_payroll",JSON.stringify(l))}catch(e){}
+        const fb=getFirebaseUrl();
+        if(fb)fetch(fb+"/payroll/"+weekKey+"/"+day+".json",{method:"PUT",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}}).catch(()=>{});
+      });
+    });
+    setTimeout(()=>{renderPaySheet();showToast("Updated "+workerName)},500);
+  });
+}
+
+// Pay sheet: edit Suriname worker
+function paySheetEditSur(workerName){
+  showToast("Edit "+workerName+" in the Suriname tab");
+  switchPayTab("suriname");
 }
 
 // Payment Roster Settings
