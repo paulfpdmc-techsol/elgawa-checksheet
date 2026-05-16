@@ -701,6 +701,14 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
     </div>
     <!-- Payment Sheet View -->
     <div id="paySheetView" style="display:none">
+      <div class="pay-date-nav" style="margin-bottom:10px">
+        <button class="pay-arrow" onclick="paySheetWeekNav(-1)">◀</button>
+        <div style="text-align:center">
+          <div class="pay-date-sub">Week of</div>
+          <div class="pay-date-label" id="paySheetWeekLabel"></div>
+        </div>
+        <button class="pay-arrow" onclick="paySheetWeekNav(1)">▶</button>
+      </div>
       <div class="paysheet-hdr">
         <span class="paysheet-title" id="paysheetTitle">Payment Sheet</span>
         <span class="paysheet-badge draft" id="paysheetBadge">Draft</span>
@@ -719,7 +727,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
   <div class="hub-subtabs" id="hubSubTabs">
     <button class="hub-subtab active" onclick="switchHubTab('overview')">Overview</button>
     <button class="hub-subtab" onclick="switchHubTab('attendance')">Attend</button>
-    <button class="hub-subtab" onclick="switchHubTab('pay')">Pay</button>
+    <button class="hub-subtab admin-item" id="hubPaySubTab" onclick="switchHubTab('pay')">Pay</button>
     <button class="hub-subtab" onclick="switchHubTab('analysis')">Analysis</button>
     <button class="hub-subtab" onclick="switchHubTab('reports')">Reports</button>
     <button class="hub-subtab admin-item" onclick="switchHubTab('personnel')">Personnel</button>
@@ -947,12 +955,12 @@ function getCustomWorkers(){try{return JSON.parse(localStorage.getItem("elg_cust
 function saveCustomWorkers(cw){try{localStorage.setItem("elg_custom_workers",JSON.stringify(cw))}catch(e){}}
 function getWorkerRoster(){
   var removedBase=[];try{removedBase=JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]")}catch(e){}
+  // Include ALL personnel: base roster + custom workers. Also merge any login-user names not already listed.
   const roster=[...BASE_WORKER_ROSTER.filter(n=>!removedBase.includes(n)),...getCustomWorkers()];
-  // Exclude workers who have been promoted to login users (team leads/supervisors)
   const allUsers=getUsers();
-  const userNames=Object.values(allUsers).map(u=>u.name?u.name.toLowerCase():"");
-  const filtered=roster.filter(w=>!userNames.includes(w.toLowerCase()));
-  return filtered.sort((a,b)=>a.localeCompare(b));
+  const userFullNames=Object.values(allUsers).filter(u=>u.name).map(u=>u.name);
+  userFullNames.forEach(name=>{if(!roster.some(r=>r.toLowerCase()===name.toLowerCase()))roster.push(name)});
+  return roster.sort((a,b)=>a.localeCompare(b));
 }
 function getAllPersonnel(){
   // Everyone: workers + team leads/supervisors/engineers (for tool assignment etc.)
@@ -1273,7 +1281,7 @@ const T={
   worker:{en:"Worker",es:"Trabajador",nl:"Werknemer"},
   attWeekOf:{en:"Week of",es:"Semana del",nl:"Week van"},
   attNotSubmitted:{en:"Not yet submitted",es:"Aún no enviado",nl:"Nog niet ingediend"},
-  attConfirmVerify:{en:"Verify and lock today's attendance? This cannot be undone.",es:"¿Verificar y bloquear la asistencia de hoy? No se puede deshacer.",nl:"Aanwezigheid van vandaag verifiëren en vergrendelen? Dit kan niet ongedaan worden."},
+  attConfirmVerify:{en:"Verify and lock today's attendance? Admin can unlock and re-edit at any time.",es:"¿Verificar y bloquear la asistencia de hoy? El admin puede desbloquear y editar en cualquier momento.",nl:"Aanwezigheid van vandaag verifiëren en vergrendelen? Admin kan altijd ontgrendelen en opnieuw bewerken."},
   nightShift:{en:"Night",es:"Noche",nl:"Nacht"},
   dayShift:{en:"Day",es:"Dia",nl:"Dag"},
   toggleShift:{en:"Toggle day/night shift",es:"Cambiar turno dia/noche",nl:"Wissel dag/nachtdienst"},
@@ -2101,6 +2109,9 @@ function showDash(){
   // Show divider between regular and admin tabs
   const navDivider=document.getElementById("navDivider");
   if(navDivider)navDivider.style.display=isAdmin?"block":"none";
+  // Pay hub sub-tab — admin only
+  const hubPaySubTab=document.getElementById("hubPaySubTab");
+  if(hubPaySubTab)hubPaySubTab.style.display=isAdmin?"":"none";
   // Import section — admin/engineers only, collapsed behind small toggle
   const canImport=currentUser.role==="Project Lead"||currentUser.role==="Engineer";
   const importToggle=document.getElementById("importToggleWrap");
@@ -8115,6 +8126,11 @@ function switchPayTab(tab){
   if(tab==="paysheet")renderPaySheet();
 }
 
+// Pay sheet week navigation
+let _paySheetWeekStart=null;
+function getPaySheetWeekStart(){if(!_paySheetWeekStart)_paySheetWeekStart=getWeekMondayFromDate(getGuyanaDate());return _paySheetWeekStart}
+function paySheetWeekNav(dir){const d=new Date(getPaySheetWeekStart());d.setDate(d.getDate()+(dir*7));const todayWeek=getWeekMondayFromDate(getGuyanaDate());if(dir>0&&d.toISOString().slice(0,10)>todayWeek)return;_paySheetWeekStart=d.toISOString().slice(0,10);renderPaySheet()}
+
 // Daily Payment Entry
 let _payDate=null;let _payGroup="installation";let _payData={};
 
@@ -8253,7 +8269,8 @@ function loadSurinameData(weekKey){
 
 // Payment Sheet
 function renderPaySheet(){
-  const date=getGuyanaDate();const weekKey=getISOWeek(date);const weekStart=getWeekMondayFromDate(date);const range=getWeekRange(date);
+  const weekStart=getPaySheetWeekStart();const weekKey=getISOWeek(weekStart);const range=getWeekRange(weekStart);
+  const weekLabelEl=document.getElementById("paySheetWeekLabel");if(weekLabelEl)weekLabelEl.textContent=range;
   document.getElementById("paysheetTitle").textContent="Payment Sheet — "+range;
   const days=[];for(let i=0;i<6;i++){const d=new Date(weekStart);d.setDate(d.getDate()+i);days.push(d.toISOString().slice(0,10))}
   const dayLabels=["Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -9166,6 +9183,7 @@ function renderHubAttendance(){/* Now handled inline by switchHubTab */}
 
 function renderHubPay(){
   const container=document.getElementById("hubPayView");
+  if(!currentUser||currentUser.username!=="admin"){container.innerHTML='<div style="text-align:center;padding:32px;color:var(--grey)">🔒 Admin access only</div>';return}
   container.innerHTML='<div class="att-card"><h3>Payment System</h3><p style="font-size:11px;color:var(--grey);margin-bottom:8px">Access daily entry, Suriname weekly, and payment sheet</p><button class="btn btn-primary" onclick="switchTab(&#39;attendance&#39;);setTimeout(()=>switchPayTab(&#39;payentry&#39;),100)">Open Payment Entry</button><button class="btn" onclick="switchTab(&#39;attendance&#39;);setTimeout(()=>switchPayTab(&#39;paysheet&#39;),100)" style="margin-top:8px;background:#8B5CF6;color:white">Open Pay Sheet</button></div>';
 }
 
