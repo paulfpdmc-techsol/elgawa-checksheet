@@ -955,11 +955,18 @@ function getCustomWorkers(){try{return JSON.parse(localStorage.getItem("elg_cust
 function saveCustomWorkers(cw){try{localStorage.setItem("elg_custom_workers",JSON.stringify(cw))}catch(e){}}
 function getWorkerRoster(){
   var removedBase=[];try{removedBase=JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]")}catch(e){}
-  // Include ALL personnel: base roster + custom workers. Also merge any login-user names not already listed.
-  const roster=[...BASE_WORKER_ROSTER.filter(n=>!removedBase.includes(n)),...getCustomWorkers()];
+  const removedSet=new Set(removedBase.map(n=>n.toLowerCase()));
+  // Include ALL personnel: base roster + custom workers + login users. Respect removed list for ALL sources.
+  const roster=[
+    ...BASE_WORKER_ROSTER.filter(n=>!removedSet.has(n.toLowerCase())),
+    ...getCustomWorkers().filter(n=>!removedSet.has(n.toLowerCase()))
+  ];
   const allUsers=getUsers();
   const userFullNames=Object.values(allUsers).filter(u=>u.name).map(u=>u.name);
-  userFullNames.forEach(name=>{if(!roster.some(r=>r.toLowerCase()===name.toLowerCase()))roster.push(name)});
+  userFullNames.forEach(name=>{
+    if(removedSet.has(name.toLowerCase()))return;
+    if(!roster.some(r=>r.toLowerCase()===name.toLowerCase()))roster.push(name);
+  });
   return roster.sort((a,b)=>a.localeCompare(b));
 }
 function getAllPersonnel(){
@@ -5856,7 +5863,7 @@ function showModal(title,msg,onOk,opts){
   overlay.innerHTML=`<div class="modal-box"><h3>${title}</h3><p>${msg}</p><div class="modal-btns"><button class="m-cancel" id="_mCancel">${cancelText}</button><button class="${danger}" id="_mOk">${okText}</button></div></div>`;
   document.body.appendChild(overlay);
   requestAnimationFrame(()=>overlay.classList.add("show"));
-  overlay.querySelector("#_mOk").onclick=()=>{overlay.remove();if(onOk)onOk()};
+  overlay.querySelector("#_mOk").onclick=()=>{try{if(onOk)onOk()}finally{overlay.remove()}};
   overlay.querySelector("#_mCancel").onclick=()=>{overlay.remove();if(opts.onCancel)opts.onCancel()};
   overlay.addEventListener("click",e=>{if(e.target===overlay){overlay.remove();if(opts.onCancel)opts.onCancel()}});
 }
@@ -7152,12 +7159,14 @@ function removeWorker(name){
     let custom=getCustomWorkers();
     custom=custom.filter(n=>n!==name);
     saveCustomWorkers(custom);
-    // Also add to base-removed list if it's a base worker
-    if(BASE_WORKER_ROSTER.includes(name)){
-      let removed=[];try{removed=JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]")}catch(e){}
-      if(!removed.includes(name)){removed.push(name);localStorage.setItem("elg_base_workers_removed",JSON.stringify(removed))}
-    }
+    // Add to removed list so it stays removed (covers base workers AND login users)
+    let removed=[];try{removed=JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]")}catch(e){}
+    if(!removed.some(r=>r.toLowerCase()===name.toLowerCase())){removed.push(name);localStorage.setItem("elg_base_workers_removed",JSON.stringify(removed))}
+    // Also remove from pay roster so they don't appear in pay sheet
+    const payR=getPayRoster();
+    if(payR[name]){delete payR[name];savePayRosterData(payR)}
     renderWorkerRoster();
+    if(typeof renderPayRoster==="function")renderPayRoster();
     showToast(t("workerRemoved"));
   },{danger:true,okText:t("remove")||"Remove"});
 }
