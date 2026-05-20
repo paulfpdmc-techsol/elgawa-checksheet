@@ -575,7 +575,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
     <div class="login-hint" id="loginHint"></div>
   </div>
 </div>
-<div id="navbar" class="nav hidden"><div class="brand">ELGAWA</div><div class="right"><button class="lang-toggle" onclick="cycleLang()" id="langToggleBtn" title="Switch language">🌐 EN</button><span class="uname" id="navUser"></span><button class="btn-s" onclick="doLogout()" id="logoutBtn"></button></div></div>
+<div id="navbar" class="nav hidden"><div class="brand" onclick="switchTab('forms')" style="cursor:pointer" title="Home">ELGAWA</div><div class="right"><button class="lang-toggle" onclick="cycleLang()" id="langToggleBtn" title="Switch language">🌐 EN</button><span class="uname" id="navUser"></span><button class="btn-s" onclick="doLogout()" id="logoutBtn"></button></div></div>
 <div class="offline-banner" id="offlineBanner">📡 You are offline — reports will sync when connected</div>
 <div id="dashView" class="dash hidden">
   <div class="dash-hdr"><h2 id="dashHdr"></h2><p id="dashDate"></p></div>
@@ -614,9 +614,9 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
   </div>
   <div id="tabHistory" class="hidden">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-      <label style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px">📅 Select Date:</label>
+      <label id="histSelectDateLbl" style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.3px">📅 Select Date:</label>
       <input type="date" id="histDatePicker" style="flex:1;min-width:140px;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;background:white;min-height:42px" onchange="renderHistoryForDate(this.value)">
-      <button class="pill-btn" onclick="document.getElementById('histDatePicker').value=getGuyanaDate();renderHistoryForDate(getGuyanaDate())" style="white-space:nowrap">Today</button>
+      <button class="pill-btn" id="histTodayBtn" onclick="document.getElementById('histDatePicker').value=getGuyanaDate();renderHistoryForDate(getGuyanaDate())" style="white-space:nowrap">Today</button>
     </div>
     <div id="histList"></div>
   </div>
@@ -630,6 +630,10 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
     </div>
     <!-- Existing sign-in content wrapper -->
     <div id="paySignInView">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <button onclick="switchTab('hub')" style="border:none;background:var(--navy);color:white;border-radius:50%;width:34px;height:34px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Back to My Hub">◀</button>
+      <span style="font-size:13px;font-weight:700;color:var(--navy)">Back to My Hub</span>
+    </div>
     <div class="att-card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <h3 id="attTitle" style="margin:0;font-size:15px">Daily Attendance</h3>
@@ -864,6 +868,15 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
           <button class="btn btn-success full" onclick="addReportAccess('monthly')" id="grantMonthlyBtn"></button>
         </div>
       </div>
+    </div>
+    <div id="smartNormalizerCard" class="s-card">
+      <h3 id="smartNormTitle">🧠 Smart Form Helper</h3>
+      <p id="smartNormDesc" style="font-size:11px;color:var(--grey);margin-bottom:8px">When workers write things like "completado" or "10 tiras" in Notes / Task fields instead of using the dropdowns, this auto-fills the % Done, Status, and quantity columns so reports stay accurate. Supports Spanish and English keywords.</p>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0">
+        <span id="smartNormLabel" style="font-size:13px;font-weight:600;color:var(--navy);flex:1"><span id="smartNormLabelText">Smart Helper</span>: <span id="smartNormStatus">ON</span></span>
+        <button class="btn" id="smartNormToggleBtn" onclick="toggleSmartNormalizer()" style="padding:6px 14px;font-size:12px">Toggle</button>
+      </div>
+      <p id="smartNormFooter" style="font-size:10px;color:#888;margin-top:6px">Disable only if the auto-detect ever applies the wrong value. Original notes are always preserved; only empty dropdown fields are filled.</p>
     </div>
     <div id="payRosterCard" class="s-card">
       <h3>💰 Payment Roster</h3>
@@ -1238,6 +1251,32 @@ let _formTeamKey=null;
 const T={
   dailyChecksheet:{en:"Daily Checksheet",es:"Registro Diario",nl:"Dagelijkse Checklist"},
   forms:{en:"Forms",es:"Formularios",nl:"Formulieren"},
+  // Team / form display names (used by getTeamName helper — does NOT mutate TEAMS object)
+  teamName_ducting:{en:"Ducting",es:"Ductos",nl:"Kanalen"},
+  teamName_copper:{en:"Copper Piping",es:"Tubería de Cobre",nl:"Koperleidingen"},
+  teamName_ahu:{en:"AHU Equipment",es:"Equipos AHU",nl:"AHU Apparatuur"},
+  teamName_insulation:{en:"Insulation",es:"Aislamiento",nl:"Isolatie"},
+  teamName_general:{en:"General Labour",es:"Mano de Obra General",nl:"Algemeen Werk"},
+  teamName_refrigerant:{en:"Refrigerant Support",es:"Soporte de Refrigerante",nl:"Koudemiddel Ondersteuning"},
+  teamName_drainage:{en:"Drainage / Condensate",es:"Drenaje / Condensado",nl:"Afvoer / Condensaat"},
+  teamName_controls:{en:"Controls / Electrical",es:"Controles / Eléctrico",nl:"Besturing / Elektrisch"},
+  teamName_commissioning:{en:"Commissioning / Testing",es:"Puesta en Marcha / Pruebas",nl:"Inbedrijfstelling / Testen"},
+  teamName_welding:{en:"Welding & Fabrication",es:"Soldadura y Fabricación",nl:"Lassen & Constructie"},
+  // History tab labels
+  selectDate:{en:"Select Date",es:"Seleccionar Fecha",nl:"Selecteer Datum"},
+  today:{en:"Today",es:"Hoy",nl:"Vandaag"},
+  // Smart Form Helper (admin settings + toasts)
+  smartHelperTitle:{en:"🧠 Smart Form Helper",es:"🧠 Asistente Inteligente de Formularios",nl:"🧠 Slimme Formulierhulp"},
+  smartHelperDesc:{en:"When workers write things like \"completado\" or \"10 tiras\" in Notes / Task fields instead of using the dropdowns, this auto-fills the % Done, Status, and quantity columns so reports stay accurate. Supports Spanish and English keywords.",es:"Cuando los trabajadores escriben cosas como \"completado\" o \"10 tiras\" en los campos de Notas / Tarea en lugar de usar los menús desplegables, esto rellena automáticamente las columnas % Hecho, Estado y cantidad para que los informes sigan siendo precisos. Admite palabras clave en español e inglés.",nl:"Wanneer werknemers dingen schrijven zoals \"completado\" of \"10 tiras\" in Notities / Taak velden in plaats van de dropdowns te gebruiken, vult dit automatisch de % Klaar, Status en hoeveelheid kolommen in zodat rapporten nauwkeurig blijven. Ondersteunt Spaanse en Engelse trefwoorden."},
+  smartHelperLabel:{en:"Smart Helper",es:"Asistente Inteligente",nl:"Slimme Hulp"},
+  smartHelperOn:{en:"ON",es:"ACTIVADO",nl:"AAN"},
+  smartHelperOff:{en:"OFF",es:"DESACTIVADO",nl:"UIT"},
+  smartHelperToggle:{en:"Toggle",es:"Alternar",nl:"Wisselen"},
+  smartHelperFooter:{en:"Disable only if the auto-detect ever applies the wrong value. Original notes are always preserved; only empty dropdown fields are filled.",es:"Desactivar solo si la detección automática alguna vez aplica un valor incorrecto. Las notas originales siempre se conservan; solo se rellenan los campos desplegables vacíos.",nl:"Schakel alleen uit als de automatische detectie ooit een verkeerde waarde toepast. Originele notities blijven altijd behouden; alleen lege dropdown velden worden ingevuld."},
+  smartHelperEnabled:{en:"Smart Helper enabled",es:"Asistente Inteligente activado",nl:"Slimme Hulp ingeschakeld"},
+  smartHelperDisabled:{en:"Smart Helper disabled",es:"Asistente Inteligente desactivado",nl:"Slimme Hulp uitgeschakeld"},
+  smartHelperToastOne:{en:"📊 Auto-detected 1 task update from notes",es:"📊 1 actualización de tarea detectada automáticamente desde las notas",nl:"📊 1 taakupdate automatisch gedetecteerd uit notities"},
+  smartHelperToastMany:{en:"📊 Auto-detected %n task updates from notes",es:"📊 %n actualizaciones de tareas detectadas automáticamente desde las notas",nl:"📊 %n taakupdates automatisch gedetecteerd uit notities"},
   reports:{en:"Reports",es:"Reportes",nl:"Rapporten"},
   history:{en:"History",es:"Historial",nl:"Geschiedenis"},
   settings:{en:"Settings",es:"Configuración",nl:"Instellingen"},
@@ -1873,6 +1912,20 @@ function applyLang(){
   document.querySelectorAll(".optEngineer").forEach(el=>{el.textContent=t("roleEngineer")});
   const subtitleMap={ducting:"ductworkInstall",copper:"refrigerantCW",ahu:"ahuInstall",insulation:"thermalAcoustic",general:"siteSupportMat",refrigerant:"refrigerantSupport",drainage:"drainageCondensate",controls:"controlsElectrical",commissioning:"commissioningTesting"};
   Object.keys(subtitleMap).forEach(k=>{if(TEAMS[k])TEAMS[k].subtitle=t(subtitleMap[k])});
+  // History tab labels
+  const hsl=document.getElementById("histSelectDateLbl");if(hsl)hsl.textContent="📅 "+t("selectDate")+":";
+  const htb=document.getElementById("histTodayBtn");if(htb)htb.textContent=t("today");
+  // Smart Form Helper card
+  if(typeof renderSmartNormalizerStatus==="function")renderSmartNormalizerStatus();
+  // Re-render dashboard team cards so titles pick up the new language
+  const grid=document.getElementById("teamGrid");
+  if(grid&&currentUser){
+    grid.innerHTML="";
+    const allowed=currentUser.teams==="all"?Object.keys(TEAMS):currentUser.teams;
+    allowed.forEach(key=>{const tm=TEAMS[key];if(!tm)return;
+      grid.innerHTML+=`<div class="t-card ${tm.css}" onclick="openForm('${key}')"><div class="icon">${tm.icon}</div><div><h3>${getTeamName(key)}</h3><p>${getTeamSubtitle(key)}</p></div></div>`;
+    });
+  }
   // Re-render form dropdowns if form is open
   const fv=document.getElementById("formView");
   if(fv&&!fv.classList.contains("hidden")&&_formTeamKey){openForm(_formTeamKey,_collectFormData())}
@@ -2023,6 +2076,13 @@ window.addEventListener("popstate",function(e){
     history.pushState({tab:"forms"},"",location.pathname);
     return;
   }
+  // If attendance tab is open, go back to hub
+  const tabAtt=document.getElementById("tabAttendance");
+  if(tabAtt&&!tabAtt.classList.contains("hidden")){
+    window._skipHistPush=true;switchTab("hub");
+    history.pushState({tab:"hub"},"",location.pathname);
+    return;
+  }
   // If settings is open, go back to forms
   const sv=document.getElementById("settingsView");
   if(sv&&!sv.classList.contains("hidden")){
@@ -2046,6 +2106,14 @@ history.replaceState({tab:"forms"},"",location.pathname);
 function getTeamSubtitle(key){
   const map={ducting:"ductworkInstall",copper:"refrigerantCW",ahu:"ahuInstall",insulation:"thermalAcoustic",general:"siteSupportMat",refrigerant:"refrigerantSupport",drainage:"drainageCondensate",controls:"controlsElectrical",commissioning:"commissioningTesting"};
   return map[key]?t(map[key]):TEAMS[key].subtitle;
+}
+// Returns the translated team display name. Falls back to TEAMS[key].name (English).
+// IMPORTANT: Does NOT mutate TEAMS[key].name, so any code that compares against the English name keeps working.
+function getTeamName(key){
+  if(!TEAMS[key])return key;
+  const trKey="teamName_"+key;
+  if(T[trKey]&&T[trKey][LANG])return T[trKey][LANG];
+  return TEAMS[key].name;
 }
 function getTeamView(){try{return localStorage.getItem("elg_team_view")||"list"}catch(e){return"list"}}
 function setTeamView(mode){
@@ -2084,7 +2152,7 @@ function showDash(){
   const grid=document.getElementById("teamGrid");grid.innerHTML="";
   const allowed=currentUser.teams==="all"?Object.keys(TEAMS):currentUser.teams;
   allowed.forEach(key=>{const tm=TEAMS[key];
-    grid.innerHTML+=`<div class="t-card ${tm.css}" onclick="openForm('${key}')"><div class="icon">${tm.icon}</div><div><h3>${tm.name}</h3><p>${getTeamSubtitle(key)}</p></div></div>`;
+    grid.innerHTML+=`<div class="t-card ${tm.css}" onclick="openForm('${key}')"><div class="icon">${tm.icon}</div><div><h3>${getTeamName(key)}</h3><p>${getTeamSubtitle(key)}</p></div></div>`;
   });
   // Apply saved view preference
   setTeamView(getTeamView());
@@ -4897,18 +4965,45 @@ function buildWorkRow(tm,i,row){
   // If it's a custom value not in the list, set the select to "Other"
   const selectVal=isCustom?"Other":taskVal;
 
-  let h=`<div class="entry-card" data-work-row="${i}"><div class="row-head"><span class="row-num">${i+1}</span><select data-work="${i}" data-key="status"><option value="">--</option>${statusOpts.map(s=>`<option ${row.status===s?"selected":""}>${s}</option>`).join("")}</select></div>
+  let h=`<div class="entry-card" data-work-row="${i}"><div class="row-head"><span class="row-num">${i+1}</span><select data-work="${i}" data-key="status" onchange="onWorkStatusChange(${i},this.value)"><option value="">--</option>${statusOpts.map(s=>`<option ${row.status===s?"selected":""}>${s}</option>`).join("")}</select></div>
   <div class="fields">
     <div class="mini-field"><label>${tm.workLabels[0]}</label>${taskSelectHTML(i,selectVal)}
       <div id="other_work_${i}" class="other-input" style="display:${showOther?"block":"none"}"><input data-work="${i}" data-key="_otherTask" value="${otherVal}" placeholder="${t("otherDesc")}"></div>
     </div>`;
   // Remaining fields (skip task and status)
+  const pctOptions=["","0","10","25","50","75","90","100"];
   tm.workKeys.forEach((k,j)=>{
     if(k==="task"||k==="status")return;
-    h+=`<div class="mini-field"><label>${tm.workLabels[j]}</label><input data-work="${i}" data-key="${k}" value="${row[k]||""}"></div>`;
+    if(k==="pctDone"){
+      const curPct=row[k]||"";
+      // If old data has a value not in our list, include it
+      const extraOpt=(curPct&&!pctOptions.includes(curPct))?`<option value="${curPct}" selected>${curPct}%</option>`:"";
+      h+=`<div class="mini-field"><label>${tm.workLabels[j]}</label><select data-work="${i}" data-key="pctDone" style="font-weight:700;color:${curPct==="100"?"#155724":(curPct&&parseInt(curPct)>=50?"#856404":"#721c24")}"><option value="">--</option>${extraOpt}${pctOptions.filter(p=>p!=="").map(p=>`<option value="${p}" ${curPct===p?"selected":""}>${p}%</option>`).join("")}</select></div>`;
+    }else{
+      h+=`<div class="mini-field"><label>${tm.workLabels[j]}</label><input data-work="${i}" data-key="${k}" value="${row[k]||""}"></div>`;
+    }
   });
   h+=`</div></div>`;
   return h;
+}
+
+// Auto-fill % Done when status changes and highlight missing %
+function onWorkStatusChange(rowIdx,status){
+  const pctSel=document.querySelector(`[data-work="${rowIdx}"][data-key="pctDone"]`);
+  if(!pctSel)return;
+  // Auto-set: C=100%, NS=0%. For IP/BL, only set if currently empty.
+  if(status==="C"){pctSel.value="100"}
+  else if(status==="NS"){pctSel.value="0"}
+  else if((status==="IP"||status==="BL")&&!pctSel.value){
+    // Flash the % field to draw attention
+    pctSel.style.border="2px solid #e74c3c";
+    pctSel.style.background="#fff5f5";
+    setTimeout(()=>{pctSel.style.border="";pctSel.style.background=""},3000);
+  }
+  // Update color
+  const v=pctSel.value;
+  pctSel.style.fontWeight="700";
+  pctSel.style.color=v==="100"?"#155724":(v&&parseInt(v)>=50?"#856404":"#721c24");
 }
 
 function buildMatRow(teamMaterials,i,row){
@@ -5457,7 +5552,7 @@ function openForm(teamKey,prefill){
 
   let html=`
   <div class="back-row"><button class="back-btn" onclick="showDash()">\u2190 ${t("back")}</button></div>
-  <div class="form-hdr" style="border-top:4px solid ${tm.color};background:linear-gradient(135deg,white 80%,${tm.color}11 100%)"><h2 style="color:${tm.color}">${tm.name.toUpperCase()}</h2><div class="sub">${getTeamSubtitle(teamKey)}</div></div>
+  <div class="form-hdr" style="border-top:4px solid ${tm.color};background:linear-gradient(135deg,white 80%,${tm.color}11 100%)"><h2 style="color:${tm.color}">${getTeamName(teamKey).toUpperCase()}</h2><div class="sub">${getTeamSubtitle(teamKey)}</div></div>
   <div class="form-progress" id="formProgressBar"><div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div><div class="prog-text" id="progText">0%</div></div>
 
   <div class="section"><h3>${t("projectInfo")}</h3>
@@ -5696,7 +5791,7 @@ function renderCardFlow(teamKey){
   // Build the overview (card stack + ring)
   const overviewHtml=`
     <div class="back-row"><button class="back-btn" onclick="showDash()">← ${t("back")}</button></div>
-    <div class="form-hdr" style="border-top:4px solid ${tm.color};background:linear-gradient(135deg,white 80%,${tm.color}11 100%)"><h2 style="color:${tm.color}">${tm.name.toUpperCase()}</h2><div class="sub">${getTeamSubtitle(teamKey)}</div></div>
+    <div class="form-hdr" style="border-top:4px solid ${tm.color};background:linear-gradient(135deg,white 80%,${tm.color}11 100%)"><h2 style="color:${tm.color}">${getTeamName(teamKey).toUpperCase()}</h2><div class="sub">${getTeamSubtitle(teamKey)}</div></div>
     <div class="card-flow-ring">
       <svg class="ring-svg" viewBox="0 0 76 76">
         <circle class="ring-bg" cx="38" cy="38" r="34"/>
@@ -6113,6 +6208,82 @@ const _HVAC_DICT={
   "penthouse":"Penthouse","pent house":"Penthouse","penthoues":"Penthouse"
 };
 
+// Spanish → English translation for report standardization
+const _ES_TO_EN={
+  // Work actions
+  "instalacion":"Installation","instalación":"Installation","instalando":"Installing","instalado":"Installed","instalada":"Installed",
+  "fabricacion":"Fabrication","fabricación":"Fabrication","fabricando":"Fabricating","fabricado":"Fabricated","fabricada":"Fabricated",
+  "soldadura":"Welding","soldando":"Welding","soldado":"Welded","soldada":"Welded",
+  "cortando":"Cutting","cortado":"Cut","cortada":"Cut","corte":"Cutting",
+  "limpieza":"Cleaning","limpiando":"Cleaning","limpio":"Clean","limpia":"Clean",
+  "reparacion":"Repair","reparación":"Repair","reparando":"Repairing","reparado":"Repaired","reparada":"Repaired",
+  "pintura":"Painting","pintando":"Painting","pintado":"Painted","pintada":"Painted",
+  "montaje":"Assembly","montando":"Assembling","montado":"Assembled","montada":"Assembled",
+  "desmontaje":"Disassembly","desmontando":"Disassembling","desmontado":"Disassembled",
+  "aislamiento":"Insulation","aislando":"Insulating","aislado":"Insulated","aislada":"Insulated",
+  "conexion":"Connection","conexión":"Connection","conectando":"Connecting","conectado":"Connected","conectada":"Connected",
+  "desconexion":"Disconnection","desconexión":"Disconnection",
+  "prueba":"Testing","probando":"Testing","probado":"Tested",
+  "medicion":"Measurement","medición":"Measurement","medido":"Measured","medida":"Measured",
+  "perforacion":"Drilling","perforación":"Drilling","perforando":"Drilling","perforado":"Drilled",
+  "soporte":"Support","soportes":"Supports",
+  "colgante":"Hanger","colgantes":"Hangers",
+  "abrazadera":"Clamp","abrazaderas":"Clamps",
+  "tubo":"Pipe","tubos":"Pipes","tuberia":"Piping","tubería":"Piping",
+  "valvula":"Valve","válvula":"Valve","valvulas":"Valves","válvulas":"Valves",
+  "bomba":"Pump","bombas":"Pumps",
+  "ventilador":"Fan","ventiladores":"Fans",
+  "filtro":"Filter","filtros":"Filters",
+  "cable":"Cable","cables":"Cables","cableado":"Cabling",
+  "tablero":"Panel","tableros":"Panels",
+  "conducto":"Duct","conductos":"Ducts",
+  "rejilla":"Grille","rejillas":"Grilles",
+  "difusor":"Diffuser","difusores":"Diffusers",
+  "termostato":"Thermostat","termostatos":"Thermostats",
+  "sensor":"Sensor","sensores":"Sensors",
+  "motor":"Motor","motores":"Motors",
+  "compresor":"Compressor","compresores":"Compressors",
+  "condensador":"Condenser","condensadores":"Condensers",
+  "evaporador":"Evaporator","evaporadores":"Evaporators",
+  "enfriador":"Chiller","enfriadores":"Chillers",
+  "calentador":"Heater","calentadores":"Heaters",
+  // Status words
+  "completado":"Completed","completada":"Completed","terminado":"Finished","terminada":"Finished",
+  "en proceso":"In Progress","en curso":"In Progress","trabajando":"Working","progresando":"Progressing",
+  "pendiente":"Pending","no iniciado":"Not Started","no empezado":"Not Started",
+  "bloqueado":"Blocked","bloqueada":"Blocked","parado":"Stopped","parada":"Stopped",
+  "esperando":"Waiting","esperando material":"Waiting for material",
+  "sin material":"No material available","falta material":"Material shortage",
+  "listo":"Ready","lista":"Ready",
+  // Common phrases
+  "trabajo":"Work","trabajos":"Works","tarea":"Task","tareas":"Tasks",
+  "area de trabajo":"Work area","área de trabajo":"Work area",
+  "piso":"Floor","nivel":"Level","planta":"Floor",
+  "cuarto":"Room","habitacion":"Room","habitación":"Room",
+  "pasillo":"Corridor","escalera":"Staircase","escaleras":"Stairs",
+  "techo":"Ceiling","pared":"Wall","paredes":"Walls","suelo":"Floor surface",
+  "herramienta":"Tool","herramientas":"Tools",
+  "material":"Material","materiales":"Materials",
+  "equipo":"Equipment","equipos":"Equipment",
+  "mano de obra":"Labour","personal":"Personnel","trabajador":"Worker","trabajadores":"Workers",
+  "supervisor":"Supervisor","ingeniero":"Engineer","tecnico":"Technician","técnico":"Technician",
+  "mañana":"Tomorrow","hoy":"Today","ayer":"Yesterday",
+  "lunes":"Monday","martes":"Tuesday","miercoles":"Wednesday","miércoles":"Wednesday",
+  "jueves":"Thursday","viernes":"Friday","sabado":"Saturday","sábado":"Saturday","domingo":"Sunday",
+  "necesitamos":"We need","necesito":"I need","hay que":"Need to","tenemos que":"We have to",
+  "falta":"Missing","faltan":"Missing","sobra":"Excess","sobran":"Excess",
+  "bueno":"Good","malo":"Bad","bien":"Good","mal":"Bad",
+  "mucho":"Lots","poco":"Little","bastante":"Sufficient","suficiente":"Sufficient",
+  "problema":"Problem","problemas":"Problems","dificultad":"Difficulty",
+  "peligro":"Hazard","peligroso":"Hazardous","cuidado":"Caution",
+  "seguridad":"Safety","seguro":"Safe",
+  "caliente":"Hot","frio":"Cold","frío":"Cold","mojado":"Wet","seco":"Dry",
+  "arriba":"Above","abajo":"Below","izquierda":"Left","derecha":"Right",
+  "dentro":"Inside","fuera":"Outside","cerca":"Near","lejos":"Far",
+  "grande":"Large","pequeno":"Small","pequeño":"Small","largo":"Long","corto":"Short",
+  "nuevo":"New","viejo":"Old","roto":"Broken","dañado":"Damaged","dañada":"Damaged"
+};
+
 // Terminology standardization
 const _TERM_STD={
   "ac unit":"Air Conditioning Unit","a/c unit":"Air Conditioning Unit","a.c. unit":"Air Conditioning Unit",
@@ -6163,7 +6334,22 @@ function autoCorrectText(text){
     result=result.replace(rx,_TERM_STD[phrase]);
   });
 
-  // 3. Grammar fixes
+  // 3. Spanish → English translation (multi-word phrases first, then single words)
+  // Sort by length descending so "esperando material" matches before "esperando"
+  const esPhrases=Object.keys(_ES_TO_EN).sort((a,b)=>b.length-a.length);
+  esPhrases.forEach(es=>{
+    const rx=new RegExp("\\b"+es.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","gi");
+    result=result.replace(rx,_ES_TO_EN[es]);
+  });
+
+  // 4. Dutch common terms → English (for Surinamese workers)
+  const _NL_TO_EN={"werk":"Work","klaar":"Done","bezig":"In Progress","kapot":"Broken","gereed":"Ready","schoon":"Clean","vuil":"Dirty","boven":"Above","beneden":"Below","kamer":"Room","vloer":"Floor","muur":"Wall","plafond":"Ceiling","deur":"Door","raam":"Window","buis":"Pipe","leiding":"Pipeline","pomp":"Pump","ventiel":"Valve","kabel":"Cable","meter":"Meter","stuk":"Piece","nieuw":"New","oud":"Old","goed":"Good","slecht":"Bad","warm":"Hot","koud":"Cold","nat":"Wet","droog":"Dry","groot":"Large","klein":"Small","lang":"Long","kort":"Short","gereedschap":"Tool","materiaal":"Material","veiligheid":"Safety","gevaar":"Hazard","probleem":"Problem"};
+  Object.keys(_NL_TO_EN).forEach(nl=>{
+    const rx=new RegExp("\\b"+nl.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","gi");
+    result=result.replace(rx,_NL_TO_EN[nl]);
+  });
+
+  // 5. Grammar fixes
   // Capitalize first letter of each sentence
   result=result.replace(/(^|[.!?]\s+)([a-z])/g,(m,p,c)=>p+c.toUpperCase());
   // Capitalize first char of entire string
@@ -6227,6 +6413,165 @@ function autoCorrectSheet(d){
   return d;
 }
 // ═══ END AUTO-CORRECT ENGINE ═══
+
+// ═══ SMART FORM NORMALIZER (Spanish/English freeform → structured fields) ═══
+// Many workers (esp. Spanish-speaking) skip the % Done / Status dropdowns and write
+// things like "completado", "10 tiras extra", "en proceso" into Task / Notes fields.
+// This normalizer scans those freeform fields and fills in the structured columns
+// WITHOUT overwriting values the user explicitly set. It also returns a list of
+// changes so we can show the user what was auto-detected.
+
+const COMPLETION_HINTS = [
+  // Spanish — completed
+  {patterns:["completado","completada","completados","completadas","terminado","terminada","terminados","terminadas","finalizado","finalizada","finalizados","finalizadas","listo","lista","listos","listas","acabado","acabada","hecho","hecha","instalado","instalada","instalados","instaladas","colocado","colocada","colocados","colocadas","100%"],status:"C",pct:100},
+  // English — completed
+  {patterns:["completed","complete","finished","done","installed","placed","100 %","100%"],status:"C",pct:100},
+  // Spanish — blocked
+  {patterns:["bloqueado","bloqueada","parado","parada","detenido","detenida","esperando material","sin material","sin herramienta","sin herramientas","falta material","falta de material","no se puede","no podemos"],status:"BL"},
+  // English — blocked
+  {patterns:["blocked","stuck","waiting on","waiting for","no material","missing material","missing tool","cannot proceed"],status:"BL"},
+  // Spanish — in progress
+  {patterns:["en proceso","en curso","trabajando","progresando","haciendo","iniciado","empezado","comenzado","avanzando","continuando"],status:"IP"},
+  // English — in progress
+  {patterns:["in progress","working on","started","ongoing","continuing"],status:"IP"},
+  // Spanish — not started
+  {patterns:["no empezado","no iniciado","pendiente","sin empezar","sin iniciar","mañana","manana","para mañana","para manana"],status:"NS",pct:0},
+  // English — not started
+  {patterns:["not started","pending","tomorrow","yet to start"],status:"NS",pct:0}
+];
+const PCT_PATTERNS = [
+  {re:/\b(\d{1,3})\s*%/, get:m=>{const n=parseInt(m[1]);return n>=0&&n<=100?n:null}},
+  {re:/\b(mitad|media|medio|half)\b/i, val:50},
+  {re:/\b(casi (?:listo|terminado|completo)|casi acabado|almost done|almost finished)\b/i, val:90},
+  {re:/\b(tres cuartos|three quarters|3\/4)\b/i, val:75},
+  {re:/\b(un cuarto|one quarter|1\/4)\b/i, val:25},
+  {re:/\b(recién empezando|recien empezando|just started|empezando)\b/i, val:10}
+];
+// Quantity extraction: "10 tiras", "5 metros", etc.
+const QTY_UNIT_MAP = {
+  tiras:"strips",tira:"strip",metros:"m",metro:"m",mts:"m",mt:"m",pies:"ft",pie:"ft",
+  pulgadas:"in",pulgada:"in",piezas:"pcs",pieza:"pc",unidades:"units",unidad:"unit",
+  rollos:"rolls",rollo:"roll",cajas:"boxes",caja:"box",tubos:"tubes",tubo:"tube",
+  codos:"elbows",codo:"elbow",reducciones:"reducers",reduccion:"reducer","tés":"tees",
+  juntas:"joints",junta:"joint",soldaduras:"welds",soldadura:"weld"
+};
+
+function _detectCompletion(text){
+  if(!text)return null;
+  const lower=" "+text.toLowerCase()+" ";
+  for(const hint of COMPLETION_HINTS){
+    for(const p of hint.patterns){
+      if(lower.indexOf(p)>=0)return{status:hint.status,pct:hint.pct};
+    }
+  }
+  return null;
+}
+function _detectPercent(text){
+  if(!text)return null;
+  for(const p of PCT_PATTERNS){
+    const m=text.match(p.re);
+    if(m){const v=p.get?p.get(m):p.val;if(v!=null)return v}
+  }
+  return null;
+}
+function _detectQuantity(text){
+  if(!text)return null;
+  const re=/(\d+(?:[.,]\d+)?)\s*([a-záéíóúñ]+)/gi;
+  let m;
+  while((m=re.exec(text))!==null){
+    const u=m[2].toLowerCase();
+    if(QTY_UNIT_MAP[u])return{value:parseFloat(m[1].replace(",",".")),unit:QTY_UNIT_MAP[u],raw:m[0]};
+  }
+  return null;
+}
+function _isEmpty(v){return v===undefined||v===null||v===""||v==="0"||v===0}
+function smartNormalizeSheet(d){
+  if(!d)return{changes:[]};
+  const changes=[];
+  // Combine all sheet-level freeform text — sometimes completion is mentioned at the top
+  const sheetText=[d.notes,d.actual,d.variance].filter(Boolean).join(" || ");
+  const sheetCompletion=_detectCompletion(sheetText);
+  // Per work-row analysis
+  if(d.workRows&&d.workRows.length){
+    d.workRows.forEach((row,idx)=>{
+      const rowText=[row.task,row.area,row.notes].filter(Boolean).join(" || ");
+      const rowCompletion=_detectCompletion(rowText);
+      const rowPct=_detectPercent(rowText);
+      const rowQty=_detectQuantity(rowText);
+      const applied=[];
+      // Status — only fill if empty
+      const detectedStatus=rowCompletion?.status;
+      if(detectedStatus&&_isEmpty(row.status)){
+        row.status=detectedStatus;
+        applied.push("status → "+detectedStatus);
+      }
+      // % Done — explicit % wins; otherwise use completion hint's pct
+      const detectedPct=rowPct!=null?rowPct:(rowCompletion?.pct!=null?rowCompletion.pct:null);
+      if(detectedPct!=null&&_isEmpty(row.pctDone)){
+        row.pctDone=detectedPct;
+        applied.push("% Done → "+detectedPct+"%");
+      }
+      // Quantity → fill the first quantity-shaped field that's empty
+      if(rowQty){
+        const qtyField=["length","qty","volume","joints","reading"].find(f=>(f in row)&&_isEmpty(row[f]));
+        if(qtyField){
+          row[qtyField]=rowQty.value;
+          applied.push(qtyField+" → "+rowQty.value+" ("+rowQty.unit+")");
+        }
+      }
+      if(applied.length){
+        changes.push({row:idx+1,task:row.task||"(row "+(idx+1)+")",applied:applied});
+      }
+    });
+  }
+  // Cross-row fallback: if every work row is at 0% AND the sheet-level notes
+  // say "completado" / "completed", bump every row that has a task to 100/C.
+  // This is the exact pattern the operator described.
+  if(sheetCompletion&&sheetCompletion.status==="C"&&d.workRows&&d.workRows.length){
+    const allZero=d.workRows.every(r=>!r.task||(_isEmpty(r.pctDone)&&_isEmpty(r.status)));
+    if(allZero){
+      d.workRows.forEach((row,idx)=>{
+        if(!row.task)return;
+        const applied=[];
+        if(_isEmpty(row.status)){row.status="C";applied.push("status → C")}
+        if(_isEmpty(row.pctDone)){row.pctDone=100;applied.push("% Done → 100%")}
+        if(applied.length){
+          changes.push({row:idx+1,task:row.task,applied:applied,source:"sheet notes"});
+        }
+      });
+    }
+  }
+  // Save the audit trail on the sheet so admin can see what was auto-applied
+  if(changes.length){
+    d._autoNormalized=changes;
+    d._autoNormalizedAt=new Date().toISOString();
+  }
+  return{changes};
+}
+// Allow admin to disable this if it ever gets in the way
+function isSmartNormalizerEnabled(){try{return localStorage.getItem("elg_smart_normalize")!=="off"}catch(e){return true}}
+function setSmartNormalizerEnabled(on){try{localStorage.setItem("elg_smart_normalize",on?"on":"off")}catch(e){}}
+function toggleSmartNormalizer(){
+  const newState=!isSmartNormalizerEnabled();
+  setSmartNormalizerEnabled(newState);
+  renderSmartNormalizerStatus();
+  if(typeof showToast==="function")showToast(t(newState?"smartHelperEnabled":"smartHelperDisabled"));
+}
+function renderSmartNormalizerStatus(){
+  const card=document.getElementById("smartNormalizerCard");
+  if(!card)return;
+  if(!currentUser||currentUser.username!=="admin"){card.style.display="none";return}
+  card.style.display="block";
+  // Translate static text
+  const ttl=document.getElementById("smartNormTitle");if(ttl)ttl.textContent=t("smartHelperTitle");
+  const dsc=document.getElementById("smartNormDesc");if(dsc)dsc.textContent=t("smartHelperDesc");
+  const lblTxt=document.getElementById("smartNormLabelText");if(lblTxt)lblTxt.textContent=t("smartHelperLabel");
+  const btn=document.getElementById("smartNormToggleBtn");if(btn)btn.textContent=t("smartHelperToggle");
+  const ftr=document.getElementById("smartNormFooter");if(ftr)ftr.textContent=t("smartHelperFooter");
+  const st=document.getElementById("smartNormStatus");
+  if(st){const on=isSmartNormalizerEnabled();st.textContent=on?t("smartHelperOn"):t("smartHelperOff");st.style.color=on?"var(--success)":"var(--danger)"}
+}
+// ═══ END SMART FORM NORMALIZER ═══
 
 function collectForm(teamKey){
   const tm=TEAMS[teamKey];
@@ -6411,6 +6756,18 @@ function validateForm(tk){
     if(sel&&sel.value&&st&&st.value)hasWork=true;
   });
   if(!hasWork)errors.push(t("taskRequired"));
+  // Every work row with a task+status MUST have % Done filled in
+  let missingPct=0;
+  workCards.forEach((_,i)=>{
+    const sel=document.querySelector(`[data-work="${i}"][data-key="task"]`);
+    const st=document.querySelector(`[data-work="${i}"][data-key="status"]`);
+    const pct=document.querySelector(`[data-work="${i}"][data-key="pctDone"]`);
+    if(sel&&sel.value&&st&&st.value&&pct&&!pct.value){
+      missingPct++;
+      pct.style.border="2px solid #e74c3c";pct.style.background="#fff5f5";
+    }
+  });
+  if(missingPct>0)errors.push((missingPct===1?"1 task is":""+missingPct+" tasks are")+" missing % Done — please fill in the completion percentage");
   // At least 1 tool row with tool name (COMPULSORY — feeds Tool Report)
   const toolCont=document.getElementById("toolRowsCont");
   const toolCards=toolCont?toolCont.querySelectorAll("[data-tool-row]"):[];
@@ -6491,6 +6848,18 @@ function _doFinalSubmit(tk,mode){
   if(submitBtn){submitBtn.innerHTML='<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px"></span>'+t("submitting");}
   const d=collectForm(tk);
   autoCorrectSheet(d);
+  // Smart normalizer: extract structured data from freeform Spanish/English notes
+  if(isSmartNormalizerEnabled()){
+    try{
+      const _norm=smartNormalizeSheet(d);
+      if(_norm.changes&&_norm.changes.length){
+        const n=_norm.changes.length;
+        const msg=n===1?t("smartHelperToastOne"):t("smartHelperToastMany").replace("%n",n);
+        showToast(msg);
+        console.log("[Smart Normalizer] Applied changes:",_norm.changes);
+      }
+    }catch(e){console.warn("[Smart Normalizer] failed:",e)}
+  }
   d._id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   // Duplicate check — prevent same team+date+lead from submitting again within 30 seconds
   const recentDup=savedSheets.find(s=>s.teamKey===d.teamKey&&s.date===d.date&&s.teamLead===d.teamLead&&s._id&&(Date.now()-parseInt(s._id,36))<30000);
@@ -6871,21 +7240,39 @@ function generatePDF(data,mode){
 }
 
 // Universal PDF preview modal
+function _isMobileDevice(){
+  return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)||window.innerWidth<768;
+}
 function showPDFPreview(pdfDoc,filename){
   const blob=pdfDoc.output("blob");
   const url=URL.createObjectURL(blob);
+  const isMobile=_isMobileDevice();
+
+  // On mobile, skip iframe preview (doesn't work) — show action buttons only
   const overlay=document.createElement("div");
   overlay.className="modal-overlay";
   overlay.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px";
-  overlay.innerHTML=`
-    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;justify-content:center">
-      <span style="color:white;font-size:14px;font-weight:600;align-self:center;margin-right:8px">${escHtml(filename)}</span>
-      <button onclick="this.closest('.modal-overlay')._downloadFn()" style="background:var(--teal);color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600">⬇️ Download</button>
-      <button onclick="this.closest('.modal-overlay')._shareFn()" style="background:#25D366;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600">📤 Share</button>
-      <button onclick="this.closest('.modal-overlay')._closeFn()" style="background:#e74c3c;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600">✕ Close</button>
-    </div>
-    <iframe src="${url}" style="width:100%;max-width:900px;flex:1;border:none;border-radius:8px;background:white"></iframe>
-  `;
+
+  const previewHTML=isMobile
+    ?`<div style="background:white;border-radius:12px;padding:24px 20px;text-align:center;max-width:340px;width:90%">
+        <div style="font-size:40px;margin-bottom:12px">📄</div>
+        <h3 style="margin:0 0 4px;font-size:16px;color:var(--navy)">${escHtml(filename)}</h3>
+        <p style="font-size:12px;color:#888;margin:0 0 20px">PDF ready — download or share</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button onclick="this.closest('.modal-overlay')._downloadFn()" style="background:var(--teal);color:white;border:none;border-radius:10px;padding:14px;font-size:15px;cursor:pointer;font-weight:700;width:100%">⬇️ Download PDF</button>
+          <button onclick="this.closest('.modal-overlay')._shareFn()" style="background:#25D366;color:white;border:none;border-radius:10px;padding:14px;font-size:15px;cursor:pointer;font-weight:700;width:100%">📤 Share via WhatsApp</button>
+          <button onclick="this.closest('.modal-overlay')._closeFn()" style="background:#eee;color:#333;border:none;border-radius:10px;padding:12px;font-size:13px;cursor:pointer;font-weight:600;width:100%">Close</button>
+        </div>
+      </div>`
+    :`<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;justify-content:center">
+        <span style="color:white;font-size:14px;font-weight:600;align-self:center;margin-right:8px">${escHtml(filename)}</span>
+        <button onclick="this.closest('.modal-overlay')._downloadFn()" style="background:var(--teal);color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600">⬇️ Download</button>
+        <button onclick="this.closest('.modal-overlay')._shareFn()" style="background:#25D366;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600">📤 Share</button>
+        <button onclick="this.closest('.modal-overlay')._closeFn()" style="background:#e74c3c;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600">✕ Close</button>
+      </div>
+      <iframe src="${url}" style="width:100%;max-width:900px;flex:1;border:none;border-radius:8px;background:white"></iframe>`;
+
+  overlay.innerHTML=previewHTML;
   overlay._downloadFn=function(){
     const a=document.createElement("a");a.href=url;a.download=filename;a.click();
     showToast("PDF downloaded");
@@ -6952,6 +7339,7 @@ function showSettings(){applyLang();
   renderOTEligible();
   renderReportAccessPanel();
   renderCloudSettings();
+  renderSmartNormalizerStatus();
   checkFirebaseExpiry();
 }
 function renderCloudSettings(){
@@ -7564,25 +7952,35 @@ function renderAttendanceTab(){
   const summary=document.getElementById("attSummary");
   const titleEl=document.getElementById("attTitle");
   if(titleEl)titleEl.textContent=t("dailyAttendance");
-  
-  // Load from cloud first, fall back to local
-  const fb=getFirebaseUrl();
-  if(fb){
-    container.innerHTML='<div class="empty">'+t("loadingCloud")+'</div>';
-    cloudLoadAttendance(date).then(cloud=>{
-      const local=loadAttendance(date);
-      const data=cloud||local||{workers:{},verified:false,verifiedBy:null};
-      _renderAttendanceUI(date,roster,data,container,actions,summary);
-      renderMovers(data);
-    }).catch(()=>{
-      const data=loadAttendance(date)||{workers:{},verified:false,verifiedBy:null};
-      _renderAttendanceUI(date,roster,data,container,actions,summary);
-      renderMovers(data);
-    });
+
+  // If we already have in-memory data for this date, use it directly (no cloud re-fetch).
+  // This prevents cloud stale data from overwriting local edits before user hits Save.
+  if(_attData&&_attDate===date){
+    _renderAttendanceUI(date,roster,_attData,container,actions,summary);
+    renderMovers(_attData);
   }else{
-    const data=loadAttendance(date)||{workers:{},verified:false,verifiedBy:null};
-    _renderAttendanceUI(date,roster,data,container,actions,summary);
-    renderMovers(data);
+    // Initial load: fetch from cloud first, fall back to local
+    const fb=getFirebaseUrl();
+    if(fb){
+      container.innerHTML='<div class="empty">'+t("loadingCloud")+'</div>';
+      cloudLoadAttendance(date).then(cloud=>{
+        const local=loadAttendance(date);
+        const data=cloud||local||{workers:{},verified:false,verifiedBy:null};
+        _attData=data;_attDate=date;
+        _renderAttendanceUI(date,roster,data,container,actions,summary);
+        renderMovers(data);
+      }).catch(()=>{
+        const data=loadAttendance(date)||{workers:{},verified:false,verifiedBy:null};
+        _attData=data;_attDate=date;
+        _renderAttendanceUI(date,roster,data,container,actions,summary);
+        renderMovers(data);
+      });
+    }else{
+      const data=loadAttendance(date)||{workers:{},verified:false,verifiedBy:null};
+      _attData=data;_attDate=date;
+      _renderAttendanceUI(date,roster,data,container,actions,summary);
+      renderMovers(data);
+    }
   }
   
   // Render weekly register
@@ -7790,8 +8188,9 @@ function saveAttendanceNow(){
   const date=_attDate;
   saveAttendanceLocal(date,data);
   cloudSaveAttendance(date,data).then(ok=>{
-    if(ok)showToast(t("attSaved")+" ☁️");
-    else showToast(t("attSaved"));
+    if(ok){showToast(t("attSaved")+" ☁️")}
+    else{showToast(t("attSaved"))}
+    // After cloud save, keep using in-memory data (already correct)
   });
 }
 
