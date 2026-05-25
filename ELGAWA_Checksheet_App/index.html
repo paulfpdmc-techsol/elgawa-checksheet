@@ -12,6 +12,8 @@
 <title>ELGAWA Daily Checksheet</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
 <style>
 :root{--navy:#0F6E56;--navy-lt:#1D9E75;--blue-bg:#E0F5ED;--grey:#666;--lt-grey:#f5faf8;--border:#d4e8df;--white:#fff;--danger:#dc3545;--success:#28a745;--warn:#f0ad4e;--ducting:#2E75B6;--copper:#C05621;--ahu:#548235;--insulation:#7030A0;--general:#BF8F00;--refrigerant:#0077B6;--drainage:#0096C7;--controls:#E63946;--commissioning:#2D6A4F;--radius:14px;--shadow:0 4px 16px rgba(15,110,86,0.08);--shadow-lg:0 8px 32px rgba(15,110,86,0.12)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -7248,33 +7250,73 @@ function showPDFPreview(pdfDoc,filename){
   const url=URL.createObjectURL(blob);
   const isMobile=_isMobileDevice();
 
-  // On mobile, skip iframe preview (doesn't work) — show action buttons only
   const overlay=document.createElement("div");
   overlay.className="modal-overlay";
-  overlay.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px";
+  overlay.style.cssText="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;flex-direction:column;align-items:center;padding:8px;overflow:hidden";
 
-  const previewHTML=isMobile
-    ?`<div style="background:white;border-radius:12px;padding:24px 20px;text-align:center;max-width:340px;width:90%">
-        <div style="font-size:40px;margin-bottom:12px">📄</div>
-        <h3 style="margin:0 0 4px;font-size:16px;color:var(--navy)">${escHtml(filename)}</h3>
-        <p style="font-size:12px;color:#888;margin:0 0 20px">PDF ready — download or share</p>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <button onclick="this.closest('.modal-overlay')._downloadFn()" style="background:var(--teal);color:white;border:none;border-radius:10px;padding:14px;font-size:15px;cursor:pointer;font-weight:700;width:100%">⬇️ Download PDF</button>
-          <button onclick="this.closest('.modal-overlay')._shareFn()" style="background:#25D366;color:white;border:none;border-radius:10px;padding:14px;font-size:15px;cursor:pointer;font-weight:700;width:100%">📤 Share via WhatsApp</button>
-          <button onclick="this.closest('.modal-overlay')._closeFn()" style="background:#eee;color:#333;border:none;border-radius:10px;padding:12px;font-size:13px;cursor:pointer;font-weight:600;width:100%">Close</button>
-        </div>
-      </div>`
-    :`<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;justify-content:center">
-        <span style="color:white;font-size:14px;font-weight:600;align-self:center;margin-right:8px">${escHtml(filename)}</span>
-        <button onclick="this.closest('.modal-overlay')._downloadFn()" style="background:var(--teal);color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600">⬇️ Download</button>
-        <button onclick="this.closest('.modal-overlay')._shareFn()" style="background:#25D366;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600">📤 Share</button>
-        <button onclick="this.closest('.modal-overlay')._closeFn()" style="background:#e74c3c;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600">✕ Close</button>
-      </div>
-      <iframe src="${url}" style="width:100%;max-width:900px;flex:1;border:none;border-radius:8px;background:white"></iframe>`;
+  // Action bar (top) — same for mobile & desktop
+  const barDiv=document.createElement("div");
+  barDiv.style.cssText="display:flex;gap:8px;padding:8px 4px;flex-wrap:wrap;justify-content:center;flex-shrink:0;width:100%;max-width:900px";
+  barDiv.innerHTML=`
+    <span style="color:white;font-size:13px;font-weight:600;align-self:center;margin-right:auto;max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(filename)}</span>
+    <button id="_pdfDlBtn" style="background:var(--teal);color:white;border:none;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:600">⬇️ Download</button>
+    <button id="_pdfShareBtn" style="background:#25D366;color:white;border:none;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:600">📤 Share</button>
+    <button id="_pdfCloseBtn" style="background:#e74c3c;color:white;border:none;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:600">✕ Close</button>`;
+  overlay.appendChild(barDiv);
 
-  overlay.innerHTML=previewHTML;
+  // Content area
+  const contentDiv=document.createElement("div");
+  contentDiv.style.cssText="flex:1;width:100%;max-width:900px;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:8px;background:white";
+  overlay.appendChild(contentDiv);
+
+  if(isMobile&&window.pdfjsLib){
+    // Mobile: render PDF pages as canvas images using pdf.js
+    contentDiv.innerHTML='<div style="text-align:center;padding:40px;color:var(--grey)"><div style="font-size:24px">⏳</div><p style="margin-top:8px">Rendering preview...</p></div>';
+    const arrBuf=pdfDoc.output("arraybuffer");
+    pdfjsLib.getDocument({data:arrBuf}).promise.then(function(pdfFile){
+      contentDiv.innerHTML="";
+      const totalPages=pdfFile.numPages;
+      for(let p=1;p<=totalPages;p++){
+        (function(pageNum){
+          pdfFile.getPage(pageNum).then(function(page){
+            const scale=Math.min((window.innerWidth-24)/page.getViewport({scale:1}).width, 2);
+            const viewport=page.getViewport({scale:scale});
+            const canvas=document.createElement("canvas");
+            canvas.width=viewport.width;
+            canvas.height=viewport.height;
+            canvas.style.cssText="width:100%;height:auto;display:block;border-bottom:1px solid #eee";
+            const ctx=canvas.getContext("2d");
+            page.render({canvasContext:ctx,viewport:viewport});
+            // Insert pages in order
+            const existing=contentDiv.querySelectorAll("canvas");
+            if(existing.length>=pageNum){
+              contentDiv.insertBefore(canvas,existing[pageNum-1]);
+            }else{
+              contentDiv.appendChild(canvas);
+            }
+          });
+        })(p);
+      }
+    }).catch(function(){
+      // Fallback: open in new tab
+      contentDiv.innerHTML='<div style="text-align:center;padding:40px"><p>Could not render preview.</p><button onclick="window.open(\''+url+'\');this.closest(\'.modal-overlay\')._closeFn()" style="background:var(--teal);color:white;border:none;border-radius:8px;padding:12px 24px;font-size:14px;cursor:pointer;margin-top:12px">Open in Browser</button></div>';
+    });
+  }else if(isMobile){
+    // Mobile without pdf.js loaded: open in new tab
+    contentDiv.innerHTML='<div style="text-align:center;padding:40px"><p style="color:var(--grey)">Loading preview...</p></div>';
+    window.open(url);
+    contentDiv.innerHTML='<div style="text-align:center;padding:40px"><p>PDF opened in new tab</p><button onclick="window.open(\''+url+'\')" style="background:var(--teal);color:white;border:none;border-radius:8px;padding:12px 24px;font-size:14px;cursor:pointer;margin-top:12px">Open Again</button></div>';
+  }else{
+    // Desktop: use iframe as before
+    const iframe=document.createElement("iframe");
+    iframe.src=url;
+    iframe.style.cssText="width:100%;height:100%;border:none";
+    contentDiv.appendChild(iframe);
+  }
+
+  // Button handlers
   overlay._downloadFn=function(){
-    const a=document.createElement("a");a.href=url;a.download=filename;a.click();
+    const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);
     showToast("PDF downloaded");
   };
   overlay._shareFn=function(){
@@ -7290,6 +7332,9 @@ function showPDFPreview(pdfDoc,filename){
     URL.revokeObjectURL(url);
     overlay.remove();
   };
+  barDiv.querySelector("#_pdfDlBtn").onclick=overlay._downloadFn;
+  barDiv.querySelector("#_pdfShareBtn").onclick=overlay._shareFn;
+  barDiv.querySelector("#_pdfCloseBtn").onclick=overlay._closeFn;
   overlay.addEventListener("click",function(e){if(e.target===overlay){overlay._closeFn()}});
   document.body.appendChild(overlay);
 }
@@ -8141,15 +8186,22 @@ function _getCurrentAttData(){
 function updateAttWorker(cb){
   const data=_getCurrentAttData();
   const name=cb.dataset.worker;
-  if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:""};
+  if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:"",shift:"day"};
   data.workers[name].present=cb.checked;
   // Auto-set time in if checking present
   if(cb.checked&&!data.workers[name].timeIn){
     const now=new Date();
     data.workers[name].timeIn=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
   }
+  // Save locally and re-render from in-memory data (never re-fetches cloud)
+  _attData=data;_attDate=_attDate||document.getElementById("attDate").value;
   saveAttendanceLocal(_attDate,data);
-  renderAttendanceTab();
+  const roster=getWorkerRoster();
+  const container=document.getElementById("attList");
+  const actions=document.getElementById("attActions");
+  const summary=document.getElementById("attSummary");
+  _renderAttendanceUI(_attDate,roster,_attData,container,actions,summary);
+  renderMovers(_attData);
 }
 
 function updateAttTime(input){
@@ -8204,10 +8256,10 @@ function _doVerifyAttendance(){
   data.verifiedAt=new Date().toISOString();
   const date=_attDate;
   saveAttendanceLocal(date,data);
-  cloudSaveAttendance(date,data).then(()=>{
-    showToast(t("attVerified"));
-    renderAttendanceTab();
-  });
+  // Render UI immediately — don't wait for cloud
+  renderAttendanceTab();
+  showToast(t("attVerified"));
+  cloudSaveAttendance(date,data);
 }
 
 function unlockAttendance(){
@@ -8217,10 +8269,10 @@ function unlockAttendance(){
     delete data.verifiedBy;
     delete data.verifiedAt;
     saveAttendanceLocal(_attDate,data);
-    cloudSaveAttendance(_attDate,data).then(()=>{
-      showToast("Attendance unlocked for editing");
-      renderAttendanceTab();
-    });
+    // Render UI immediately — don't wait for cloud
+    renderAttendanceTab();
+    showToast("Attendance unlocked for editing");
+    cloudSaveAttendance(_attDate,data);
   });
 }
 
