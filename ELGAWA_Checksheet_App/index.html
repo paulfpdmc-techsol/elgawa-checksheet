@@ -4557,6 +4557,7 @@ function buildReportPDF(date,extraSheets){
   const localSheets=savedSheets.filter(s=>s.date===date);
   const daySheets=extraSheets?mergeSheets(localSheets,extraSheets):localSheets;
   if(!daySheets.length)return null;
+  if(!pdfReady())return null;
   const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");
   const W=215.9,H=279.4,M=12;let y=12;const nv=[15,110,86];
 
@@ -7632,7 +7633,7 @@ function showPDFPreview(pdfDoc,filename){
   barDiv.style.cssText="display:flex;gap:8px;padding:8px 4px;flex-wrap:wrap;justify-content:center;flex-shrink:0;width:100%;max-width:900px";
   barDiv.innerHTML=`
     <span style="color:white;font-size:13px;font-weight:600;align-self:center;margin-right:auto;max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(filename)}</span>
-    <button id="_pdfDlBtn" style="background:var(--teal);color:white;border:none;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:600">⬇️ Download</button>
+    <button id="_pdfDlBtn" style="background:var(--teal);color:white;border:none;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:600">💾 Save</button>
     <button id="_pdfShareBtn" style="background:#25D366;color:white;border:none;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:600">📤 Share</button>
     <button id="_pdfCloseBtn" style="background:#e74c3c;color:white;border:none;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:600">✕ Close</button>`;
   overlay.appendChild(barDiv);
@@ -7694,8 +7695,21 @@ function showPDFPreview(pdfDoc,filename){
 
   // Button handlers
   overlay._downloadFn=function(){
-    const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);
-    showToast("PDF downloaded");
+    // iOS installed-app mode ignores the download attribute — hand the PDF
+    // to the system viewer where the user can save/share from there.
+    const isIOS=/(iPhone|iPad|iPod)/i.test(navigator.userAgent);
+    if(isIOS&&window.navigator.standalone){
+      window.open(url);
+      showToast("Use the share icon to save the PDF");
+      return;
+    }
+    try{
+      const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);
+      showToast("💾 Saved to Downloads: "+filename);
+    }catch(e){
+      window.open(url);
+      showToast("Opened PDF — save it from your browser");
+    }
   };
   overlay._shareFn=function(){
     if(navigator.share&&navigator.canShare){
@@ -8912,6 +8926,7 @@ function renderWeeklyRegister(refDate){
 
 function generateWeeklyAttPDF(){
   const d=window._weekAttData;if(!d){showToast("⏳ Loading attendance data... please wait and try again");renderWeeklyRegister(document.getElementById("attDate").value||getGuyanaDate());return}
+  if(!pdfReady())return;
   try{
   const{jsPDF}=window.jspdf;
   const pdf=new jsPDF("l","mm","a4");
@@ -9384,6 +9399,7 @@ function savePayRoster(){showToast("✅ Payment roster saved")}
 // PDF Download
 function downloadPayPDF(){
   const d=window._paySheetData;if(!d)return;
+  if(!pdfReady())return;
   const{jsPDF}=window.jspdf;const pdf=new jsPDF("l","mm","a4");const M=14;let y=20;
   pdf.setFontSize(16);pdf.setTextColor(15,110,86);pdf.text("ELGAWA Guyana Inc. — Weekly Payment Sheet",M,y);y+=6;
   pdf.setFontSize(10);pdf.setTextColor(100);pdf.text(d.range,M,y);y+=10;
@@ -10064,8 +10080,16 @@ function renderHubOverview(){
 
   statsEl.innerHTML='<div style="text-align:center;width:100%;color:var(--grey)">Loading...</div>';
 
-  // Load today's attendance
-  const attPromise=fb?cloudLoadAttendance(date).then(d=>d||loadAttendance(date)||{workers:{}}):Promise.resolve(loadAttendance(date)||{workers:{}});
+  // Load today's attendance — newer-wins between cloud and local. The old
+  // cloud-first read raced against our own just-fired save: tap Present →
+  // re-render read STALE cloud → the tap looked like it didn't work.
+  const attPromise=(fb?cloudLoadAttendance(date):Promise.resolve(null)).then(cloud=>{
+    const local=loadAttendance(date);
+    let base=null;
+    if(cloud&&local)base=(cloud.updatedAt||0)>=(local.updatedAt||0)?cloud:local;
+    else base=cloud||local;
+    return base||{workers:{}};
+  }).catch(()=>loadAttendance(date)||{workers:{}});
 
   // Load today's submitted sheets from cloud
   // BUG FIX: was reading /sheets.json (never written) — "Teams In" was always 0.
@@ -10109,8 +10133,16 @@ function renderHubOverview(){
       +'<div class="hub-stat"><div class="hs-val">'+presentCount+'</div><div class="hs-lbl">Workers</div></div>'
       +'<div class="hub-stat"><div class="hs-val">'+todaySheets.length+'</div><div class="hs-lbl">Reports</div></div>';
 
-    // Unregistered workers — anyone on roster not marked present
-    const unregistered=roster.filter(name=>!workers[name]||!workers[name].present);
+    // Unregistered workers — anyone on roster with NO record yet today.
+    // A worker the admin explicitly marked Absent is dealt with and leaves
+    // the list (old filter kept them forever because present=false).
+    const unregistered=roster.filter(name=>{
+      const w=workers[name];
+      if(!w)return true;
+      if(w._removed)return false;
+      if(w.present)return false;
+      return !w.confirmedByAdmin; // absent but never explicitly confirmed
+    });
     if(unregistered.length===0){
       unregEl.innerHTML='<div style="text-align:center;padding:12px;color:#28a745;font-weight:700">All workers accounted for today</div>';
     }else{
@@ -10144,10 +10176,10 @@ function hubConfirmWorker(name,present){
     if(!data.workers)data.workers={};
     if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:""};
     data.workers[name].present=present;
+    data.workers[name].confirmedByAdmin=true; // marked either way = dealt with
     if(present){
       const now=new Date();
       data.workers[name].timeIn=now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0");
-      data.workers[name].confirmedByAdmin=true;
     }else{
       data.workers[name].timeIn="";data.workers[name].timeOut="";
     }
