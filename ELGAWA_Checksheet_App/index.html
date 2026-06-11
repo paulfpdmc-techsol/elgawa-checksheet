@@ -647,7 +647,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
       <textarea id="importInput" class="import-ta" rows="3"></textarea>
       <button class="btn btn-primary" onclick="importChecksheet()" id="importBtn2"></button>
     </div>
-    <div class="f-field" style="margin-bottom:8px;display:flex;align-items:center;gap:6px"><label id="rptDateLabel" style="white-space:nowrap"></label><button class="btn-s" onclick="shiftReportDate(-1)" style="padding:4px 8px;font-size:14px">&larr;</button><input type="date" id="rptDate" style="flex:1"><button class="btn-s" onclick="shiftReportDate(1)" style="padding:4px 8px;font-size:14px">&rarr;</button><button class="btn-s" onclick="goToToday()" style="padding:4px 8px;font-size:11px;font-weight:600">Today</button></div>
+    <div class="f-field" style="margin-bottom:8px;display:flex;align-items:center;gap:6px"><label id="rptDateLabel" style="white-space:nowrap"></label><button class="btn-s" onclick="shiftReportDate(-1)" style="padding:4px 8px;font-size:14px">&larr;</button><input type="date" id="rptDate" style="flex:1"><button class="btn-s" onclick="shiftReportDate(1)" style="padding:4px 8px;font-size:14px">&rarr;</button><button class="btn-s" onclick="goToToday()" style="padding:4px 8px;font-size:11px;font-weight:600">Today</button><button class="btn-s" onclick="generateDayPackPDF()" title="Cover page + all team checksheets + attendance register in one PDF" style="padding:4px 10px;font-size:11px;font-weight:700;background:var(--navy);color:white;border-color:var(--navy)">📑 Daily Report</button></div>
     <div class="tab-row" style="margin-bottom:8px">
       <button class="tab-btn active" onclick="switchReportTab('main',this)" id="rptTabMain"></button>
       <button class="tab-btn" onclick="switchReportTab('tools',this)" id="rptTabTools"></button>
@@ -2242,6 +2242,7 @@ function showDash(){
   document.getElementById("navbar").classList.remove("hidden");
   document.getElementById("dashView").classList.remove("hidden");
   document.getElementById("bottomNav").classList.remove("hidden");
+  try{startSubmissionWatch()}catch(e){}
   ["formView","settingsView","reportView"].forEach(id=>document.getElementById(id).classList.add("hidden"));
   document.getElementById("navUser").textContent=currentUser.name+" ("+currentUser.role+")";
   const loc=LANG==="es"?"es-ES":LANG==="nl"?"nl-NL":"en-US";
@@ -2941,6 +2942,7 @@ function downloadToolReport(date){
   else{_buildToolPDF(date,savedSheets.filter(s=>s.date===date))}
 }
 function _buildToolPDF(date,daySheets){
+  if(!pdfReady())return;
   const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");
   const W=215.9,H=279.4,M=12;let y=12;const nv=[15,110,86];
   pdf.setFontSize(16);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("ELGAWA GUYANA INC.",W/2,y,{align:"center"});y+=5;
@@ -2972,6 +2974,7 @@ function downloadAttendanceReport(date){
   else{_buildAttendancePDF(date,savedSheets.filter(s=>s.date===date))}
 }
 function _buildAttendancePDF(date,daySheets){
+  if(!pdfReady())return;
   const{jsPDF}=window.jspdf;const pdf=new jsPDF("l","mm","letter");// Landscape for attendance
   const W=279.4,H=215.9,M=10;let y=10;const nv=[15,110,86];
   pdf.setFontSize(14);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text(t("pdfAttendanceRegister"),W/2,y,{align:"center"});y+=5;
@@ -3230,6 +3233,7 @@ function downloadMonthlyPDF(monthVal){
 }
 
 function _buildMonthlyPDF(monthVal,allSheets){
+  if(!pdfReady())return;
   const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");
   const W=215.9,H=279.4,M=12;let y=12;const nv=[15,110,86];
   const monthName=new Date(monthVal+"-15").toLocaleDateString("en-US",{month:"long",year:"numeric"});
@@ -4297,6 +4301,7 @@ function downloadAnalysisPDF(mode,dateVal){
 
 function _buildAnalysisPDF(mode,periodLabel,analyses){
   const agg=aggregateAnalyses(analyses);
+  if(!pdfReady())return;
   const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");
   const W=215.9,H=279.4,M=12;let y=12;const teal=[15,110,86];const navy=[10,50,60];
   const modeLabel=mode==="daily"?"Daily":mode==="weekly"?"Weekly":"Monthly";
@@ -7275,8 +7280,12 @@ function exportTeamPDF(teamKey,date){
   const pdfDoc=buildPDFDoc(d);
   showPDFPreview(pdfDoc,fn);
 }
-function buildPDFDoc(data){
-  const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");const tm=TEAMS[data.teamKey];
+function buildPDFDoc(data,pdfIn){
+  // pdfIn (optional): append this sheet to an existing document on a new page
+  // — used by the Day Pack to combine all teams into one PDF.
+  const{jsPDF}=window.jspdf;
+  const pdf=pdfIn?(pdfIn.addPage("letter","p"),pdfIn):new jsPDF("p","mm","letter");
+  const tm=TEAMS[data.teamKey];
   const W=215.9,H=279.4,M=12;let y=12;
   function hx(h){h=h.replace("#","");return[parseInt(h.substring(0,2),16),parseInt(h.substring(2,4),16),parseInt(h.substring(4,6),16)]}
   const tc=hx(tm.color),nv=[31,78,121];
@@ -7285,32 +7294,32 @@ function buildPDFDoc(data){
   pdf.setFontSize(12);pdf.setTextColor(...tc);pdf.setFont(undefined,"bold");pdf.text(`DAILY CHECKSHEET - ${tm.name.toUpperCase()}`,W/2,y,{align:"center"});y+=2;
   pdf.setDrawColor(...tc);pdf.setLineWidth(.5);pdf.line(M,y,W-M,y);y+=5;
   function il(l,v,x,yy){pdf.setFontSize(8);pdf.setFont(undefined,"bold");pdf.setTextColor(50);pdf.text(l,x,yy);pdf.setFont(undefined,"normal");pdf.setTextColor(0);pdf.text(v||"",x+pdf.getTextWidth(l)+2,yy)}
-  il("Date: ",data.date,M,y);il("Lead: ",data.teamLead,M+50,y);il("Location: ",data.location+" "+data.floor,M+110,y);y+=4;
-  il("Weather: ",data.weather,M,y);y+=6;
+  il("Date: ",data.date,M,y);il("Team Lead: ",data.teamLead,M+50,y);il("Location: ",[data.location,data.floor].filter(Boolean).join(" — "),M+118,y);y+=4;
+  il("Weather: ",data.weather,M,y);if(data.submittedBy||data.savedBy)il("Submitted by: ",data.submittedBy||data.savedBy,M+50,y);y+=6;
   if(data.target){
-    pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("Target vs Actual",M,y);y+=4;
-    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Planned","Actual","Variance"]],body:[[data.target,data.actual||"",data.variance||""]],headStyles:{fillColor:nv,fontSize:8},bodyStyles:{fontSize:8,minCellHeight:10},theme:"grid"});
+    pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("Target vs. Actual",M,y);y+=4;
+    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Planned Target","Actual Achieved","Variance / Reason"]],body:[[data.target,data.actual||"",data.variance||""]],headStyles:{fillColor:nv,fontSize:8},bodyStyles:{fontSize:8,minCellHeight:10},theme:"grid"});
     y=pdf.lastAutoTable.finalY+5;
   }
   const wb=(data.workRows||[]).filter(r=>r.task).map(r=>tm.workKeys.map(k=>r[k]||""));
   if(wb.length){pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("Work Completed",M,y);y+=4;
     pdf.autoTable({startY:y,margin:{left:M,right:M},head:[tm.workLabels],body:wb,headStyles:{fillColor:nv,fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
   const mb=(data.matRows||[]).filter(r=>r.qtyUsed).map(r=>[r.material,r.unit||"",r.qtyUsed,r.qtyOnSite||""]);
-  if(mb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("Materials",M,y);y+=4;
-    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Material","Unit","Used","On Site"]],body:mb,headStyles:{fillColor:nv,fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
+  if(mb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("Materials Used",M,y);y+=4;
+    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Material","Unit","Qty Used","Qty On Site"]],body:mb,headStyles:{fillColor:nv,fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
   const mpb=(data.manRows||[]).filter(r=>r.name).map(r=>[r.name,r.trade||"",r.timeIn||"",r.timeOut||"",r.hours||"",r.ot||"",r.ppe||"Yes"]);
-  if(mpb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("Manpower",M,y);y+=4;
-    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Name","Trade","In","Out","Hrs","OT","PPE"]],body:mpb,headStyles:{fillColor:nv,fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+3}
+  if(mpb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("Manpower & Hours",M,y);y+=4;
+    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Name","Trade","Time In","Time Out","Hrs","OT","PPE"]],body:mpb,headStyles:{fillColor:nv,fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+3}
   pdf.setFontSize(8);pdf.setFont(undefined,"bold");pdf.setTextColor(0);
-  pdf.text(`Manpower: ${data.totalMan||"-"} | Hours: ${data.totalHrs||"-"} | OT: ${data.totalOT||"-"}`,M,y);y+=6;
+  pdf.text(`Total Manpower: ${data.totalMan||"—"}   |   Total Hours: ${data.totalHrs||"—"}   |   Overtime: ${data.totalOT||"—"}`,M,y);y+=6;
   const cb=(data.checkItems||[]).filter(c=>c.status).map((c,i)=>[i+1,c.item,c.status==="done"?"OK":c.status==="notdone"?"NO":"N/A"]);
-  if(cb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("Quality",M,y);y+=4;
+  if(cb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("Quality Checklist",M,y);y+=4;
     pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["#","Item","Status"]],body:cb,headStyles:{fillColor:nv,fontSize:7},bodyStyles:{fontSize:7},columnStyles:{0:{cellWidth:8},2:{cellWidth:14,halign:"center"}},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
   const ib=(data.issueRows||[]).filter(r=>r.issue).map(r=>[r.issue,r.impact||"",r.action||"",r.followup||""]);
-  if(ib.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("Issues",M,y);y+=4;
-    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Issue","Impact","Action","Follow-up"]],body:ib,headStyles:{fillColor:[220,53,69],fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
+  if(ib.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("Issues & Actions",M,y);y+=4;
+    pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Issue","Impact","Action Taken","Follow-up Required"]],body:ib,headStyles:{fillColor:[220,53,69],fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
   const tb=(data.toolRows||[]).filter(r=>r.toolName).map(r=>[r.toolName,r.toolCode||"",r.qty||"",r.condition||"",r.assignedTo||"",r.toolLocation||"",r.returnStatus||""]);
-  if(tb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("Tools",M,y);y+=4;
+  if(tb.length){if(y>H-30){pdf.addPage();y=12}pdf.setFontSize(10);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");pdf.text("Tools & Equipment",M,y);y+=4;
     pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Tool","Code","Qty","Condition","Assigned To","Location","Status"]],body:tb,headStyles:{fillColor:nv,fontSize:7},bodyStyles:{fontSize:7},theme:"grid"});y=pdf.lastAutoTable.finalY+5}
   // Tool alerts in PDF
   const alertTools=(data.toolRows||[]).filter(r=>r.toolName&&(r.condition==="Damaged"||r.condition==="Lost"||r.returnStatus==="Not Returned"));
@@ -7388,8 +7397,211 @@ function clearForm(){showModal(t("confirm")||"Confirm",t("clearConfirm")||"Clear
 function downloadPDF(i){var s=savedSheets[i];if(!s){showToast("⚠️ Report not found — please refresh");return}generatePDF(s,"preview")}
 function sharePDF(i){var s=savedSheets[i];if(!s){showToast("⚠️ Report not found — please refresh");return}generatePDF(s,"share")}
 
+// ═══ DAILY REPORT — cover page + every team's checksheet + attendance register ═══
+// One tap produces the polished end-of-day report: executive summary up front,
+// each team's refined sheet, and the full attendance list at the back.
+function _dailyCoverPage(pdf,date,sheets,attData){
+  const W=215.9,H=279.4,M=14;const nv=[31,78,121];const teal=[15,110,86];
+  let y=30;
+  pdf.setFontSize(20);pdf.setTextColor(...teal);pdf.setFont(undefined,"bold");
+  pdf.text("ELGAWA GUYANA INC.",W/2,y,{align:"center"});y+=8;
+  pdf.setFontSize(11);pdf.setTextColor(100);pdf.setFont(undefined,"normal");
+  pdf.text("Pasha Global Luxury Hotel — HVAC Works",W/2,y,{align:"center"});y+=12;
+  pdf.setFontSize(16);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");
+  pdf.text("DAILY PROJECT REPORT",W/2,y,{align:"center"});y+=7;
+  let longDate=date;
+  try{longDate=new Date(date+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}catch(e){}
+  pdf.setFontSize(12);pdf.setTextColor(60);pdf.setFont(undefined,"normal");
+  pdf.text(longDate,W/2,y,{align:"center"});y+=6;
+  pdf.setDrawColor(...teal);pdf.setLineWidth(.8);pdf.line(M+30,y,W-M-30,y);y+=12;
+  // Day summary numbers
+  let tasks=0,blocked=0,issues=0,toolAlerts=0,photos=0,totalHrs=0;
+  sheets.forEach(function(s){
+    tasks+=(s.workRows||[]).filter(function(r){return r.task}).length;
+    blocked+=(s.workRows||[]).filter(function(r){return r.status==="BL"}).length;
+    issues+=(s.issueRows||[]).filter(function(r){return r.issue}).length;
+    toolAlerts+=(s.toolRows||[]).filter(function(r){return r.toolName&&(r.condition==="Damaged"||r.condition==="Lost"||r.returnStatus==="Not Returned")}).length;
+    photos+=(s.photos||[]).length;
+    const h=parseFloat(s.totalHrs);if(!isNaN(h))totalHrs+=h;
+  });
+  let present=0,absent=0,movers=(attData&&attData.movers?attData.movers.length:0);
+  if(attData&&attData.workers)Object.keys(attData.workers).forEach(function(n){
+    const w=attData.workers[n];if(w._removed)return;
+    if(w.present)present++;else absent++;
+  });
+  pdf.setFontSize(11);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");
+  pdf.text("Day at a Glance",M,y);y+=4;
+  pdf.autoTable({startY:y,margin:{left:M,right:M},
+    head:[["Teams Reporting","Workers Present","Workers Absent","Movers","Tasks Recorded","Blocked","Issues Raised","Tool Alerts"]],
+    body:[[sheets.length,present,absent,movers,tasks,blocked,issues,toolAlerts]],
+    headStyles:{fillColor:teal,fontSize:7.5,halign:"center"},bodyStyles:{fontSize:11,halign:"center",fontStyle:"bold",minCellHeight:10},theme:"grid"});
+  y=pdf.lastAutoTable.finalY+10;
+  // Contents — one line per team
+  pdf.setFontSize(11);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");
+  pdf.text("Teams in This Report",M,y);y+=4;
+  pdf.autoTable({startY:y,margin:{left:M,right:M},
+    head:[["Team","Team Lead","Tasks","Issues","Photos"]],
+    body:sheets.map(function(s){
+      const tm=TEAMS[s.teamKey]||{name:s.teamKey};
+      return[tm.name,s.teamLead||"—",(s.workRows||[]).filter(function(r){return r.task}).length,(s.issueRows||[]).filter(function(r){return r.issue}).length,(s.photos||[]).length];
+    }),
+    headStyles:{fillColor:nv,fontSize:8},bodyStyles:{fontSize:9},columnStyles:{2:{halign:"center"},3:{halign:"center"},4:{halign:"center"}},theme:"striped"});
+  y=pdf.lastAutoTable.finalY+12;
+  pdf.setFontSize(9);pdf.setTextColor(120);pdf.setFont(undefined,"normal");
+  const prep=(typeof currentUser!=="undefined"&&currentUser&&currentUser.name)?currentUser.name:"";
+  pdf.text("Prepared by: "+(prep||"ELGAWA Checksheet System"),M,y);y+=5;
+  pdf.text("Generated: "+new Date().toLocaleString(),M,y);
+}
+function _attendancePage(pdf,date,attData){
+  pdf.addPage("letter","p");
+  const W=215.9,M=14;const nv=[31,78,121];const teal=[15,110,86];
+  let y=16;
+  pdf.setFontSize(14);pdf.setTextColor(...teal);pdf.setFont(undefined,"bold");
+  pdf.text("ATTENDANCE REGISTER — "+date,W/2,y,{align:"center"});y+=3;
+  pdf.setDrawColor(...teal);pdf.setLineWidth(.5);pdf.line(M,y,W-M,y);y+=6;
+  const rows=[];let present=0,absent=0,captured=0;
+  if(attData&&attData.workers){
+    const names=Object.keys(attData.workers).filter(function(n){return !attData.workers[n]._removed});
+    // Present first (alphabetical), then absent
+    names.sort(function(a,b){
+      const wa=attData.workers[a],wb=attData.workers[b];
+      if(!!wa.present!==!!wb.present)return wa.present?-1:1;
+      return a.localeCompare(b);
+    });
+    names.forEach(function(n,i){
+      const w=attData.workers[n];
+      if(w.present)present++;else absent++;
+      if(w.autoRegistered)captured++;
+      rows.push([i+1,n,w.timeIn||"—",w.timeOut||"—",w.shift==="night"?"Night":"Day",w.present?"Present":"Absent",w.autoRegistered?"Team sheet":(w.confirmedByAdmin?"Admin":"Lead/Admin")]);
+    });
+  }
+  if(rows.length===0){
+    pdf.setFontSize(10);pdf.setTextColor(120);pdf.text("No attendance data recorded for this date.",M,y+4);
+    return;
+  }
+  pdf.setFontSize(9);pdf.setTextColor(60);pdf.setFont(undefined,"normal");
+  pdf.text("Present: "+present+"    Absent: "+absent+"    Captured via team checksheets: "+captured+((attData.verified&&attData.verifiedBy)?("    Verified by: "+attData.verifiedBy):""),M,y);y+=4;
+  pdf.autoTable({startY:y,margin:{left:M,right:M},
+    head:[["#","Worker","Time In","Time Out","Shift","Status","Captured By"]],
+    body:rows,
+    headStyles:{fillColor:teal,fontSize:7.5},bodyStyles:{fontSize:8},
+    columnStyles:{0:{cellWidth:8,halign:"center"},2:{halign:"center"},3:{halign:"center"},4:{halign:"center"},5:{halign:"center"}},
+    didParseCell:function(d){if(d.section==="body"&&d.column.index===5&&d.cell.raw==="Absent"){d.cell.styles.textColor=[220,53,69];d.cell.styles.fontStyle="bold"}},
+    theme:"grid"});
+  y=pdf.lastAutoTable.finalY+6;
+  const mv=(attData.movers||[]).filter(function(m){return m&&m.name});
+  if(mv.length){
+    pdf.setFontSize(11);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");
+    pdf.text("Movers / Day Workers",M,y);y+=4;
+    pdf.autoTable({startY:y,margin:{left:M,right:M},
+      head:[["#","Name","Time In","Time Out"]],
+      body:mv.map(function(m,i){return[i+1,m.name,m.timeIn||"—",m.timeOut||"—"]}),
+      headStyles:{fillColor:nv,fontSize:7.5},bodyStyles:{fontSize:8},columnStyles:{0:{cellWidth:8,halign:"center"}},theme:"grid"});
+  }
+}
+function generateDayPackPDF(){
+  requirePdf(function(){
+    const dp=document.getElementById("rptDate");
+    const date=(dp&&dp.value)||getGuyanaDate();
+    showToast("📑 Building daily report for "+date+"…");
+    const attPromise=getFirebaseUrl()?cloudLoadAttendance(date).catch(function(){return null}):Promise.resolve(null);
+    Promise.all([cloudLoadSheets(date),attPromise]).then(function(res){
+      const cloudSheets=res[0]||[];
+      const attData=res[1]||loadAttendance(date)||{workers:{}};
+      const locals=savedSheets.filter(function(s){return s.date===date});
+      const seen=new Set();const all=[];
+      cloudSheets.concat(locals).forEach(function(s){
+        if(!s||!s.teamKey)return;
+        const k=s._id||(s.teamKey+"|"+(s.submittedAt||s.savedAt||""));
+        if(seen.has(k))return;seen.add(k);all.push(s);
+      });
+      if(all.length===0&&!(attData&&attData.workers&&Object.keys(attData.workers).length)){showToast("Nothing recorded for "+date);return}
+      all.sort(function(a,b){return(a.teamKey||"").localeCompare(b.teamKey||"")});
+      // Cover page first
+      const{jsPDF}=window.jspdf;
+      let pdf=new jsPDF("p","mm","letter");
+      try{_dailyCoverPage(pdf,date,all,attData)}catch(e){}
+      // Then one team sheet at a time, yielding between each so the phone
+      // never freezes on photo-heavy days
+      let idx=0,failed=0;
+      function step(){
+        if(idx>=all.length){
+          try{_attendancePage(pdf,date,attData)}catch(e){}
+          // Page numbers on every page
+          try{
+            const total=pdf.getNumberOfPages();
+            for(let i=1;i<=total;i++){pdf.setPage(i);pdf.setFontSize(7);pdf.setTextColor(150);pdf.text("Page "+i+" of "+total,215.9-12,279.4-4,{align:"right"})}
+          }catch(e){}
+          if(failed>0)showToast("⚠️ "+failed+" sheet(s) skipped due to errors");
+          showPDFPreview(pdf,"ELGAWA_Daily_Report_"+date+".pdf");
+          return;
+        }
+        const s=all[idx];idx++;
+        const tn=(TEAMS[s.teamKey]&&TEAMS[s.teamKey].name)||s.teamKey;
+        showToast("📑 Building "+idx+"/"+all.length+" — "+tn);
+        setTimeout(function(){
+          try{pdf=buildPDFDoc(s,pdf)}catch(e){failed++}
+          step();
+        },60);
+      }
+      step();
+    });
+  });
+}
+
+// ═══ NEW-SUBMISSION ALERT (admin) ═══
+// While the app is open, checks every 3 minutes whether new checksheets
+// arrived for today and fires a notification + chime so reports come to
+// Paul instead of him going looking.
+let _subWatchTimer=null;
+function startSubmissionWatch(){
+  clearInterval(_subWatchTimer);
+  if(!currentUser||currentUser.username!=="admin")return;
+  const check=function(){
+    const fb=getFirebaseUrl();if(!fb)return;
+    const date=getGuyanaDate();
+    fetch(fb+"/checksheets/"+date+".json?shallow=true").then(fbJson).then(function(d){
+      const count=d?Object.keys(d).length:0;
+      const key="elg_seen_sheets_"+date;
+      const seen=parseInt(localStorage.getItem(key)||"0",10);
+      if(count>seen){
+        if(seen>0)_fireReminder("ELGAWA — New Checksheet","📥 "+(count-seen)+" new checksheet(s) submitted ("+count+" total today). Open Reports to view.","elg-newsheet");
+        localStorage.setItem(key,String(count));
+      }
+    }).catch(function(){});
+  };
+  check();
+  _subWatchTimer=setInterval(check,180000);
+}
+
+// ═══ PDF ENGINE GUARD ═══
+// The PDF libraries load from a CDN. On weak site signal they can fail to
+// load, which made every PDF button die silently. This loads them on demand
+// and tells the user what's happening instead of doing nothing.
+function requirePdf(cb){
+  if(window.jspdf&&window.jspdf.jsPDF){cb();return}
+  showToast("⏳ Loading PDF engine…");
+  const fail=()=>showToast("⚠️ No internet — PDF engine couldn't load. Connect and try again.");
+  const s=document.createElement("script");
+  s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+  s.onload=function(){
+    const s2=document.createElement("script");
+    s2.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js";
+    s2.onload=function(){cb()};s2.onerror=fail;
+    document.head.appendChild(s2);
+  };
+  s.onerror=fail;
+  document.head.appendChild(s);
+}
+function pdfReady(){
+  if(window.jspdf&&window.jspdf.jsPDF)return true;
+  requirePdf(function(){});
+  showToast("⏳ PDF engine loading — tap again in a few seconds");
+  return false;
+}
 function generatePDF(data,mode){
   if(!data||!data.teamKey){showToast("⚠️ Cannot generate PDF — report data missing");return}
+  if(!window.jspdf||!window.jspdf.jsPDF){requirePdf(function(){generatePDF(data,mode)});return}
   const tm=TEAMS[data.teamKey];
   const fn=`Checksheet_${tm.name.replace(/\s/g,"_")}_${data.date||"undated"}.pdf`;
   const pdf=buildPDFDoc(data);

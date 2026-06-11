@@ -1,9 +1,23 @@
-const CACHE_NAME = "elgawa-checksheet-v127";
+const CACHE_NAME = "elgawa-checksheet-v129";
 const ASSETS = ["./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+// PDF + rendering libraries — precached so PDF buttons work on weak signal/offline
+const CDN_ASSETS = [
+  "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"
+];
 
-// Install — cache all assets
+// Install — cache all assets (CDN libs cached best-effort so a single
+// failure doesn't block the install)
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(cache =>
+      cache.addAll(ASSETS).then(() =>
+        Promise.all(CDN_ASSETS.map(u => cache.add(u).catch(() => {})))
+      )
+    )
+  );
   self.skipWaiting();
 });
 
@@ -15,9 +29,22 @@ self.addEventListener("activate", e => {
   self.clients.claim();
 });
 
-// Fetch — network first, fall back to cache (ensures updates show immediately)
+// Fetch:
+//  - cdnjs libraries: cache-first (immutable versioned files; instant + offline-proof)
+//  - same-origin: network-first, fall back to cache (updates show immediately)
 self.addEventListener("fetch", e => {
-  if (!e.request.url.startsWith(self.location.origin)) return;
+  const url = e.request.url;
+  if (url.startsWith("https://cdnjs.cloudflare.com/")) {
+    e.respondWith(
+      caches.match(e.request).then(hit => hit || fetch(e.request).then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        return response;
+      }))
+    );
+    return;
+  }
+  if (!url.startsWith(self.location.origin)) return;
   e.respondWith(
     fetch(e.request).then(response => {
       const clone = response.clone();
