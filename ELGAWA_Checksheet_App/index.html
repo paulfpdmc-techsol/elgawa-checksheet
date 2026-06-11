@@ -15,10 +15,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
 <style>
-:root{--navy:#0F6E56;--navy-lt:#1D9E75;--teal:#1D9E75;--blue-bg:#E0F5ED;--grey:#666;--lt-grey:#f5faf8;--border:#d4e8df;--white:#fff;--danger:#dc3545;--success:#28a745;--warn:#f0ad4e;--ducting:#2E75B6;--copper:#C05621;--ahu:#548235;--insulation:#7030A0;--general:#BF8F00;--refrigerant:#0077B6;--drainage:#0096C7;--controls:#E63946;--commissioning:#2D6A4F;--radius:14px;--shadow:0 4px 16px rgba(15,110,86,0.08);--shadow-lg:0 8px 32px rgba(15,110,86,0.12)}
+:root{--navy:#0B5D47;--navy-lt:#17A06F;--teal:#17A06F;--blue-bg:#DFF4EB;--grey:#5c6b66;--lt-grey:#f4faf7;--border:#cfe6db;--white:#fff;--danger:#dc3545;--success:#22a04a;--warn:#f0ad4e;--ducting:#2E75B6;--copper:#C05621;--ahu:#548235;--insulation:#7030A0;--general:#BF8F00;--refrigerant:#0077B6;--drainage:#0096C7;--controls:#E63946;--commissioning:#2D6A4F;--radius:16px;--shadow:0 3px 14px rgba(11,93,71,0.09);--shadow-lg:0 10px 34px rgba(11,93,71,0.15);--hdr-grad:linear-gradient(135deg,#0B5D47 0%,#12936A 55%,#17A06F 100%)}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:linear-gradient(180deg,#edf7f3 0%,var(--lt-grey) 100%);color:#333;min-height:100vh;-webkit-tap-highlight-color:transparent}
+html,body{overflow-x:hidden;max-width:100vw}
+img,svg,video,canvas{max-width:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:linear-gradient(180deg,#e8f5ef 0%,var(--lt-grey) 38%,#fbfdfc 100%);color:#26312d;min-height:100vh;-webkit-tap-highlight-color:transparent}
 input,select,textarea,button{font-family:inherit;transition:border-color .2s,box-shadow .2s}
+/* Narrow phones: keep attendance rows inside the screen */
+@media (max-width:380px){
+  .att-row{gap:4px;padding:10px 6px}
+  .att-time{width:56px;font-size:11px}
+  .att-name{min-width:72px;font-size:12px}
+}
+#attList{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .splash{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy),var(--navy-lt));z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;transition:opacity .4s}
 .splash.hide{opacity:0;pointer-events:none}
 .splash h1{font-size:28px;margin-bottom:4px}.splash p{opacity:.7;font-size:14px}
@@ -88,21 +97,21 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .submit-bar .btn{flex:1;max-width:200px}
 .submit-bar .btn:disabled{opacity:.5;cursor:not-allowed}
 .login-hint{color:#777;font-size:10px;text-align:center;margin-top:14px;line-height:1.6}
-.nav{background:linear-gradient(135deg,var(--navy) 0%,#17b882 50%,var(--navy-lt) 100%);color:white;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 6px 30px rgba(15,110,86,.4)}
-.nav .brand{font-weight:800;font-size:15px;letter-spacing:-.3px}.nav .right{display:flex;align-items:center;gap:8px}
+.nav{background:var(--hdr-grad);color:white;padding:13px 16px calc(13px + 0px);padding-top:max(13px,env(safe-area-inset-top,13px));display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 6px 24px rgba(11,93,71,.35)}
+.nav .brand{font-weight:800;font-size:16px;letter-spacing:-.3px;text-shadow:0 1px 2px rgba(0,0,0,.15)}.nav .right{display:flex;align-items:center;gap:8px}
 .nav .uname{font-size:11px;opacity:.9;background:rgba(255,255,255,.12);padding:3px 8px;border-radius:6px}
 .btn-s{padding:5px 10px;border:1.5px solid var(--border);background:white;color:var(--navy);border-radius:6px;font-size:11px;cursor:pointer;font-weight:600}
 .nav .btn-s{border-color:rgba(255,255,255,.4);background:transparent;color:white;font-weight:400}
 .lang-toggle{padding:4px 10px;border:1.5px solid rgba(255,255,255,.6);background:rgba(255,255,255,.15);color:white;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .2s;letter-spacing:1px}
 .lang-toggle:active{background:rgba(255,255,255,.25)}
-.dash{max-width:600px;margin:0 auto;padding:16px;padding-bottom:90px}
-.dash-hdr{text-align:center;margin-bottom:16px}
-.dash-hdr h2{color:var(--navy);font-size:18px}.dash-hdr p{color:var(--grey);font-size:12px;margin-top:2px}
+.dash{max-width:600px;margin:0 auto;padding:16px;padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+.dash-hdr{text-align:left;margin-bottom:14px}
+.dash-hdr h2{color:var(--navy);font-size:20px;letter-spacing:-.4px}.dash-hdr p{color:var(--grey);font-size:12.5px;margin-top:2px;font-weight:500}
 /* Bottom navigation bar */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:500;background:white;display:flex;align-items:stretch;justify-content:center;box-shadow:0 -2px 20px rgba(15,110,86,.12);border-top:1px solid var(--border);padding:0 0 env(safe-area-inset-bottom,0)}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:500;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;align-items:stretch;justify-content:center;box-shadow:0 -4px 24px rgba(11,93,71,.14);border-top:1px solid var(--border);padding:0 0 env(safe-area-inset-bottom,0)}
 .bottom-nav .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 2px 6px;cursor:pointer;background:none;border:none;color:var(--grey);transition:all .2s;position:relative;max-width:90px}
 .bottom-nav .bnav-item .bnav-icon{font-size:20px;line-height:1;transition:transform .2s}
-.bottom-nav .bnav-item .bnav-label{font-size:9px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;margin-top:2px;white-space:nowrap}
+.bottom-nav .bnav-item .bnav-label{font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;margin-top:2px;white-space:nowrap}
 .bottom-nav .bnav-item:active .bnav-icon{transform:scale(.85)}
 .bottom-nav .bnav-item.active{color:var(--navy)}
 .bottom-nav .bnav-item.active::before{content:"";position:absolute;top:0;left:25%;right:25%;height:3px;background:linear-gradient(90deg,var(--navy),var(--navy-lt));border-radius:0 0 4px 4px}
@@ -133,7 +142,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .t-card.controls{border-color:var(--controls);background:linear-gradient(135deg,#f5c6cb 0%,#fde8ea 100%);border-left:6px solid var(--controls)}.t-card.controls h3{color:var(--controls);font-size:16px}.t-card.controls .icon{background:var(--controls);color:white}
 .t-card.commissioning{border-color:var(--commissioning);background:linear-gradient(135deg,#c4dfd0 0%,#e6f0eb 100%);border-left:6px solid var(--commissioning)}.t-card.commissioning h3{color:var(--commissioning);font-size:16px}.t-card.commissioning .icon{background:var(--commissioning);color:white}
 .settings-row{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
-.pill-btn{padding:8px 16px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;color:#555}
+.pill-btn{padding:9px 16px;min-height:38px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;color:#4a554f;box-shadow:0 1px 4px rgba(11,93,71,.06)}
 .settings-pill{background:var(--navy);color:white;border-color:var(--navy);font-size:14px;padding:10px 20px;box-shadow:0 2px 8px rgba(15,110,86,.3);animation:settingsPulse 3s ease-in-out infinite}
 @keyframes settingsPulse{0%,100%{box-shadow:0 2px 8px rgba(15,110,86,.3)}50%{box-shadow:0 2px 16px rgba(15,110,86,.5)}}
 .hist-sec{margin-top:20px}
@@ -163,7 +172,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .s-tab-icon{display:block;font-size:16px;margin-bottom:2px}
 .empty{text-align:center;padding:24px;color:#888;font-size:12px}
-.form-wrap{max-width:600px;margin:0 auto;padding:12px;padding-bottom:90px}
+.form-wrap{max-width:600px;margin:0 auto;padding:12px;padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .back-row{margin-bottom:8px}
 .back-btn{background:none;border:none;color:var(--navy-lt);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:4px}
 .form-hdr{background:white;border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);text-align:center}
@@ -209,12 +218,12 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .tot-f{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600}
 .tot-f input{width:60px;padding:6px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-weight:700;text-align:center}
 .action-bar{position:sticky;bottom:0;left:0;right:0;background:white;padding:10px 14px;box-shadow:0 -2px 10px rgba(0,0,0,.1);display:flex;gap:8px;justify-content:center;z-index:90}
-.btn{padding:12px 22px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-.btn:active{opacity:.85}
+.btn{padding:12px 22px;min-height:46px;border:none;border-radius:13px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.btn:active{opacity:.85;transform:scale(.98)}
 .btn-primary{background:var(--navy);color:white}.btn-success{background:var(--success);color:white}
 .btn-outline{background:white;color:var(--navy);border:2px solid var(--navy)}
 .btn-whatsapp{background:#25D366;color:white}
-.report-wrap{max-width:600px;margin:0 auto;padding:12px;padding-bottom:90px}
+.report-wrap{max-width:600px;margin:0 auto;padding:12px;padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .rpt-card{background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid rgba(15,110,86,.04);transition:box-shadow .2s}
 .rpt-card h3{font-size:14px;color:var(--navy);margin-bottom:10px;border-bottom:2px solid var(--blue-bg);padding-bottom:6px;font-weight:700}
 .rpt-stat{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
@@ -580,7 +589,16 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 <div id="navbar" class="nav hidden"><div class="brand" onclick="switchTab('forms')" style="cursor:pointer" title="Home">ELGAWA</div><div class="right"><button class="lang-toggle" onclick="cycleLang()" id="langToggleBtn" title="Switch language">🌐 EN</button><span class="uname" id="navUser"></span><button class="btn-s" onclick="doLogout()" id="logoutBtn"></button></div></div>
 <div class="offline-banner" id="offlineBanner">📡 You are offline — reports will sync when connected</div>
 <div id="dashView" class="dash hidden">
-  <div class="dash-hdr"><h2 id="dashHdr"></h2><p id="dashDate"></p></div>
+  <div class="dash-hdr" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+    <div style="flex:1;min-width:0"><h2 id="dashHdr"></h2><p id="dashDate"></p></div>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button onclick="history.back()" title="Back" style="border:1.5px solid var(--border);background:white;color:var(--navy);border-radius:50%;width:36px;height:36px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(11,93,71,.08)">◀</button>
+      <button onclick="history.forward()" title="Forward" style="border:1.5px solid var(--border);background:white;color:var(--navy);border-radius:50%;width:36px;height:36px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(11,93,71,.08)">▶</button>
+      <button onclick="goHome()" title="Home" style="border:none;background:var(--navy);color:white;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(11,93,71,.25)">🏠</button>
+      <button id="refreshBtn" onclick="forceRefresh()" title="Refresh app" style="border:none;background:var(--teal);color:white;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(11,93,71,.25)">↻</button>
+    </div>
+  </div>
+  <div id="fbHealthBanner" class="fb-expiry-warn"></div>
   <div id="tabForms">
     <div class="settings-row" id="settingsRow">
     <button class="pill-btn" onclick="exportCSV()" id="exportBtn" style="display:none">📊 Export CSV</button></div>
@@ -1737,6 +1755,8 @@ const T={
   general:{en:"General",es:"General",nl:"Algemeen"},
   // Notification
   notifBody:{en:"Time to fill in your daily checksheet!",es:"¡Es hora de llenar tu registro diario!",nl:"Tijd om je dagelijkse checklist in te vullen!"},
+  remSignIn:{en:"Good morning! Sign in / mark your attendance now.",es:"¡Buenos días! Regístrate / marca tu asistencia ahora.",nl:"Goedemorgen! Meld je aan / registreer je aanwezigheid nu."},
+  remSignOut:{en:"End of day — sign out and enter your time-out.",es:"Fin del día — cierra sesión y registra tu hora de salida.",nl:"Einde van de dag — meld je af en vul je eindtijd in."},
   // Roles
   roleWorker:{en:"Worker",es:"Trabajador",nl:"Werknemer"},
   roleLeadWorker:{en:"Lead Worker",es:"Trabajador Líder",nl:"Hoofdwerknemer"},
@@ -2034,6 +2054,31 @@ function startReportRefresh(){
 }
 function stopReportRefresh(){if(_reportRefreshTimer){clearInterval(_reportRefreshTimer);_reportRefreshTimer=null}}
 
+// HOME — one tap back to the main dashboard from anywhere in the app.
+// Drafts auto-save every 1.5s, so leaving a half-filled form loses nothing.
+function goHome(){
+  const fv=document.getElementById("formView");if(fv)fv.classList.add("hidden");
+  const rv=document.getElementById("reportView");if(rv)rv.classList.add("hidden");
+  window._skipHistPush=false;
+  switchTab("forms");
+  window.scrollTo(0,0);
+}
+
+// REFRESH — force-pulls the newest app version and data. Pushes any pending
+// attendance edits to cloud first, then clears the service worker cache and reloads.
+function forceRefresh(){
+  showToast("Refreshing…");
+  try{clearTimeout(_attCloudTimer);if(_attDate&&_attData)cloudSaveAttendance(_attDate,_attData)}catch(e){}
+  const done=()=>location.reload();
+  try{
+    const work=[];
+    if("serviceWorker" in navigator)work.push(navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.update().catch(()=>{})))).catch(()=>{}));
+    if(window.caches&&caches.keys)work.push(caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).catch(()=>{}));
+    Promise.all(work).then(done).catch(done);
+    setTimeout(done,4000); // safety net — never let refresh hang
+  }catch(e){done()}
+}
+
 function switchTab(tab,btn){
   // Update bottom nav active state
   document.querySelectorAll(".bottom-nav .bnav-item").forEach(b=>b.classList.remove("active"));
@@ -2324,7 +2369,7 @@ function deleteSaved(i){var s=savedSheets[i];if(!s){showToast("⚠️ Report not
   if(fb&&s.date){
     // Fetch all entries for this date and find matching ones
     fetch(fb+"/checksheets/"+s.date+".json")
-      .then(r=>r.json()).then(obj=>{
+      .then(fbJson).then(obj=>{
         if(obj&&typeof obj==="object"){
           Object.keys(obj).forEach(k=>{
             const entry=obj[k];
@@ -2386,7 +2431,7 @@ function doReassignDate(i,oldDate){
   if(fb&&sheet._id){
     // Delete from old date
     fetch(fb+"/checksheets/"+oldDate+'.json?orderBy="_id"&equalTo="'+sheet._id+'"')
-      .then(r=>r.json())
+      .then(fbJson)
       .then(obj=>{
         if(obj&&Object.keys(obj).length){
           const fbKey=Object.keys(obj)[0];
@@ -5834,7 +5879,7 @@ function renderCardFlow(teamKey){
 
   // Build the overview (card stack + ring)
   const overviewHtml=`
-    <div class="back-row"><button class="back-btn" onclick="showDash()">← ${t("back")}</button></div>
+    <div class="back-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px"><button class="back-btn" onclick="showDash()">← ${t("back")}</button><div style="display:flex;gap:8px"><button onclick="goHome()" title="Home" style="border:none;background:var(--navy);color:white;border-radius:50%;width:34px;height:34px;font-size:15px;cursor:pointer">🏠</button><button onclick="forceRefresh()" title="Refresh app" style="border:none;background:var(--teal);color:white;border-radius:50%;width:34px;height:34px;font-size:15px;cursor:pointer">↻</button></div></div>
     <div class="form-hdr" style="border-top:4px solid ${tm.color};background:linear-gradient(135deg,white 80%,${tm.color}11 100%)"><h2 style="color:${tm.color}">${getTeamName(teamKey).toUpperCase()}</h2><div class="sub">${getTeamSubtitle(teamKey)}</div></div>
     <div class="card-flow-ring">
       <svg class="ring-svg" viewBox="0 0 76 76">
@@ -7052,13 +7097,24 @@ function cloudSaveSheet(data){
     .then(r=>{if(!r.ok)throw new Error("sync fail");return true})
     .catch(()=>false);
 }
+// Safe Firebase JSON reader: returns null on HTTP errors instead of the
+// Firebase error body (e.g. {"error":"Permission denied"} when rules expire).
+// Without this, expired rules make every load return a truthy garbage object
+// that overwrites good local data. Also flags rule problems for the health banner.
+function fbJson(r){
+  if(!r.ok){
+    if(r.status===401||r.status===403){window._fbRulesBroken=true;try{renderFbHealthBanner()}catch(e){}}
+    return null;
+  }
+  return r.json();
+}
 function cloudUpdateSheet(data){
   const fb=getFirebaseUrl();if(!fb)return Promise.resolve(false);
   const date=data.date||getGuyanaDate();
   const id=data._id;if(!id)return cloudSaveSheet(data);
   // Find existing Firebase key by _id, then PUT to replace
   return fetch(`${fb}/checksheets/${date}.json?orderBy="_id"&equalTo="${id}"`)
-    .then(r=>r.json())
+    .then(fbJson)
     .then(obj=>{
       if(obj&&Object.keys(obj).length){
         const fbKey=Object.keys(obj)[0];
@@ -7095,7 +7151,7 @@ function cloudLoadSheets(date){
 function cloudGetLatestDate(){
   const fb=getFirebaseUrl();if(!fb)return Promise.resolve(null);
   return fetch(`${fb}/checksheets.json?shallow=true`)
-    .then(r=>r.json())
+    .then(fbJson)
     .then(obj=>{
       if(!obj)return null;
       const dates=Object.keys(obj).sort().reverse();
@@ -7122,7 +7178,7 @@ function cloudSaveUsers(){
 function cloudLoadUsers(){
   const fb=getFirebaseUrl();if(!fb)return Promise.resolve(false);
   return fetch(`${fb}/appUsers.json`)
-    .then(r=>r.json())
+    .then(fbJson)
     .then(data=>{
       if(!data||!data.customUsers)return false;
       // Merge: cloud data wins for shared keys, keep local-only keys
@@ -7928,24 +7984,89 @@ document.addEventListener("touchstart",e=>{
   }
 });
 
-// Firebase rules expiry check (expires 2026-05-31)
-const FB_RULES_EXPIRY=new Date("2026-05-31T23:59:59-04:00").getTime();
-function checkFirebaseExpiry(){
-  if(!currentUser||currentUser.username!=="admin")return;
-  const now=Date.now();
-  const daysLeft=Math.ceil((FB_RULES_EXPIRY-now)/(1000*60*60*24));
-  const warn=document.getElementById("fbExpiryWarn");
-  if(!warn)return;
-  if(daysLeft<=0){
-    warn.style.display="block";warn.className="fb-expiry-warn critical";
-    warn.innerHTML=`<b>⛔ Firebase Rules EXPIRED</b>Cloud sync is broken. Go to <a href="https://console.firebase.google.com" target="_blank" style="color:inherit;text-decoration:underline">Firebase Console</a> → Realtime Database → Rules → extend the expiry date or set permanent rules.`;
-  }else if(daysLeft<=14){
-    warn.style.display="block";warn.className="fb-expiry-warn"+(daysLeft<=5?" critical":"");
-    warn.innerHTML=`<b>⚠️ Firebase Rules Expire in ${daysLeft} Day${daysLeft>1?"s":""}</b>Cloud sync will stop working on May 31. Go to <a href="https://console.firebase.google.com" target="_blank" style="color:inherit;text-decoration:underline">Firebase Console</a> → Realtime Database → Rules → extend the date.`;
-  }
+// Firebase health check — replaces the old hardcoded expiry-date countdown.
+// Probes the database with a real read; if rules are locked (401/403) it shows
+// a banner on the main dashboard so the problem is visible immediately,
+// not buried in Settings. Self-healing: banner disappears once rules are fixed.
+function renderFbHealthBanner(){
+  const broken=window._fbRulesBroken===true;
+  const isAdmin=currentUser&&currentUser.username==="admin";
+  const adminMsg='<b>⛔ Cloud Sync is BROKEN — Firebase rules expired</b>Nothing is saving to the cloud. Fix now: <a href="https://console.firebase.google.com" target="_blank" style="color:inherit;text-decoration:underline">Firebase Console</a> → Realtime Database → Rules → set read/write to true (no expiry date) → Publish. Then tap ↻ Refresh in the app.';
+  const userMsg='<b>⚠️ Cloud sync is down</b>Your entries are saved on this phone only. Tell the admin to fix Firebase, then tap ↻ Refresh.';
+  ["fbExpiryWarn","fbHealthBanner"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    if(broken){
+      el.style.display="block";el.className="fb-expiry-warn critical";
+      el.innerHTML=isAdmin?adminMsg:userMsg;
+    }else{
+      el.style.display="none";el.innerHTML="";
+    }
+  });
+}
+function checkFirebaseExpiry(){ // kept name so existing call sites still work
+  const fb=getFirebaseUrl();
+  if(!fb){window._fbRulesBroken=false;renderFbHealthBanner();return}
+  fetch(fb+"/.json?shallow=true").then(r=>{
+    window._fbRulesBroken=(r.status===401||r.status===403);
+    renderFbHealthBanner();
+  }).catch(()=>{/* offline — not a rules problem, leave banner as-is */});
 }
 function saveNotifTime(){localStorage.setItem("elg_notif_time",document.getElementById("notifTime").value);scheduleNotification()}
-function scheduleNotification(){if(localStorage.getItem("elg_notif")!=="on")return;const tt=localStorage.getItem("elg_notif_time")||"16:30";const[h,m]=tt.split(":").map(Number);const now=new Date();let tgt=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m);if(tgt<=now)tgt.setDate(tgt.getDate()+1);clearTimeout(window._nt);window._nt=setTimeout(()=>{if("Notification" in window&&Notification.permission==="granted")new Notification("ELGAWA Checksheet",{body:t("notifBody"),icon:"icon-192.png"});scheduleNotification()},tgt-now)}
+// ═══ DAILY REMINDERS ═══
+// Three reminders while the app is open (web apps can't wake a closed phone):
+//   08:00 — sign in / mark attendance (chime + vibrate)
+//   16:30 — fill checksheets (user-adjustable via elg_notif_time)
+//   17:00 — sign out / enter time-out (chime + vibrate)
+function _playChime(){
+  try{
+    const ctx=window.__chimeCtx||(window.__chimeCtx=new (window.AudioContext||window.webkitAudioContext)());
+    if(ctx.state==="suspended")ctx.resume();
+    const t0=ctx.currentTime;
+    [[880,0],[1175,.18]].forEach(p=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.frequency.value=p[0];o.type="sine";
+      g.gain.setValueAtTime(0.0001,t0+p[1]);
+      g.gain.exponentialRampToValueAtTime(0.35,t0+p[1]+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+p[1]+0.5);
+      o.connect(g);g.connect(ctx.destination);
+      o.start(t0+p[1]);o.stop(t0+p[1]+0.55);
+    });
+  }catch(e){}
+}
+function _fireReminder(title,body,tag){
+  try{if(navigator.vibrate)navigator.vibrate([300,120,300,120,300])}catch(e){}
+  _playChime();
+  try{showToast("🔔 "+body)}catch(e){}
+  try{
+    if("Notification" in window&&Notification.permission==="granted"){
+      if(navigator.serviceWorker&&navigator.serviceWorker.ready){
+        navigator.serviceWorker.ready.then(reg=>{
+          reg.showNotification(title,{body:body,icon:"icon-192.png",badge:"icon-192.png",tag:tag,vibrate:[300,120,300,120,300]});
+        }).catch(()=>{try{new Notification(title,{body:body,icon:"icon-192.png"})}catch(e){}});
+      }else{new Notification(title,{body:body,icon:"icon-192.png"})}
+    }
+  }catch(e){}
+}
+function scheduleNotification(){
+  if(window._remTimers)window._remTimers.forEach(x=>clearTimeout(x));
+  window._remTimers=[];
+  if(localStorage.getItem("elg_notif")!=="on")return;
+  const sheetTime=localStorage.getItem("elg_notif_time")||"16:30";
+  const rems=[
+    {time:"08:00",title:"ELGAWA — Sign In",body:t("remSignIn"),tag:"elg-signin"},
+    {time:sheetTime,title:"ELGAWA — Checksheet",body:t("notifBody"),tag:"elg-sheet"},
+    {time:"17:00",title:"ELGAWA — Sign Out",body:t("remSignOut"),tag:"elg-signout"}
+  ];
+  const now=new Date();
+  rems.forEach(rem=>{
+    const hm=rem.time.split(":").map(Number);
+    if(isNaN(hm[0])||isNaN(hm[1]))return;
+    let tgt=new Date(now.getFullYear(),now.getMonth(),now.getDate(),hm[0],hm[1],0);
+    if(tgt<=now)tgt.setDate(tgt.getDate()+1);
+    window._remTimers.push(setTimeout(()=>{_fireReminder(rem.title,rem.body,rem.tag);scheduleNotification()},tgt-now));
+  });
+}
 function showToast(m){const el=document.getElementById("toast");el.textContent=m;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2500)}
 
 
@@ -7973,6 +8094,7 @@ function removeMover(idx){
   data.movers.splice(idx,1);
   saveAttendanceLocal(_attDate,data);
   renderMovers(data);
+  _attAutoCloudSave();
 }
 
 function updateMover(idx,field,value){
@@ -7980,6 +8102,7 @@ function updateMover(idx,field,value){
   if(!data.movers[idx])return;
   data.movers[idx][field]=value;
   saveAttendanceLocal(_attDate,data);
+  _attAutoCloudSave();
 }
 
 function renderMovers(data){
@@ -8021,17 +8144,31 @@ function loadAttendance(date){
   try{return JSON.parse(localStorage.getItem(getAttendanceKey(date))||"null")}catch(e){return null}
 }
 function saveAttendanceLocal(date,data){
+  data.updatedAt=Date.now();
   try{localStorage.setItem(getAttendanceKey(date),JSON.stringify(data))}catch(e){showToast(t("storageFull"))}
 }
 function cloudSaveAttendance(date,data){
   const fb=getFirebaseUrl();if(!fb)return Promise.resolve(false);
+  if(!data.updatedAt)data.updatedAt=Date.now();
   return fetch(fb+"/attendance/"+date+".json",{method:"PUT",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}})
-    .then(r=>r.ok).catch(()=>false);
+    .then(r=>{
+      if(r.status===401||r.status===403){window._fbRulesBroken=true;try{renderFbHealthBanner()}catch(e){}}
+      return r.ok;
+    }).catch(()=>false);
+}
+// Debounced auto-save to cloud: every attendance edit syncs ~2s after the
+// last change, so check-offs persist without needing the Save button.
+let _attCloudTimer=null;
+function _attAutoCloudSave(){
+  clearTimeout(_attCloudTimer);
+  _attCloudTimer=setTimeout(()=>{
+    if(_attDate&&_attData)cloudSaveAttendance(_attDate,_attData);
+  },2000);
 }
 function cloudLoadAttendance(date){
   const fb=getFirebaseUrl();if(!fb)return Promise.resolve(null);
   return fetch(fb+"/attendance/"+date+".json")
-    .then(r=>r.json()).then(d=>d||null).catch(()=>null);
+    .then(fbJson).then(d=>d||null).catch(()=>null);
 }
 
 function attDateNav(dir){
@@ -8077,8 +8214,16 @@ function renderAttendanceTab(){
     if(fb){
       container.innerHTML='<div class="empty">'+t("loadingCloud")+'</div>';
       cloudLoadAttendance(date).then(cloud=>{
+        // Race guard: if the user started editing this date while the cloud
+        // fetch was in flight, never clobber their in-progress edits.
+        if(_attData&&_attDate===date)return;
         const local=loadAttendance(date);
-        const data=_defaultAttData(cloud||local);
+        // Newer-wins merge: pick whichever copy was saved most recently,
+        // instead of blindly preferring cloud (which may be stale or empty).
+        let base=null;
+        if(cloud&&local)base=(cloud.updatedAt||0)>=(local.updatedAt||0)?cloud:local;
+        else base=cloud||local;
+        const data=_defaultAttData(base);
         _attData=data;_attDate=date;
         _renderAttendanceUI(date,roster,data,container,actions,summary);
         renderMovers(data);
@@ -8272,6 +8417,7 @@ function updateAttWorker(cb){
   _renderAttendanceUI(_attDate,roster,_attData,container,actions,summary);
   renderMovers(_attData);
   renderWeeklyRegister(_attDate);
+  _attAutoCloudSave();
 }
 
 function updateAttTime(input){
@@ -8281,6 +8427,7 @@ function updateAttTime(input){
   if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:""};
   data.workers[name][field]=input.value;
   saveAttendanceLocal(_attDate,data);
+  _attAutoCloudSave();
 }
 
 function toggleShift(name){
@@ -8295,6 +8442,7 @@ function toggleShift(name){
   const summary=document.getElementById("attSummary");
   _renderAttendanceUI(_attDate,roster,_attData,container,actions,summary);
   renderMovers(_attData);
+  _attAutoCloudSave();
 }
 
 function markAllAttendance(present){
@@ -8317,6 +8465,7 @@ function markAllAttendance(present){
   _renderAttendanceUI(_attDate,roster,_attData,container,actions,summary);
   renderMovers(_attData);
   renderWeeklyRegister(_attDate);
+  _attAutoCloudSave();
 }
 
 function saveAttendanceNow(){
@@ -8413,7 +8562,7 @@ function renderWeeklyRegister(refDate){
     satInput.value=notes;
     // Also try cloud
     const fb=getFirebaseUrl();
-    if(fb)fetch(fb+"/satNotes/"+monStr+".json").then(r=>r.json()).then(v=>{if(v&&typeof v==="string")satInput.value=v}).catch(()=>{});
+    if(fb)fetch(fb+"/satNotes/"+monStr+".json").then(fbJson).then(v=>{if(v&&typeof v==="string")satInput.value=v}).catch(()=>{});
   }
 
   const roster=getWorkerRoster();
@@ -8613,6 +8762,9 @@ if("serviceWorker" in navigator){
   }).catch(()=>{});
 }
 scheduleNotification();
+// Re-arm reminder timers when the app returns to the foreground (mobile
+// browsers throttle timers in background tabs, which drifts the schedule)
+document.addEventListener("visibilitychange",function(){if(!document.hidden)scheduleNotification()});
 document.getElementById("loginHint").innerHTML='Enter your username and password to sign in<br><span style="font-size:9px;color:#888">Contact admin if you forgot your credentials</span>';
 
 
@@ -8750,7 +8902,7 @@ function savePayEntry(){
 }
 function loadPayDayData(weekKey,date){
   const fb=getFirebaseUrl();
-  if(fb){return fetch(fb+"/payroll/"+weekKey+"/"+date+".json").then(r=>r.json()).then(d=>{if(d){try{const l=JSON.parse(localStorage.getItem("elg_payroll")||"{}");if(!l[weekKey])l[weekKey]={};l[weekKey][date]=d;localStorage.setItem("elg_payroll",JSON.stringify(l))}catch(e){}return d}try{return JSON.parse(localStorage.getItem("elg_payroll")||"{}")[weekKey]?.[date]||null}catch(e){return null}}).catch(()=>{try{return JSON.parse(localStorage.getItem("elg_payroll")||"{}")[weekKey]?.[date]||null}catch(e){return null}})}
+  if(fb){return fetch(fb+"/payroll/"+weekKey+"/"+date+".json").then(fbJson).then(d=>{if(d){try{const l=JSON.parse(localStorage.getItem("elg_payroll")||"{}");if(!l[weekKey])l[weekKey]={};l[weekKey][date]=d;localStorage.setItem("elg_payroll",JSON.stringify(l))}catch(e){}return d}try{return JSON.parse(localStorage.getItem("elg_payroll")||"{}")[weekKey]?.[date]||null}catch(e){return null}}).catch(()=>{try{return JSON.parse(localStorage.getItem("elg_payroll")||"{}")[weekKey]?.[date]||null}catch(e){return null}})}
   try{return Promise.resolve(JSON.parse(localStorage.getItem("elg_payroll")||"{}")[weekKey]?.[date]||null)}catch(e){return Promise.resolve(null)}
 }
 
@@ -8807,7 +8959,7 @@ function saveSurinameEntry(){
 }
 function loadSurinameData(weekKey){
   const fb=getFirebaseUrl();
-  if(fb){return fetch(fb+"/payroll/"+weekKey+"/suriname.json").then(r=>r.json()).then(d=>{if(d){try{const l=JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}");l[weekKey]=d;localStorage.setItem("elg_payroll_sur",JSON.stringify(l))}catch(e){}return d}try{return JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}")[weekKey]||null}catch(e){return null}}).catch(()=>{try{return JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}")[weekKey]||null}catch(e){return null}})}
+  if(fb){return fetch(fb+"/payroll/"+weekKey+"/suriname.json").then(fbJson).then(d=>{if(d){try{const l=JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}");l[weekKey]=d;localStorage.setItem("elg_payroll_sur",JSON.stringify(l))}catch(e){}return d}try{return JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}")[weekKey]||null}catch(e){return null}}).catch(()=>{try{return JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}")[weekKey]||null}catch(e){return null}})}
   try{return Promise.resolve(JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}")[weekKey]||null)}catch(e){return Promise.resolve(null)}
 }
 
@@ -9652,7 +9804,8 @@ function renderHubOverview(){
   const attPromise=fb?cloudLoadAttendance(date).then(d=>d||loadAttendance(date)||{workers:{}}):Promise.resolve(loadAttendance(date)||{workers:{}});
 
   // Load today's submitted sheets from cloud
-  const sheetsPromise=fb?fetch(fb+"/sheets.json").then(r=>r.json()).then(d=>d||{}).catch(()=>({})):Promise.resolve({});
+  // BUG FIX: was reading /sheets.json (never written) — "Teams In" was always 0.
+  const sheetsPromise=fb?fetch(fb+"/checksheets/"+date+".json").then(fbJson).then(d=>d||{}).catch(()=>({})):Promise.resolve({});
 
   Promise.all([attPromise,sheetsPromise]).then(([attData,allSheets])=>{
     // Count attendance
@@ -9662,7 +9815,7 @@ function renderHubOverview(){
     roster.forEach(name=>{if(workers[name]&&workers[name].present)presentCount++});
 
     // Count today's sheets
-    const todaySheets=Object.values(allSheets).filter(s=>s.date===date);
+    const todaySheets=Object.values(allSheets).filter(s=>s&&s.teamKey);
     const teamsSubmitted=new Set(todaySheets.map(s=>s.teamKey));
 
     // Team lead status
@@ -9675,7 +9828,12 @@ function renderHubOverview(){
       const inAtt=workers[user.name]&&workers[user.name].present;
       const isIn=submitted||inAtt;
       if(isIn)leadsIn++;
-      const timeStr=inAtt&&workers[user.name].timeIn?workers[user.name].timeIn:(submitted?new Date(parseInt(submitted._id.split("").slice(0,8).join(""),36)||Date.now()).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"--:--");
+      // Safe time label: attendance time-in, else submission time, else "--:--"
+      // (old code decoded a timestamp out of _id and threw if _id was missing)
+      let timeStr="--:--";
+      if(inAtt&&workers[user.name].timeIn)timeStr=workers[user.name].timeIn;
+      else if(submitted&&submitted.submittedAt){try{timeStr=new Date(submitted.submittedAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}catch(e){timeStr="✓"}}
+      else if(submitted)timeStr="✓";
       leadHtml+='<div class="hub-lead-row"><div class="hub-lead-dot '+(isIn?"in":"out")+'"></div><div class="hub-lead-name">'+user.name+'</div><div class="hub-lead-time">'+(isIn?"In "+timeStr:"Not yet")+'</div></div>';
     });
     if(!leadHtml)leadHtml='<div style="color:var(--grey);font-size:12px;padding:8px">No team leads found</div>';
@@ -9704,23 +9862,51 @@ function renderHubOverview(){
       uHtml+='</div>';
       unregEl.innerHTML=uHtml;
     }
+  }).catch(()=>{
+    // Never leave the overview stuck on "Loading..."
+    statsEl.innerHTML='<div style="text-align:center;width:100%;color:var(--grey)">Could not load — pull Refresh ↻</div>';
+    if(leadEl)leadEl.innerHTML='';
+    if(unregEl)unregEl.innerHTML='';
   });
 }
 
 function hubConfirmWorker(name,present){
   const date=getGuyanaDate();
-  const data=loadAttendance(date)||{workers:{},verified:false};
-  if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:""};
-  data.workers[name].present=present;
-  if(present){
-    const now=new Date();
-    data.workers[name].timeIn=now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0");
-    data.workers[name].confirmedByAdmin=true;
-  }
-  saveAttendanceLocal(date,data);
-  cloudSaveAttendance(date,data);
-  showToast(present?"Marked "+name+" present":"Marked "+name+" absent");
-  renderHubOverview();
+  // Same stomp-bug fix as autoRegisterAttendance: rebase on the freshest copy
+  // (in-memory > newer of cloud/local) before writing, so one tap never
+  // erases other edits made elsewhere.
+  const apply=(data)=>{
+    if(!data)data={workers:{},verified:false};
+    if(!data.workers)data.workers={};
+    if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:""};
+    data.workers[name].present=present;
+    if(present){
+      const now=new Date();
+      data.workers[name].timeIn=now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0");
+      data.workers[name].confirmedByAdmin=true;
+    }else{
+      data.workers[name].timeIn="";data.workers[name].timeOut="";
+    }
+    return data;
+  };
+  const finish=(data)=>{
+    saveAttendanceLocal(date,data);
+    cloudSaveAttendance(date,data);
+    if(_attDate===date)_attData=data; // keep the attendance tab's memory in sync
+    showToast(present?"Marked "+name+" present":"Marked "+name+" absent");
+    renderHubOverview();
+  };
+  if(_attDate===date&&_attData){finish(apply(_attData));return}
+  const fb=getFirebaseUrl();
+  if(fb){
+    cloudLoadAttendance(date).then(cloud=>{
+      const local=loadAttendance(date);
+      let base=null;
+      if(cloud&&local)base=(cloud.updatedAt||0)>=(local.updatedAt||0)?cloud:local;
+      else base=cloud||local;
+      finish(apply(base));
+    }).catch(()=>finish(apply(loadAttendance(date))));
+  }else finish(apply(loadAttendance(date)));
 }
 
 function renderHubAttendance(){/* Now handled inline by switchHubTab */}
@@ -9740,9 +9926,11 @@ function renderHubReports(){
   const fb=getFirebaseUrl();
   if(!fb){container.innerHTML='<div style="text-align:center;padding:20px;color:var(--grey)">No Firebase connection</div>';return}
 
-  fetch(fb+"/sheets.json").then(r=>r.json()).then(allSheets=>{
+  // BUG FIX: this read /sheets.json which is never written — checksheets live
+  // at /checksheets/<date>.json. Hub Reports always showed empty before this.
+  fetch(fb+"/checksheets/"+date+".json").then(fbJson).then(allSheets=>{
     if(!allSheets){container.innerHTML='<div style="text-align:center;padding:20px;color:var(--grey)">No reports found</div>';return}
-    const todaySheets=Object.values(allSheets).filter(s=>s.date===date);
+    const todaySheets=Object.values(allSheets).filter(s=>s&&s.teamKey);
     if(todaySheets.length===0){container.innerHTML='<div style="text-align:center;padding:20px;color:var(--grey)">No reports submitted today</div>';return}
 
     let html='<div style="margin-bottom:8px;font-size:12px;color:var(--grey);font-weight:700">'+todaySheets.length+' report(s) for '+date+'</div>';
@@ -9764,13 +9952,16 @@ function renderHubReports(){
 }
 
 // ═══ AUTO-ATTENDANCE ON CHECKSHEET SUBMIT ═══
-function autoRegisterAttendance(sheetData){
-  if(!sheetData||!sheetData.date)return;
-  const date=sheetData.date;
-  const data=loadAttendance(date)||{workers:{},verified:false};
+// CRITICAL FIX: this used to load attendance from THIS device's localStorage
+// (stale on team lead phones) and PUT the whole object to the cloud — wiping
+// out the admin's check-offs, times, and verified flag every time anyone
+// submitted a checksheet. Now it re-bases on the freshest copy (cloud vs local)
+// before marking workers present, so it only ever ADDS presence, never erases edits.
+function _applyAutoRegister(data,sheetData){
+  if(!data)data={workers:{},verified:false};
+  if(!data.workers)data.workers={};
   const now=new Date();
   const timeStr=now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0");
-
   // 1. Mark the team lead as present
   if(sheetData.teamLead){
     const leadName=sheetData.teamLead;
@@ -9781,7 +9972,6 @@ function autoRegisterAttendance(sheetData){
       data.workers[leadName].autoRegistered=true;
     }
   }
-
   // 2. Mark workers from manpower section as present
   if(sheetData.manRows){
     sheetData.manRows.forEach(row=>{
@@ -9797,10 +9987,30 @@ function autoRegisterAttendance(sheetData){
       }
     });
   }
-
-  // Save locally and to cloud
-  saveAttendanceLocal(date,data);
-  cloudSaveAttendance(date,data);
+  return data;
+}
+function autoRegisterAttendance(sheetData){
+  if(!sheetData||!sheetData.date)return;
+  const date=sheetData.date;
+  const fb=getFirebaseUrl();
+  if(fb){
+    cloudLoadAttendance(date).then(cloud=>{
+      const local=loadAttendance(date);
+      let base=null;
+      if(cloud&&local)base=(cloud.updatedAt||0)>=(local.updatedAt||0)?cloud:local;
+      else base=cloud||local;
+      const data=_applyAutoRegister(base,sheetData);
+      saveAttendanceLocal(date,data);
+      cloudSaveAttendance(date,data);
+    }).catch(()=>{
+      const data=_applyAutoRegister(loadAttendance(date),sheetData);
+      saveAttendanceLocal(date,data);
+      cloudSaveAttendance(date,data);
+    });
+  }else{
+    const data=_applyAutoRegister(loadAttendance(date),sheetData);
+    saveAttendanceLocal(date,data);
+  }
 }
 
 // Wire up payment sub-tabs when attendance tab opens
@@ -9860,7 +10070,7 @@ function loadSelfAttendance(date,username){
   return new Promise(resolve=>{
     const fb=getFirebaseUrl();
     if(fb){
-      fetch(fb+"/selfAttendance/"+date+"/"+username+".json").then(r=>r.json()).then(d=>{
+      fetch(fb+"/selfAttendance/"+date+"/"+username+".json").then(fbJson).then(d=>{
         if(d){try{localStorage.setItem("elg_self_"+date+"_"+username,JSON.stringify(d))}catch(e){}}
         resolve(d||null);
       }).catch(()=>{
@@ -9876,7 +10086,7 @@ function loadAllSelfAttendance(date){
   return new Promise(resolve=>{
     const fb=getFirebaseUrl();
     if(fb){
-      fetch(fb+"/selfAttendance/"+date+".json").then(r=>r.json()).then(d=>{
+      fetch(fb+"/selfAttendance/"+date+".json").then(fbJson).then(d=>{
         resolve(d||{});
       }).catch(()=>resolve({}));
     }else{resolve({})}
@@ -10101,7 +10311,7 @@ function renderSelfAttendanceDashboard(container,date){
     
     loadTL.then(tlData=>{
       const roster=getWorkerRoster();
-      let html='<div style="margin-top:16px;background:white;border-radius:12px;box-shadow:var(--shadow);padding:16px">';
+      let html='<div style="margin-top:16px;background:white;border-radius:12px;box-shadow:var(--shadow);padding:16px;overflow-x:auto">';
       html+='<h3 style="color:var(--navy);font-size:14px;margin-bottom:4px">\ud83d\udcf1 Self Sign-In Records</h3>';
       html+='<p style="font-size:11px;color:var(--grey);margin-bottom:12px">Worker self-reported attendance vs team lead records</p>';
       
@@ -10250,6 +10460,8 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v126 — visual refresh, viewport fixes, back/forward buttons, 3 daily reminders (chime+vibrate), hub bug fixes (/checksheets source, crash guards)
+// Build: v125 — fbJson hardening, attendance auto-sync, home/refresh buttons, live Firebase health banner
 </script>
 </body>
 </html>
