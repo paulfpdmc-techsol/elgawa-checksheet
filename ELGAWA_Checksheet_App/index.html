@@ -560,6 +560,36 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .an-rec-card h5{margin:0 0 4px 0;font-size:12px;color:var(--navy)}
 .an-rec-card p{margin:0;font-size:11px;color:#555;line-height:1.4}
 
+/* ═══ v127 VISUAL REFRESH — bolder look, same layout ═══ */
+/* Page background: soft green wash with depth */
+body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
+/* Top bar: thicker, brand pops */
+.nav{padding-top:max(16px,env(safe-area-inset-top,16px));padding-bottom:16px;border-bottom:3px solid rgba(255,255,255,.25)}
+.nav .brand{font-size:18px;letter-spacing:.5px}
+/* Bottom nav: active tab becomes a filled green pill */
+.bottom-nav .bnav-item{margin:6px 3px;border-radius:14px;padding:7px 2px 6px}
+.bottom-nav .bnav-item.active{background:var(--hdr-grad);color:white;box-shadow:0 4px 14px rgba(11,93,71,.35)}
+.bottom-nav .bnav-item.active::before{display:none}
+.bottom-nav .bnav-item.admin-item.active{background:linear-gradient(135deg,#7C3AED,#A78BFA);color:white}
+/* Section + card headers: bigger with accent bar */
+.section h3,.rpt-card h3,.an-card h3,.hub-overview-card h3{font-size:15px;display:flex;align-items:center;gap:8px}
+.section h3::before,.rpt-card h3::before,.an-card h3::before,.hub-overview-card h3::before{content:"";width:5px;height:18px;border-radius:3px;background:var(--hdr-grad);flex-shrink:0}
+/* Stat tiles: gradient face, bigger numbers */
+.att-stat,.stat-box,.an-kpi-box,.hub-stat{background:linear-gradient(180deg,#ffffff 0%,#eef8f3 100%);border:1px solid var(--border);border-radius:14px;box-shadow:0 3px 12px rgba(11,93,71,.08)}
+.att-stat .num,.stat-box .num{font-size:26px}
+/* Cards get a uniform modern face */
+.att-card,.hub-overview-card,.s-card,.section,.rpt-card,.an-card{border-radius:16px;border:1px solid rgba(11,93,71,.07)}
+/* Team cards: deeper press feedback + bigger icon */
+.t-card .icon{width:54px;height:54px;border-radius:16px;font-size:28px}
+.t-card{padding:19px 16px}
+/* Inputs: rounder, calmer borders */
+.f-field input,.f-field select{border-radius:13px}
+/* Toast: pill with brand gradient */
+#toast{background:var(--hdr-grad) !important;border-radius:30px !important;font-weight:600;box-shadow:0 6px 24px rgba(11,93,71,.35) !important}
+/* Team category badges (user lists) */
+.team-badge{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.3px;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle;text-transform:uppercase}
+.team-badge.guyana{background:#DFF4EB;color:#0B5D47;border:1px solid #b7e0cf}
+.team-badge.suriname{background:#FFF1E0;color:#9a5b00;border:1px solid #f0d9b5}
 </style>
 </head>
 <body>
@@ -645,7 +675,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
     <div id="paySubTabs" class="pay-subtabs pay-hidden">
       <button class="pay-subtab active" onclick="switchPayTab('signin')">Sign-In</button>
       <button class="pay-subtab" onclick="switchPayTab('payentry')">Payment</button>
-      <button class="pay-subtab" onclick="switchPayTab('suriname')">Suriname</button>
+      <button class="pay-subtab" onclick="switchPayTab('suriname')">Suriname ELGAWA</button>
       <button class="pay-subtab" onclick="switchPayTab('paysheet')">Pay Sheet</button>
     </div>
     <!-- Existing sign-in content wrapper -->
@@ -960,6 +990,28 @@ const BASE_USERS={
   shanic:{pass:"shanic2026",name:"Shanic Burnette",role:"Worker",teams:"all"},
   hosea:{pass:"hosea2026",name:"Hosea Mckend",role:"Worker",teams:"all"}
 };
+// ═══ TEAM CATEGORIES ═══
+// "ELGAWA Guyana Team" is a fixed list set by Paul. "Suriname ELGAWA" is
+// derived from the payment roster's suriname group, so it stays in sync
+// when workers are reassigned there.
+const GUYANA_TEAM_USERS=["admin","akeem","shanic","hosea","osvaldo","orlando","dima","addel"];
+function getUserCategory(username,fullName){
+  if(GUYANA_TEAM_USERS.includes(username))return{key:"guyana",label:"ELGAWA Guyana Team"};
+  try{
+    const nm=fullName||((BASE_USERS[username]||getCustomUsers()[username]||{}).name)||"";
+    const pr=(typeof getPayRoster==="function")?getPayRoster():{};
+    if(nm&&pr[nm]&&pr[nm].group==="suriname")return{key:"suriname",label:"Suriname ELGAWA"};
+  }catch(e){}
+  return null;
+}
+function teamBadgeHtml(username,fullName){
+  const c=getUserCategory(username,fullName);
+  return c?'<span class="team-badge '+c.key+'">'+c.label+'</span>':'';
+}
+function workerBadgeHtml(name){
+  try{const e=getPayRoster()[name];if(e&&e.group==="suriname")return ' <span class="team-badge suriname">Suriname ELGAWA</span>'}catch(ex){}
+  return "";
+}
 // Worker roster — these are personnel names for dropdowns (NOT login accounts)
 // Admin can add more via Settings > Manage Workers
 const BASE_WORKER_ROSTER=[
@@ -7538,7 +7590,7 @@ function renderUserList(){
     const usr=USERS[u];
     const num=i+1;
     const roleOpts=roles.map(r=>`<option value="${r}" ${usr.role===r?"selected":""}>${r}</option>`).join("");
-    return`<div class="user-row" id="urow_${u}" onclick="toggleUserActions('${u}')"><div class="user-info"><span style="font-size:11px;font-weight:700;color:white;background:var(--navy);border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;flex-shrink:0">${num}</span><div style="min-width:0"><span class="uname">${u}</span><span class="ufull">${usr.name}</span></div><span class="edit-hint">Tap to edit</span></div>
+    return`<div class="user-row" id="urow_${u}" onclick="toggleUserActions('${u}')"><div class="user-info"><span style="font-size:11px;font-weight:700;color:white;background:var(--navy);border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;margin-right:6px;flex-shrink:0">${num}</span><div style="min-width:0"><span class="uname">${u}${teamBadgeHtml(u,usr.name)}</span><span class="ufull">${usr.name}</span></div><span class="edit-hint">Tap to edit</span></div>
     <div class="user-actions" onclick="event.stopPropagation()"><select class="role-select" onchange="changeUserRole('${u}',this.value)">${roleOpts}</select></div></div>
     <div class="user-action-panel" id="upanel_${u}" style="display:none;padding:12px;background:#f0f4ff;border-radius:0 0 10px 10px;margin-bottom:8px;border:1.5px solid var(--navy);border-top:none;animation:fadeIn 0.2s">
     <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px">Edit ${u}</div>
@@ -7661,7 +7713,7 @@ function renderWorkerRoster(){
   const allWorkers=getWorkerRoster();
   const payRoster=getPayRoster();
   const groupColors={installation:"var(--navy)",ducting:"var(--ducting,#2196F3)",suriname:"#E67E22"};
-  const groupLabels={installation:"Installation Crew",ducting:"Ducting / Movers",suriname:"Suriname Team"};
+  const groupLabels={installation:"Installation Crew",ducting:"Ducting / Movers",suriname:"Suriname ELGAWA"};
   const grouped={installation:[],ducting:[],suriname:[],unassigned:[]};
   allWorkers.forEach(name=>{
     const pr=payRoster[name];
@@ -7745,7 +7797,7 @@ function editWorkerName(oldName){
 function editWorkerGroup(name){
   const payR=getPayRoster();
   const current=payR[name]?payR[name].group:"unassigned";
-  const groups=[{id:"installation",label:"Installation Crew",rate:7000},{id:"ducting",label:"Ducting / Movers",rate:7000},{id:"suriname",label:"Suriname Team",rate:6000}];
+  const groups=[{id:"installation",label:"Installation Crew",rate:7000},{id:"ducting",label:"Ducting / Movers",rate:7000},{id:"suriname",label:"Suriname ELGAWA",rate:6000}];
   let optHtml=groups.map(g=>'<option value="'+g.id+'" '+(current===g.id?'selected':'')+'>'+g.label+' ($'+g.rate.toLocaleString()+'/day)</option>').join("");
   optHtml+='<option value="_remove" '+(current==="unassigned"?"selected":"")+'>Unassigned (remove from pay roster)</option>';
   showModal("Change Group — "+name,'<select id="_editWGroup" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px">'+optHtml+'</select>',function(){
@@ -9574,7 +9626,7 @@ function renderHubPersonnel(){
     html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:4px;background:${isDisabled?"#ffeaea":"#f8fffe"};border-radius:10px;border:1px solid ${isDisabled?"#f5c6cb":"#e0e0e0"}">
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:13px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name}${statusBadge}${roleBadge}</div>
-        <div style="font-size:10px;color:var(--grey)">@${uname}${isBase?" • Built-in":" • Custom"}</div>
+        <div style="font-size:10px;color:var(--grey)">@${uname}${isBase?" • Built-in":" • Custom"}${teamBadgeHtml(uname,u.name)}</div>
       </div>
       <div style="display:flex;gap:4px;flex-shrink:0">
         ${isDisabled?`<button onclick="hubEnableUser('${uname}')" style="font-size:10px;padding:4px 10px;background:#27ae60;color:white;border:none;border-radius:6px;cursor:pointer">Enable</button>`:`<button onclick="hubDisableUser('${uname}')" style="font-size:10px;padding:4px 10px;background:#e74c3c;color:white;border:none;border-radius:6px;cursor:pointer">Disable</button>`}
@@ -9616,7 +9668,7 @@ function renderHubPersonnel(){
     html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;margin-bottom:3px;background:white;border-radius:8px;border:1px solid #eee">
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:9px;font-weight:700;color:white;background:var(--teal);border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${num}</span>
-        <span style="font-size:12px;font-weight:600;color:var(--navy)">${name}</span>
+        <span style="font-size:12px;font-weight:600;color:var(--navy)">${name}${workerBadgeHtml(name)}</span>
         ${isCustom?`<span style="font-size:9px;color:var(--grey)">(custom)</span>`:""}
       </div>
       <div style="display:flex;gap:3px">
@@ -10329,9 +10381,8 @@ function renderSelfAttendanceDashboard(container,date){
       if(selfCount===0){
         html+='<p style="text-align:center;color:var(--grey);padding:16px;font-size:12px">No self sign-ins for this date</p>';
       }else{
-        // Table header
-        html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px 60px;gap:4px;padding:6px 4px;background:#f7f7f7;border-radius:6px;font-weight:600;color:var(--grey);margin-bottom:4px">'
-          +'<span>Worker</span><span>In</span><span>Out</span><span>Hours</span><span>Status</span><span>Action</span></div>';
+        // Stacked rows (name + status + actions on top, times underneath) —
+        // the old 6-column grid overran narrow phone screens
 
         Object.entries(allData).forEach(([username,d])=>{
           const name=d.name||username;
@@ -10355,18 +10406,18 @@ function renderSelfAttendanceDashboard(container,date){
             statusBadge='⏳ Pend';statusColor='#f59e0b';
           }
 
-          html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px 60px;gap:4px;padding:8px 4px;border-bottom:1px solid #f0f0f0;align-items:center">';
-          html+='<span style="font-weight:500">'+name+'</span>';
-          html+='<span>'+formatTime12(d.signIn)+'</span>';
-          html+='<span>'+(d.signOut?formatTime12(d.signOut):'...')+'</span>';
-          html+='<span>'+hrs+shiftBadge+'</span>';
-          html+='<span style="color:'+statusColor+';font-weight:600;font-size:10px">'+statusBadge+'</span>';
-          html+='<span style="display:flex;gap:2px">';
+          html+='<div style="padding:9px 4px;border-bottom:1px solid #f0f0f0">';
+          html+='<div style="display:flex;align-items:center;gap:8px">';
+          html+='<span style="font-weight:600;font-size:12.5px;flex:1;min-width:0;overflow-wrap:anywhere">'+name+'</span>';
+          html+='<span style="color:'+statusColor+';font-weight:700;font-size:10px;flex-shrink:0">'+statusBadge+'</span>';
+          html+='<span style="display:flex;gap:5px;flex-shrink:0">';
           if(!d.confirmed){
-            html+='<button onclick="confirmSelfAttendance(\''+date+'\',\''+username+'\')" style="border:none;background:var(--teal);color:white;border-radius:4px;padding:2px 5px;font-size:10px;cursor:pointer" title="Confirm">✓</button>';
+            html+='<button onclick="confirmSelfAttendance(\''+date+'\',\''+username+'\')" style="border:none;background:var(--teal);color:white;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer" title="Confirm">✓</button>';
           }
-          html+='<button onclick="editSelfAttendance(\''+date+'\',\''+username+'\',\''+( d.signIn||"")+'\',\''+(d.signOut||"")+'\')" style="border:none;background:#3b82f6;color:white;border-radius:4px;padding:2px 5px;font-size:10px;cursor:pointer" title="Edit">✏️</button>';
+          html+='<button onclick="editSelfAttendance(\''+date+'\',\''+username+'\',\''+( d.signIn||"")+'\',\''+(d.signOut||"")+'\')" style="border:none;background:#3b82f6;color:white;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer" title="Edit">✏️</button>';
           html+='</span></div>';
+          html+='<div style="font-size:11px;color:var(--grey);margin-top:4px">In <b style="color:#26312d">'+formatTime12(d.signIn)+'</b> · Out <b style="color:#26312d">'+(d.signOut?formatTime12(d.signOut):'—')+'</b> · '+hrs+shiftBadge+'</div>';
+          html+='</div>';
         });
       }
 
@@ -10375,18 +10426,14 @@ function renderSelfAttendanceDashboard(container,date){
       html+='<h4 style="color:var(--navy);font-size:13px;margin-bottom:8px">📋 Team Lead Records <span style="font-size:10px;color:var(--teal);font-weight:400">(Confirmed)</span></h4>';
       if(tlData&&tlData.workers&&Object.keys(tlData.workers).length>0){
         let tlPresent=0;
-        html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px;gap:4px;padding:6px 4px;background:#e6f7f2;border-radius:6px;font-weight:600;color:var(--grey);margin-bottom:4px">'
-          +'<span>Worker</span><span>In</span><span>Out</span><span>Shift</span><span>Status</span></div>';
         Object.entries(tlData.workers).forEach(([wname,w])=>{
           if(!w.present)return;
           tlPresent++;
           const shift=w.shift==="night"?"🌙 Night":"☀️ Day";
-          html+='<div style="font-size:11px;display:grid;grid-template-columns:1fr 60px 60px 60px 70px;gap:4px;padding:6px 4px;border-bottom:1px solid #f0f0f0">';
-          html+='<span>'+wname+'</span>';
-          html+='<span>'+(w.timeIn?formatTime12(w.timeIn):'—')+'</span>';
-          html+='<span>'+(w.timeOut?formatTime12(w.timeOut):'—')+'</span>';
-          html+='<span style="font-size:10px">'+shift+'</span>';
-          html+='<span style="color:var(--teal);font-weight:600;font-size:10px">✅ Actual</span></div>';
+          html+='<div style="padding:8px 4px;border-bottom:1px solid #f0f0f0">';
+          html+='<div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600;font-size:12.5px;flex:1;min-width:0;overflow-wrap:anywhere">'+wname+'</span><span style="color:var(--teal);font-weight:700;font-size:10px;flex-shrink:0">✅ Actual</span></div>';
+          html+='<div style="font-size:11px;color:var(--grey);margin-top:3px">In <b style="color:#26312d">'+(w.timeIn?formatTime12(w.timeIn):'—')+'</b> · Out <b style="color:#26312d">'+(w.timeOut?formatTime12(w.timeOut):'—')+'</b> · '+shift+'</div>';
+          html+='</div>';
         });
         if(tlPresent===0)html+='<p style="text-align:center;color:var(--grey);font-size:11px;padding:8px">No workers marked present by team leads</p>';
       }else{
@@ -10460,6 +10507,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v127 — bolder visual theme (pill bottom-nav, accent headers, gradient stats), self sign-in table restacked to fit narrow screens, team category badges (ELGAWA Guyana Team / Suriname ELGAWA)
 // Build: v126 — visual refresh, viewport fixes, back/forward buttons, 3 daily reminders (chime+vibrate), hub bug fixes (/checksheets source, crash guards)
 // Build: v125 — fbJson hardening, attendance auto-sync, home/refresh buttons, live Firebase health banner
 </script>
