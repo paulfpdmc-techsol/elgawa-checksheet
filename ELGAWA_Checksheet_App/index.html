@@ -8061,7 +8061,7 @@ function editWorkerName(oldName){
 function editWorkerGroup(name){
   const payR=getPayRoster();
   const current=payR[name]?payR[name].group:"unassigned";
-  const groups=[{id:"installation",label:"Installation Crew",rate:7000},{id:"ducting",label:"Ducting / Movers",rate:7000},{id:"suriname",label:"Suriname ELGAWA",rate:6000},{id:"guyana",label:"ELGAWA Guyana Team",rate:7000}];
+  const groups=[{id:"installation",label:"Installation Crew",rate:7000},{id:"ducting",label:"Ducting / Movers",rate:7000},{id:"suriname",label:"Suriname ELGAWA",rate:7000},{id:"guyana",label:"ELGAWA Guyana Team",rate:7000}];
   let optHtml=groups.map(g=>'<option value="'+g.id+'" '+(current===g.id?'selected':'')+'>'+g.label+' ($'+g.rate.toLocaleString()+'/day)</option>').join("");
   optHtml+='<option value="_remove" '+(current==="unassigned"?"selected":"")+'>Unassigned (remove from pay roster)</option>';
   showModal("Change Group — "+name,'<select id="_editWGroup" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px">'+optHtml+'</select>',function(){
@@ -9148,18 +9148,28 @@ const DEFAULT_PAY_ROSTER = {
   "Wilfredo Delgado":{group:"ducting",rate:7000},
   "Reinaldo Anasco":{group:"ducting",rate:7000},
   "Wilfred Arevalo":{group:"ducting",rate:7000},
-  "Romario Barron":{group:"suriname",rate:6000},
-  "Johnny Tjon":{group:"suriname",rate:6000},
-  "Kenneth Soerowidjojo":{group:"suriname",rate:6000},
-  "Sayad Jayat":{group:"suriname",rate:6000},
-  "Rajiv Poeran":{group:"suriname",rate:6000},
-  "Shaheed Laismohamedkhan":{group:"suriname",rate:6000},
-  "Ashishkumar Moti":{group:"suriname",rate:6000},
-  "Ronny Rodjan":{group:"suriname",rate:6000}
+  "Romario Barron":{group:"suriname",rate:7000},
+  "Johnny Tjon":{group:"suriname",rate:7000},
+  "Kenneth Soerowidjojo":{group:"suriname",rate:7000},
+  "Sayad Jayat":{group:"suriname",rate:7000},
+  "Rajiv Poeran":{group:"suriname",rate:7000},
+  "Shaheed Laismohamedkhan":{group:"suriname",rate:7000},
+  "Ashishkumar Moti":{group:"suriname",rate:7000},
+  "Ronny Rodjan":{group:"suriname",rate:7000}
 };
-const PAY_GROUPS={installation:{label:"Installation Crew",rate:7000,color:"var(--navy)"},ducting:{label:"Ducting / Movers",rate:7000,color:"var(--ducting)"},suriname:{label:"Suriname Team",rate:6000,color:"#E67E22"}};
+const PAY_GROUPS={installation:{label:"Installation Crew",rate:7000,color:"var(--navy)"},ducting:{label:"Ducting / Movers",rate:7000,color:"var(--ducting)"},suriname:{label:"Suriname ELGAWA",rate:7000,color:"#E67E22"},guyana:{label:"ELGAWA Guyana Team",rate:7000,color:"#0B5D47"}};
 
-function getPayRoster(){try{const s=localStorage.getItem("elg_pay_roster");if(s)return JSON.parse(s)}catch(e){}return{...DEFAULT_PAY_ROSTER}}
+function getPayRoster(){
+  let r=null;
+  try{const s=localStorage.getItem("elg_pay_roster");if(s)r=JSON.parse(s)}catch(e){}
+  if(!r)return{...DEFAULT_PAY_ROSTER};
+  // One-time migration (2026-06-12, per Paul): Suriname rate 6000 → 7000.
+  // Only bumps the old default — custom rates other than 6000 are untouched.
+  let changed=false;
+  Object.keys(r).forEach(n=>{if(r[n]&&r[n].group==="suriname"&&r[n].rate===6000){r[n].rate=7000;changed=true}});
+  if(changed){try{localStorage.setItem("elg_pay_roster",JSON.stringify(r))}catch(e){}}
+  return r;
+}
 function savePayRosterData(r){try{localStorage.setItem("elg_pay_roster",JSON.stringify(r))}catch(e){}const fb=getFirebaseUrl();if(fb)fetch(fb+"/payrollConfig/roster.json",{method:"PUT",body:JSON.stringify(r),headers:{"Content-Type":"application/json"}}).catch(()=>{})}
 function getPayGroupWorkers(group){const roster=getPayRoster();return Object.entries(roster).filter(([_,v])=>v.group===group).map(([name,v])=>({name,rate:v.rate})).sort((a,b)=>a.name.localeCompare(b.name))}
 
@@ -9352,6 +9362,8 @@ function renderPaySheet(){
     if(filledDays>=Math.min(dow===0?6:dow,6)){badge.textContent="Ready";badge.className="paysheet-badge ready"}
     else{badge.textContent="Draft ("+filledDays+"/6 days)";badge.className="paysheet-badge draft"}
     let installTotal=0,ductTotal=0,surTotal=0,content="";
+    // Make the editing obvious — missed capture days are fixed right here.
+    content+='<div style="background:#FFF8E8;border:1px solid #F0D9B5;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:#854F0B">✎ <b>Tap any day cell</b> to set shifts (— → 1 → 2 → 3 → 0) — use this to fill days the app missed. <b>Tap a name</b> to edit the whole week. The PDF export uses these edits.</div>';
     ["installation","ducting"].forEach(group=>{
       const workers=getPayGroupWorkers(group);const gLabel=PAY_GROUPS[group].label;
       content+='<div class="paysheet-table-wrap"><table class="paysheet-table"><thead><tr><th>'+gLabel+'</th>';
@@ -9377,7 +9389,7 @@ function renderPaySheet(){
     content+='<div class="paysheet-table-wrap"><table class="paysheet-table"><thead><tr><th>Suriname Team</th><th>Weekly</th><th class="sat-col">Sat</th><th>Travel</th><th>Total</th></tr></thead><tbody>';
     let surGroupTotal=0;
     surWorkers.forEach(w=>{
-      const wd=surData.workers?.[w.name]||{present:true,days:{},saturday:6000,travel:0};
+      const wd=surData.workers?.[w.name]||{present:true,days:{},saturday:7000,travel:0};
       // Support new daily format
       let tot=0;
       if(wd.days&&Object.keys(wd.days).length>0){
@@ -9490,7 +9502,7 @@ function downloadPayPDF(){
   pdf.autoTable({startY:y,margin:{left:M,right:M},head:[["Name",...d.dayLabels,"Total"]],body:makeRows("ducting"),theme:"grid",headStyles:{fillColor:[46,117,182],fontSize:8},bodyStyles:{fontSize:8},columnStyles:{0:{cellWidth:45},7:{fontStyle:"bold"}}});
   y=pdf.lastAutoTable.finalY+8;
   const surWorkers=getPayGroupWorkers("suriname");const surRows=[];
-  surWorkers.forEach(w=>{const wd=d.surData?.workers?.[w.name]||{present:true,saturday:6000,travel:0};if(wd.present===false){surRows.push([w.name,"Absent","—","—","0"]);return}const weekly=5*w.rate;const sat=wd.saturday||0;const travel=wd.travel||0;surRows.push([w.name,weekly.toLocaleString(),sat>0?sat.toLocaleString():"—",travel>0?travel.toLocaleString():"—",(weekly+sat+travel).toLocaleString()])});
+  surWorkers.forEach(w=>{const wd=d.surData?.workers?.[w.name]||{present:true,saturday:7000,travel:0};if(wd.present===false){surRows.push([w.name,"Absent","—","—","0"]);return}const weekly=5*w.rate;const sat=wd.saturday||0;const travel=wd.travel||0;surRows.push([w.name,weekly.toLocaleString(),sat>0?sat.toLocaleString():"—",travel>0?travel.toLocaleString():"—",(weekly+sat+travel).toLocaleString()])});
   surRows.push(["Food Allowance","","","",( d.surData?.foodAllowance||0).toLocaleString()]);
   if(y>170){pdf.addPage();y=20}
   pdf.setFontSize(11);pdf.setTextColor(230,126,34);pdf.text("Suriname Team",M,y);y+=2;
@@ -9519,7 +9531,7 @@ function downloadPayExcel(){
   getPayGroupWorkers("ducting").forEach(w=>{let row=w.name,total=0;d.days.forEach((day,i)=>{const dd=d.dayData[i];const shifts=dd?.[w.name]!==undefined?dd[w.name]:0;const fee=shifts*w.rate;total+=fee;row+=","+(shifts===0?"0":fee)});row+=","+total;csv+=row+"\n"});
   csv+=",,,,,,,"+d.ductTotal+"\n\n";
   csv+="SURINAME TEAM\nName,Weekly,Saturday,Travel,Total\n";
-  getPayGroupWorkers("suriname").forEach(w=>{const wd=d.surData?.workers?.[w.name]||{present:true,saturday:6000,travel:0};if(wd.present===false){csv+=w.name+",Absent,0,0,0\n";return}const weekly=5*w.rate;const sat=wd.saturday||0;const travel=wd.travel||0;csv+=w.name+","+weekly+","+sat+","+travel+","+(weekly+sat+travel)+"\n"});
+  getPayGroupWorkers("suriname").forEach(w=>{const wd=d.surData?.workers?.[w.name]||{present:true,saturday:7000,travel:0};if(wd.present===false){csv+=w.name+",Absent,0,0,0\n";return}const weekly=5*w.rate;const sat=wd.saturday||0;const travel=wd.travel||0;csv+=w.name+","+weekly+","+sat+","+travel+","+(weekly+sat+travel)+"\n"});
   csv+="Food Allowance,,,,"+( d.surData?.foodAllowance||0)+"\n,,,,"+ d.surTotal+"\n\nGRAND TOTAL,,,,"+ d.grand+"\n";
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const link=document.createElement("a");link.href=URL.createObjectURL(blob);
   link.download="Payment_Sheet_"+getWeekMondayFromDate(getGuyanaDate())+".csv";link.click();showToast("✅ Excel (CSV) downloaded");
