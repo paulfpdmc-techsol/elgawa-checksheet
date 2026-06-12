@@ -1001,6 +1001,7 @@ function getUserCategory(username,fullName){
     const nm=fullName||((BASE_USERS[username]||getCustomUsers()[username]||{}).name)||"";
     const pr=(typeof getPayRoster==="function")?getPayRoster():{};
     if(nm&&pr[nm]&&pr[nm].group==="suriname")return{key:"suriname",label:"Suriname ELGAWA"};
+    if(nm&&pr[nm]&&pr[nm].group==="guyana")return{key:"guyana",label:"ELGAWA Guyana Team"};
   }catch(e){}
   return null;
 }
@@ -1009,7 +1010,11 @@ function teamBadgeHtml(username,fullName){
   return c?'<span class="team-badge '+c.key+'">'+c.label+'</span>':'';
 }
 function workerBadgeHtml(name){
-  try{const e=getPayRoster()[name];if(e&&e.group==="suriname")return ' <span class="team-badge suriname">Suriname ELGAWA</span>'}catch(ex){}
+  try{
+    const e=getPayRoster()[name];
+    if(e&&e.group==="suriname")return ' <span class="team-badge suriname">Suriname ELGAWA</span>';
+    if(e&&e.group==="guyana")return ' <span class="team-badge guyana">ELGAWA Guyana Team</span>';
+  }catch(ex){}
   return "";
 }
 // Worker roster — these are personnel names for dropdowns (NOT login accounts)
@@ -1464,7 +1469,7 @@ const T={
   blocked:{en:"Blocked",es:"Bloqueado",nl:"Geblokkeerd"},
   completionRate:{en:"completion rate",es:"tasa de cumplimiento",nl:"voltooiingsgraad"},
   totalTasks:{en:"total tasks",es:"tareas totales",nl:"totaal taken"},
-  downloadReport:{en:"Download Report PDF",es:"Descargar Reporte PDF",nl:"Download Rapport PDF"},
+  downloadReport:{en:"View Report PDF",es:"Ver Reporte PDF",nl:"Bekijk Rapport PDF"},
   shareWhatsapp:{en:"Share via WhatsApp",es:"Compartir por WhatsApp",nl:"Delen via WhatsApp"},
   overtimeAlert:{en:"Overtime Alert",es:"Alerta de Horas Extra",nl:"Overwerk Waarschuwing"},
   language:{en:"Language",es:"Idioma",nl:"Taal"},
@@ -5004,8 +5009,20 @@ function buildReportPDF(date,extraSheets){
 }
 
 function downloadReport(date){
-  const pdf=buildReportPDF(date);
-  if(pdf)showPDFPreview(pdf,`ELGAWA_Daily_Report_${date}.pdf`);
+  // FIX: this built from LOCAL sheets only — on the admin's phone (which
+  // didn't author the team submissions) the list was empty, buildReportPDF
+  // returned null, and the button silently did nothing. Now it pulls cloud
+  // sheets first (same as the WhatsApp share button) and always says
+  // something — opening the preview where Save/Share live.
+  showToast("⏳ Building report for "+date+"…");
+  const go=(cloudSheets)=>{
+    const pdf=buildReportPDF(date,cloudSheets||[]);
+    if(pdf){showPDFPreview(pdf,`ELGAWA_Daily_Report_${date}.pdf`)}
+    else if(window.jspdf&&window.jspdf.jsPDF){showToast("No checksheets found for "+date)}
+    // (if the PDF engine is missing, pdfReady already explained it)
+  };
+  if(getFirebaseUrl()){cloudLoadSheets(date).then(go).catch(()=>go([]))}
+  else go([]);
 }
 
 function shareReport(date){
@@ -5016,7 +5033,7 @@ function shareReport(date){
 }
 function _doShareReport(date,cloudSheets){
   const pdf=buildReportPDF(date,cloudSheets);
-  if(!pdf)return;
+  if(!pdf){if(window.jspdf&&window.jspdf.jsPDF)showToast("No checksheets found for "+date);return}
   loadSaved();
   const daySheets=mergeSheets(savedSheets.filter(s=>s.date===date),cloudSheets);
   let totalMan=0,totalHrs=0;
@@ -7224,11 +7241,23 @@ function testFirebaseConnection(url){
     .catch(()=>false);
 }
 // Cloud user sync — admin changes push to Firebase, all devices pull on login
+// Tombstone helpers — removed users/workers stay removed across devices.
+// Without these, any device still holding an old copy pushed removed
+// people straight back into the cloud list ("they reappear").
+function getRemovedUsers(){try{return JSON.parse(localStorage.getItem("elg_removed_users")||"[]")}catch(e){return[]}}
+function saveRemovedUsers(l){try{localStorage.setItem("elg_removed_users",JSON.stringify([...new Set(l)]))}catch(e){}}
+function getRemovedWorkers(){try{return JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]")}catch(e){return[]}}
+function saveRemovedWorkers(l){try{localStorage.setItem("elg_base_workers_removed",JSON.stringify([...new Set(l)]))}catch(e){}}
 function cloudSaveUsers(){
   const fb=getFirebaseUrl();if(!fb)return Promise.resolve(false);
-  const cu=getCustomUsers();
-  const dis=getDisabledUsers();
-  const payload={customUsers:cu,disabledUsers:dis,updatedAt:Date.now()};
+  const payload={
+    customUsers:getCustomUsers(),
+    disabledUsers:getDisabledUsers(),
+    removedUsers:getRemovedUsers(),
+    customWorkers:getCustomWorkers(),
+    removedWorkers:getRemovedWorkers(),
+    updatedAt:Date.now()
+  };
   return fetch(`${fb}/appUsers.json`,{method:"PUT",body:JSON.stringify(payload),headers:{"Content-Type":"application/json"}})
     .then(r=>{if(!r.ok)throw new Error("user sync fail");return true})
     .catch(()=>false);
@@ -7239,17 +7268,23 @@ function cloudLoadUsers(){
     .then(fbJson)
     .then(data=>{
       if(!data||!data.customUsers)return false;
-      // Merge: cloud data wins for shared keys, keep local-only keys
-      const localCU=getCustomUsers();
-      const cloudCU=data.customUsers||{};
-      const merged={...localCU,...cloudCU};
+      // Tombstones first: union local + cloud so removals win everywhere
+      const remU=[...new Set([...getRemovedUsers(),...(Array.isArray(data.removedUsers)?data.removedUsers:[])])];
+      saveRemovedUsers(remU);
+      const remW=[...new Set([...getRemovedWorkers(),...(Array.isArray(data.removedWorkers)?data.removedWorkers:[])])];
+      saveRemovedWorkers(remW);
+      // Custom users: merge cloud over local, then strike the tombstoned
+      const merged={...getCustomUsers(),...(data.customUsers||{})};
+      remU.forEach(u=>{delete merged[u]});
       saveCustomUsers(merged);
       if(data.disabledUsers&&Array.isArray(data.disabledUsers)){
-        // Merge: union of local + cloud disabled lists so removals are never lost
-        const localDis=getDisabledUsers();
-        const merged=[...new Set([...localDis,...data.disabledUsers])];
-        saveDisabledUsers(merged);
+        const mergedDis=[...new Set([...getDisabledUsers(),...data.disabledUsers])];
+        saveDisabledUsers(mergedDis);
       }
+      // Custom workers: union local + cloud, minus tombstoned names
+      const cw=[...new Set([...getCustomWorkers(),...(Array.isArray(data.customWorkers)?data.customWorkers:[])])]
+        .filter(n=>!remW.includes(n));
+      saveCustomWorkers(cw);
       USERS=getUsers();
       return true;
     })
@@ -7916,6 +7951,7 @@ function removeUser(uname){
   if(uname==="admin"){showToast("Cannot remove admin account");return}
   showModal(t("confirm")||"Confirm",(t("removeUserConfirm")||"Remove user")+" "+uname+"?",()=>{
     const cu=getCustomUsers();delete cu[uname];saveCustomUsers(cu);
+    const rem=getRemovedUsers();rem.push(uname);saveRemovedUsers(rem); // tombstone — stays removed on every device
     if(BASE_USERS[uname]){const dis=getDisabledUsers();if(!dis.includes(uname))dis.push(uname);saveDisabledUsers(dis)}
     USERS=getUsers();
     cloudSaveUsers();
@@ -7938,9 +7974,9 @@ function renderWorkerRoster(){
   const custom=getCustomWorkers();
   const allWorkers=getWorkerRoster();
   const payRoster=getPayRoster();
-  const groupColors={installation:"var(--navy)",ducting:"var(--ducting,#2196F3)",suriname:"#E67E22"};
-  const groupLabels={installation:"Installation Crew",ducting:"Ducting / Movers",suriname:"Suriname ELGAWA"};
-  const grouped={installation:[],ducting:[],suriname:[],unassigned:[]};
+  const groupColors={installation:"var(--navy)",ducting:"var(--ducting,#2196F3)",suriname:"#E67E22",guyana:"#0B5D47"};
+  const groupLabels={installation:"Installation Crew",ducting:"Ducting / Movers",suriname:"Suriname ELGAWA",guyana:"ELGAWA Guyana Team"};
+  const grouped={installation:[],ducting:[],suriname:[],guyana:[],unassigned:[]};
   allWorkers.forEach(name=>{
     const pr=payRoster[name];
     if(pr&&grouped[pr.group])grouped[pr.group].push(name);
@@ -7948,7 +7984,7 @@ function renderWorkerRoster(){
   });
   let html=`<div style="text-align:right;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;padding:4px 12px;background:var(--lt-grey);border-radius:8px">Total Workers: ${allWorkers.length}</div>`;
   let num=0;
-  const groupOrder=["installation","ducting","suriname","unassigned"];
+  const groupOrder=["installation","ducting","suriname","guyana","unassigned"];
   groupOrder.forEach(g=>{
     const workers=grouped[g];
     if(!workers||workers.length===0)return;
@@ -7974,6 +8010,8 @@ function addWorkerToRoster(){
   const custom=getCustomWorkers();
   custom.push(name);
   saveCustomWorkers(custom);
+  saveRemovedWorkers(getRemovedWorkers().filter(n=>n.toLowerCase()!==name.toLowerCase())); // un-tombstone on re-add
+  if(typeof cloudSaveUsers==="function")cloudSaveUsers();
   inp.value="";
   renderWorkerRoster();
   showToast(t("workerAdded"));
@@ -8023,7 +8061,7 @@ function editWorkerName(oldName){
 function editWorkerGroup(name){
   const payR=getPayRoster();
   const current=payR[name]?payR[name].group:"unassigned";
-  const groups=[{id:"installation",label:"Installation Crew",rate:7000},{id:"ducting",label:"Ducting / Movers",rate:7000},{id:"suriname",label:"Suriname ELGAWA",rate:6000}];
+  const groups=[{id:"installation",label:"Installation Crew",rate:7000},{id:"ducting",label:"Ducting / Movers",rate:7000},{id:"suriname",label:"Suriname ELGAWA",rate:6000},{id:"guyana",label:"ELGAWA Guyana Team",rate:7000}];
   let optHtml=groups.map(g=>'<option value="'+g.id+'" '+(current===g.id?'selected':'')+'>'+g.label+' ($'+g.rate.toLocaleString()+'/day)</option>').join("");
   optHtml+='<option value="_remove" '+(current==="unassigned"?"selected":"")+'>Unassigned (remove from pay roster)</option>';
   showModal("Change Group — "+name,'<select id="_editWGroup" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px">'+optHtml+'</select>',function(){
@@ -8425,12 +8463,44 @@ function saveAttendanceLocal(date,data){
   data.updatedAt=Date.now();
   try{localStorage.setItem(getAttendanceKey(date),JSON.stringify(data))}catch(e){showToast(t("storageFull"))}
 }
+// ═══ FIREBASE KEY ENCODING ═══
+// Firebase forbids . # $ / [ ] in keys. Worker names like "Jose N. Queipo"
+// made the ENTIRE attendance PUT fail with HTTP 400 — silently. That is how
+// 25 marked workers became 11 in the cloud: every save containing the dotted
+// name was rejected; only team-lead writes (clean names) survived.
+// Names are now %hex-encoded going up and decoded coming down.
+function _fbEncKey(k){return String(k).replace(/[%.#$\/\[\]]/g,ch=>"%"+ch.charCodeAt(0).toString(16).padStart(2,"0"))}
+function _fbDecKey(k){return String(k).replace(/%([0-9a-f]{2})/gi,(m,h)=>String.fromCharCode(parseInt(h,16)))}
+function _encWorkers(data){
+  if(!data||!data.workers)return data;
+  const out={...data,workers:{}};
+  Object.keys(data.workers).forEach(n=>{out.workers[_fbEncKey(n)]=data.workers[n]});
+  return out;
+}
+function _decWorkers(data){
+  if(!data||!data.workers)return data;
+  const w={};
+  Object.keys(data.workers).forEach(n=>{w[_fbDecKey(n)]=data.workers[n]});
+  data.workers=w;
+  return data;
+}
 function cloudSaveAttendance(date,data){
   const fb=getFirebaseUrl();if(!fb)return Promise.resolve(false);
   if(!data.updatedAt)data.updatedAt=Date.now();
-  return fetch(fb+"/attendance/"+date+".json",{method:"PUT",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}})
+  return fetch(fb+"/attendance/"+date+".json",{method:"PUT",body:JSON.stringify(_encWorkers(data)),headers:{"Content-Type":"application/json"},keepalive:true})
     .then(r=>{
       if(r.status===401||r.status===403){window._fbRulesBroken=true;try{renderFbHealthBanner()}catch(e){}}
+      if(!r.ok){
+        // Never fail silently again — tell the admin and retry once.
+        const now=Date.now();
+        if(!window._attSyncWarnedAt||now-window._attSyncWarnedAt>60000){
+          window._attSyncWarnedAt=now;
+          showToast("⚠️ Attendance cloud sync failed (HTTP "+r.status+") — retrying");
+        }
+        setTimeout(()=>{
+          fetch(fb+"/attendance/"+date+".json",{method:"PUT",body:JSON.stringify(_encWorkers(data)),headers:{"Content-Type":"application/json"},keepalive:true}).catch(()=>{});
+        },5000);
+      }
       return r.ok;
     }).catch(()=>false);
 }
@@ -8446,7 +8516,7 @@ function _attAutoCloudSave(){
 function cloudLoadAttendance(date){
   const fb=getFirebaseUrl();if(!fb)return Promise.resolve(null);
   return fetch(fb+"/attendance/"+date+".json")
-    .then(fbJson).then(d=>d||null).catch(()=>null);
+    .then(fbJson).then(d=>d?_decWorkers(d):null).catch(()=>null);
 }
 
 function attDateNav(dir){
@@ -9042,8 +9112,17 @@ if("serviceWorker" in navigator){
 }
 scheduleNotification();
 // Re-arm reminder timers when the app returns to the foreground (mobile
-// browsers throttle timers in background tabs, which drifts the schedule)
-document.addEventListener("visibilitychange",function(){if(!document.hidden)scheduleNotification()});
+// browsers throttle timers in background tabs, which drifts the schedule).
+// And when the app goes to the BACKGROUND, flush any pending attendance sync
+// immediately (keepalive) — marking 25 workers then locking the phone used to
+// lose the last debounced save.
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){
+    try{clearTimeout(_attCloudTimer);if(_attDate&&_attData)cloudSaveAttendance(_attDate,_attData)}catch(e){}
+  }else{
+    scheduleNotification();
+  }
+});
 document.getElementById("loginHint").innerHTML='Enter your username and password to sign in<br><span style="font-size:9px;color:#888">Contact admin if you forgot your credentials</span>';
 
 
@@ -9936,6 +10015,7 @@ function hubAddUser(){
   const cu=getCustomUsers();
   cu[uname]={pass:pass,name:name,role:role,teams:"all"};
   saveCustomUsers(cu);
+  saveRemovedUsers(getRemovedUsers().filter(u=>u!==uname)); // un-tombstone on re-add
   USERS=getUsers();
   nameEl.value="";unameEl.value="";passEl.value="";
   renderHubPersonnel();
@@ -9965,6 +10045,7 @@ function hubRemoveUser(uname){
     const cu=getCustomUsers();
     delete cu[uname];
     saveCustomUsers(cu);
+    const rem=getRemovedUsers();rem.push(uname);saveRemovedUsers(rem); // tombstone
     USERS=getUsers();
     renderHubPersonnel();
     if(typeof cloudSaveUsers==="function")cloudSaveUsers();
@@ -9980,6 +10061,8 @@ function hubAddWorker(){
   const custom=getCustomWorkers();
   custom.push(name);
   saveCustomWorkers(custom);
+  saveRemovedWorkers(getRemovedWorkers().filter(n=>n.toLowerCase()!==name.toLowerCase())); // un-tombstone on re-add
+  if(typeof cloudSaveUsers==="function")cloudSaveUsers();
   inp.value="";
   renderHubPersonnel();
   showToast(name+" added to roster");
@@ -9997,14 +10080,16 @@ function hubRemoveWorker(name){
 // Remove ANY worker (base or custom)
 function hubRemoveWorkerAny(name){
   showModal("Remove Worker","Remove "+name+" from the roster?",function(){
-    if(BASE_WORKER_ROSTER.includes(name)){
-      var removed=[];try{removed=JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]")}catch(e){}
-      if(!removed.includes(name))removed.push(name);
-      try{localStorage.setItem("elg_base_workers_removed",JSON.stringify(removed))}catch(e){}
-    }
+    // ALWAYS tombstone the name — the roster also auto-includes login users'
+    // full names, so without this a removed worker who is also a login user
+    // reappeared instantly. Tombstones now sync to cloud via cloudSaveUsers.
+    var removed=[];try{removed=JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]")}catch(e){}
+    if(!removed.includes(name))removed.push(name);
+    try{localStorage.setItem("elg_base_workers_removed",JSON.stringify(removed))}catch(e){}
     var custom=getCustomWorkers();
     custom=custom.filter(function(n){return n!==name});
     saveCustomWorkers(custom);
+    if(typeof cloudSaveUsers==="function")cloudSaveUsers();
     renderHubPersonnel();
     if(typeof renderWorkerRoster==="function")renderWorkerRoster();
     showToast(name+" removed from roster");
@@ -10694,6 +10779,37 @@ function renderSelfAttendanceDashboard(container,date){
 // ═══════════════════════════════════════════════════════════
 // CONFIRM / EDIT SELF-ATTENDANCE
 // ═══════════════════════════════════════════════════════════
+// Write one worker into the MAIN attendance record (the register), rebased on
+// the freshest copy so it never stomps other edits. This is the single path
+// that keeps the register true: hub confirms, self sign-in confirms, edits.
+function _attMarkWorker(date,name,patch){
+  const apply=(data)=>{
+    if(!data)data={workers:{},verified:false};
+    if(!data.workers)data.workers={};
+    if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:"",shift:"day"};
+    Object.assign(data.workers[name],patch);
+    return data;
+  };
+  const finish=(data)=>{
+    saveAttendanceLocal(date,data);
+    cloudSaveAttendance(date,data);
+    if(_attDate===date)_attData=data;
+    // Refresh whatever attendance UI is on screen
+    try{const tabAtt=document.getElementById("tabAttendance");if(tabAtt&&!tabAtt.classList.contains("hidden"))renderAttendanceTab()}catch(e){}
+    try{renderWeeklyRegister(date)}catch(e){}
+  };
+  if(_attDate===date&&_attData){finish(apply(_attData));return}
+  const fb=getFirebaseUrl();
+  if(fb){
+    cloudLoadAttendance(date).then(cloud=>{
+      const local=loadAttendance(date);
+      let base=null;
+      if(cloud&&local)base=(cloud.updatedAt||0)>=(local.updatedAt||0)?cloud:local;
+      else base=cloud||local;
+      finish(apply(base));
+    }).catch(()=>finish(apply(loadAttendance(date))));
+  }else finish(apply(loadAttendance(date)));
+}
 function confirmSelfAttendance(date,username){
   loadSelfAttendance(date,username).then(data=>{
     if(!data)return;
@@ -10701,7 +10817,18 @@ function confirmSelfAttendance(date,username){
     data.confirmedBy=currentUser.username;
     data.confirmedAt=Date.now();
     saveSelfAttendance(date,username,data);
-    showToast("Confirmed "+username);
+    // KEY FIX: confirming a self sign-in now writes the worker into the main
+    // attendance register too. Before, it only flagged the selfAttendance
+    // node — the register never updated.
+    const fullName=data.name||((getUsers()[username]||{}).name)||username;
+    _attMarkWorker(date,fullName,{
+      present:true,
+      timeIn:data.signIn||"",
+      timeOut:data.signOut||"",
+      confirmedByAdmin:true,
+      selfSignIn:true
+    });
+    showToast("Confirmed "+fullName+" — added to register");
     const dashCont=document.getElementById("selfAttDashboard");
     const attDate=document.getElementById("attDate");
     if(dashCont)renderSelfAttendanceDashboard(dashCont,attDate?attDate.value:date);
@@ -10742,6 +10869,15 @@ function saveSelfAttEdit(date,username){
     data.editedBy=currentUser.username;
     data.editedAt=Date.now();
     saveSelfAttendance(date,username,data);
+    // If this worker is already on the register, keep the register's times in
+    // step with the admin's edit (confirm still controls presence).
+    try{
+      const fullName=data.name||((getUsers()[username]||{}).name)||username;
+      const att=(_attDate===date&&_attData)?_attData:loadAttendance(date);
+      if(att&&att.workers&&att.workers[fullName]&&att.workers[fullName].present){
+        _attMarkWorker(date,fullName,{timeIn:inVal,timeOut:outVal||""});
+      }
+    }catch(e){}
     // Close modal
     const m=document.querySelector(".modal-overlay");if(m)m.remove();
     // Re-render
