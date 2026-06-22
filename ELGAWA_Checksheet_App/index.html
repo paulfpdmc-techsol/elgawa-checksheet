@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#B8860B">
+<meta name="theme-color" content="#7E5BB5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ELGAWA">
@@ -15,11 +15,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
 <style>
-:root{--navy:#B8860B;--navy-lt:#D6A41C;--teal:#D6A41C;--blue-bg:#FDF6DD;--grey:#6c6353;--lt-grey:#FDFBF3;--border:#F0E6C8;--white:#fff;--danger:#dc3545;--success:#22a04a;--warn:#f0ad4e;--ducting:#2E75B6;--copper:#C05621;--ahu:#548235;--insulation:#7030A0;--general:#BF8F00;--refrigerant:#0077B6;--drainage:#0096C7;--controls:#E63946;--commissioning:#2D6A4F;--radius:16px;--shadow:0 3px 14px rgba(184,134,11,0.10);--shadow-lg:0 10px 34px rgba(184,134,11,0.16);--hdr-grad:linear-gradient(135deg,#B8860B 0%,#CC9A18 55%,#DBAA26 100%)}
+:root{--navy:#7E5BB5;--navy-lt:#D6A41C;--teal:#D6A41C;--blue-bg:#EFE6F7;--grey:#6b6472;--lt-grey:#FAF7FB;--border:#E6DCEF;--white:#fff;--danger:#dc3545;--success:#22a04a;--warn:#f0ad4e;--ducting:#2E75B6;--copper:#C05621;--ahu:#548235;--insulation:#7030A0;--general:#BF8F00;--refrigerant:#0077B6;--drainage:#0096C7;--controls:#E63946;--commissioning:#2D6A4F;--radius:16px;--shadow:0 3px 14px rgba(126,91,181,0.12);--shadow-lg:0 10px 34px rgba(126,91,181,0.18);--hdr-grad:linear-gradient(135deg,#7E5BB5 0%,#9F7AC4 42%,#D6A41C 100%)}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{overflow-x:hidden;max-width:100vw}
 img,svg,video,canvas{max-width:100%}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:linear-gradient(180deg,#FDF7E6 0%,var(--lt-grey) 38%,#FFFEFA 100%);color:#2c2820;min-height:100vh;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:linear-gradient(165deg,#EFE4F5 0%,#F7F0E2 52%,#FFFFFF 100%);background-attachment:fixed;color:#2c2820;min-height:100vh;-webkit-tap-highlight-color:transparent}
 input,select,textarea,button{font-family:inherit;transition:border-color .2s,box-shadow .2s}
 /* Narrow phones: keep attendance rows inside the screen */
 @media (max-width:380px){
@@ -220,7 +220,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .action-bar{position:sticky;bottom:0;left:0;right:0;background:white;padding:10px 14px;box-shadow:0 -2px 10px rgba(0,0,0,.1);display:flex;gap:8px;justify-content:center;z-index:90}
 .btn{padding:12px 22px;min-height:46px;border:none;border-radius:13px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .btn:active{opacity:.85;transform:scale(.98)}
-.btn-primary{background:var(--navy);color:white}.btn-success{background:var(--success);color:white}
+.btn-primary{background:var(--hdr-grad);color:white}.btn-success{background:var(--success);color:white}
 .btn-outline{background:white;color:var(--navy);border:2px solid var(--navy)}
 .btn-whatsapp{background:#25D366;color:white}
 .report-wrap{max-width:600px;margin:0 auto;padding:12px;padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
@@ -236,9 +236,9 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .analysis-wrap{max-width:600px;margin:0 auto;padding:0}
 .analysis-period-tabs{display:flex;gap:4px;margin-bottom:10px;padding:4px;background:white;border-radius:10px;box-shadow:var(--shadow)}
 .ap-tab{flex:1;padding:10px 6px;text-align:center;font-size:11px;font-weight:700;border:none;background:none;border-radius:8px;cursor:pointer;color:var(--grey);transition:all .2s}
-.ap-tab.active{background:linear-gradient(135deg,#B8860B,#E1A91E);color:white;box-shadow:0 3px 10px rgba(184,134,11,.25)}
+.ap-tab.active{background:linear-gradient(135deg,#7E5BB5,#D6A41C);color:white;box-shadow:0 3px 10px rgba(126,91,181,.25)}
 .hr-tab{flex:1;padding:12px 8px;text-align:center;font-size:13px;font-weight:700;border:1px solid var(--border);background:white;border-radius:10px;cursor:pointer;color:var(--grey);box-shadow:var(--shadow);transition:all .2s}
-.hr-tab.active{background:var(--hdr-grad);color:white;border-color:transparent;box-shadow:0 3px 12px rgba(184,134,11,.28)}
+.hr-tab.active{background:var(--hdr-grad);color:white;border-color:transparent;box-shadow:0 3px 12px rgba(126,91,181,.28)}
 .hr-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
 .hr-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border)}
 .hr-row:last-child{border-bottom:none}
@@ -254,10 +254,10 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .an-card{background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid rgba(15,110,86,.04)}
 .an-card h3{font-size:14px;color:var(--navy);margin-bottom:10px;border-bottom:2px solid var(--blue-bg);padding-bottom:6px;font-weight:700}
 .an-card h4{font-size:12px;color:var(--navy);margin:8px 0 4px;font-weight:700}
-.an-exec{background:linear-gradient(135deg,#FCF6E6,white);border-left:4px solid #B8860B}
-.an-exec h3{color:#B8860B}
+.an-exec{background:linear-gradient(135deg,#F3EDFA,white);border-left:4px solid #7E5BB5}
+.an-exec h3{color:#7E5BB5}
 .an-kpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0}
-.an-kpi-box{background:white;border-radius:10px;padding:10px 6px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.04);border:1px solid rgba(184,134,11,.10)}
+.an-kpi-box{background:white;border-radius:10px;padding:10px 6px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.04);border:1px solid rgba(126,91,181,.10)}
 .an-kpi-box .kn{font-size:20px;font-weight:800;color:var(--navy);letter-spacing:-.5px}
 .an-kpi-box .kl{font-size:8px;color:var(--grey);text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
 .an-team-card{border-left:5px solid var(--navy);padding:12px;margin-bottom:10px;background:var(--lt-grey);border-radius:0 var(--radius) var(--radius) 0;transition:all .2s}
@@ -266,7 +266,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .an-metric{background:white;border-radius:6px;padding:4px 8px;font-size:10px;border:1px solid var(--border)}
 .an-metric b{color:var(--navy)}
 .an-spec-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
-.an-spec{background:rgba(184,134,11,.08);border-radius:4px;padding:3px 6px;font-size:9px;color:#B8860B;font-weight:600}
+.an-spec{background:rgba(126,91,181,.08);border-radius:4px;padding:3px 6px;font-size:9px;color:#7E5BB5;font-weight:600}
 .an-blocker{background:#fff5f5;border-left:3px solid var(--danger);padding:6px 10px;margin:4px 0;border-radius:0 6px 6px 0;font-size:11px}
 .an-narrative{font-size:11px;line-height:1.6;color:#444;padding:8px 12px;background:var(--lt-grey);border-radius:8px;margin:8px 0}
 .an-trend-bar{display:flex;align-items:center;gap:6px;font-size:10px;margin:3px 0}
@@ -1113,7 +1113,7 @@ function getCustomUsers(){try{const raw=JSON.parse(localStorage.getItem("elg_cus
 function saveCustomUsers(cu){try{localStorage.setItem("elg_custom_users",JSON.stringify(cu))}catch(e){}}
 function getDisabledUsers(){try{return JSON.parse(localStorage.getItem("elg_disabled_users")||"[]")}catch(e){return[]}}
 function saveDisabledUsers(list){try{localStorage.setItem("elg_disabled_users",JSON.stringify(list))}catch(e){}}
-function getUsers(){const all={...BASE_USERS,...getCustomUsers()};const disabled=getDisabledUsers();disabled.forEach(u=>{delete all[u]});return all}
+function getUsers(){const all={...BASE_USERS,...getCustomUsers()};getRemovedUsers().forEach(u=>{delete all[u]});getDisabledUsers().forEach(u=>{delete all[u]});return all}
 let USERS=getUsers();
 function getGuyanaDate(){
   try{
@@ -3839,7 +3839,7 @@ function renderWeeklyAnalysis(monday){
       const dayName=d.toLocaleDateString("en-US",{weekday:"short"});
       const dayAnalyses=byDate[ds]||[];
       const dayAgg=dayAnalyses.length?aggregateAnalyses(dayAnalyses):null;
-      html+=`<div class="an-day-box" style="${dayAnalyses.length?'border-color:#B8860B':'opacity:.5'}">
+      html+=`<div class="an-day-box" style="${dayAnalyses.length?'border-color:#7E5BB5':'opacity:.5'}">
         <div class="day-name">${dayName}</div>
         <div class="day-num">${dayAgg?dayAgg.work.comp+'%':'—'}</div>
         <div class="day-sub">${dayAgg?dayAgg.manpower.total+' ppl | '+dayAgg.manpower.hrs.toFixed(0)+'h':'No data'}</div>
@@ -7943,10 +7943,12 @@ function renderUserList(){
   const list=document.getElementById("userList");
   USERS=getUsers();
   // Source from ALL accounts (active + inactive) so inactive users stay visible and toggleable.
+  // Permanently-removed users (tombstoned) are excluded entirely.
   const allUsersMap={...BASE_USERS,...getCustomUsers()};
+  const removedSet=new Set(getRemovedUsers());
   const disabledSet=new Set(getDisabledUsers());
   const roles=["Worker","Lead Worker","Team Lead","Supervisor","Engineer","Project Lead","HR"];
-  const userKeys=Object.keys(allUsersMap).filter(u=>allUsersMap[u]&&allUsersMap[u].name&&allUsersMap[u].pass)
+  const userKeys=Object.keys(allUsersMap).filter(u=>allUsersMap[u]&&allUsersMap[u].name&&allUsersMap[u].pass&&!removedSet.has(u))
     .sort((a,b)=>{const da=disabledSet.has(a)?1:0,db=disabledSet.has(b)?1:0;return da-db||(allUsersMap[a].name||"").localeCompare(allUsersMap[b].name||"")});
   const activeCount=userKeys.filter(u=>!disabledSet.has(u)).length;
   list.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;padding:5px 12px;background:var(--lt-grey);border-radius:8px"><span>Total: ${userKeys.length}</span><span>${activeCount} active · ${userKeys.length-activeCount} inactive</span></div>`+userKeys.map((u,i)=>{
@@ -8031,6 +8033,7 @@ function addNewUser(){
   if(dis.includes(uname)){
     showModal("Re-enable User","User \""+uname+"\" was previously removed. Re-enable this account?",()=>{
       saveDisabledUsers(dis.filter(u=>u!==uname));
+      saveRemovedUsers(getRemovedUsers().filter(u=>u!==uname)); // clear tombstone so they reappear
       // Apply new details as custom override
       const cu=getCustomUsers();
       cu[uname]={pass:pass,name:fname,role:role,teams:"all"};
@@ -8045,6 +8048,9 @@ function addNewUser(){
   }
   USERS=getUsers();
   if(USERS[uname]){showToast(t("userExists"));return}
+  // Re-creating a previously-removed username: clear any tombstone/disable marker
+  saveRemovedUsers(getRemovedUsers().filter(u=>u!==uname));
+  const dd=getDisabledUsers();if(dd.includes(uname))saveDisabledUsers(dd.filter(u=>u!==uname));
   const cu=getCustomUsers();
   cu[uname]={pass:pass,name:fname,role:role,teams:"all"};
   saveCustomUsers(cu);USERS=getUsers();
@@ -8094,8 +8100,8 @@ function renderWorkerRoster(){
   const custom=getCustomWorkers();
   const allWorkers=getWorkerRoster();
   const payRoster=getPayRoster();
-  const groupColors={installation:"var(--navy)",ducting:"var(--ducting,#2196F3)",suriname:"#E67E22",guyana:"#0B5D47"};
-  const groupLabels={installation:"Installation Crew",ducting:"Ducting / Movers",suriname:"Suriname ELGAWA",guyana:"ELGAWA Guyana Team"};
+  const groupColors={installation:"var(--navy)",ducting:"var(--ducting,#2196F3)",suriname:"#E67E22",guyana:"#0B5D47",unassigned:"#0B5D47"};
+  const groupLabels={installation:"Installation Crew",ducting:"Ducting / Movers",suriname:"Suriname ELGAWA",guyana:"ELGAWA Guyana Team",unassigned:"ELGAWA Guyana"};
   const grouped={installation:[],ducting:[],suriname:[],guyana:[],unassigned:[]};
   allWorkers.forEach(name=>{
     const pr=payRoster[name];
@@ -8110,11 +8116,11 @@ function renderWorkerRoster(){
     if(!workers||workers.length===0)return;
     const color=groupColors[g]||"#888";
     const label=groupLabels[g]||"Unassigned";
-    html+=`<div style="margin-top:10px;margin-bottom:4px;padding:6px 10px;background:${g==="unassigned"?"#f0f0f0":color+"15"};border-left:3px solid ${color};border-radius:0 8px 8px 0;font-weight:700;font-size:12px;color:${color}">${label} <span style="font-weight:400;font-size:11px">(${workers.length})</span></div>`;
+    html+=`<div style="margin-top:10px;margin-bottom:4px;padding:6px 10px;background:${color}15;border-left:3px solid ${color};border-radius:0 8px 8px 0;font-weight:700;font-size:12px;color:${color}">${label} <span style="font-weight:400;font-size:11px">(${workers.length})</span></div>`;
     workers.forEach(name=>{
       num++;
       const tagColor=groupColors[g]||"#888";
-      const tagLabel=g==="unassigned"?"—":(g==="installation"?"INST":g==="ducting"?"DUCT":"SUR");
+      const tagLabel=g==="unassigned"?"GUY":(g==="installation"?"INST":g==="ducting"?"DUCT":g==="guyana"?"GUY":"SUR");
       const esc=name.replace(/'/g,"\\'");
       html+=`<div class="user-row" style="display:flex;align-items:center;justify-content:space-between;gap:4px"><div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0"><span style="font-size:10px;font-weight:700;color:white;background:${tagColor};border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${num}</span><span class="uname" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span><span style="font-size:9px;font-weight:700;color:${tagColor};background:${tagColor}15;border:1px solid ${tagColor}40;padding:1px 6px;border-radius:10px;white-space:nowrap">${tagLabel}</span></div><div style="display:flex;gap:4px;flex-shrink:0"><button onclick="editWorkerName('${esc}')" style="border:none;background:var(--teal);color:white;border-radius:6px;width:26px;height:26px;font-size:12px;cursor:pointer" title="Edit">✎</button><button onclick="editWorkerGroup('${esc}')" style="border:none;background:var(--navy);color:white;border-radius:6px;width:26px;height:26px;font-size:11px;cursor:pointer" title="Change group">⇄</button><button onclick="removeWorker('${esc}')" style="border:none;background:#fee;color:#c0392b;border-radius:6px;width:26px;height:26px;font-size:13px;cursor:pointer" title="Remove">✕</button></div></div>`;
     });
@@ -10729,7 +10735,7 @@ function downloadHrMembersPDF(){
     try{
       const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");
       const W=215.9,M=14;let y=16;
-      pdf.setFillColor(184,134,11);pdf.rect(0,0,W,26,"F");
+      pdf.setFillColor(126,91,181);pdf.rect(0,0,W,26,"F");
       pdf.setTextColor(255);pdf.setFontSize(15);pdf.setFont(undefined,"bold");
       pdf.text("ELGAWA GUYANA INC.",W/2,12,{align:"center"});
       pdf.setFontSize(10);pdf.setFont(undefined,"normal");
@@ -10739,7 +10745,7 @@ function downloadHrMembersPDF(){
       pdf.text("Total: "+list.length,M,y);
       pdf.autoTable({startY:y+4,margin:{left:M,right:M},
         head:[["#","Name","Role"]],body:list.map((r,i)=>[String(i+1),r.name,_hrRoleLabel(r.role)]),
-        headStyles:{fillColor:[184,134,11],fontSize:9},bodyStyles:{fontSize:9},theme:"grid",
+        headStyles:{fillColor:[126,91,181],fontSize:9},bodyStyles:{fontSize:9},theme:"grid",
         columnStyles:{0:{cellWidth:12},1:{fontStyle:"bold"}}});
       showPDFPreview(pdf,"ELGAWA_Team_Members_"+getGuyanaDate()+".pdf");
     }catch(err){console.error("HR members PDF failed:",err);showToast("⚠️ PDF error: "+((err&&err.message)?err.message:"could not generate"));}
@@ -10802,7 +10808,7 @@ function downloadHrAttendancePDF(){
     try{
       const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");
       const W=215.9,M=14;let y=16;
-      pdf.setFillColor(184,134,11);pdf.rect(0,0,W,26,"F");
+      pdf.setFillColor(126,91,181);pdf.rect(0,0,W,26,"F");
       pdf.setTextColor(255);pdf.setFontSize(15);pdf.setFont(undefined,"bold");
       pdf.text("ELGAWA GUYANA INC.",W/2,12,{align:"center"});
       pdf.setFontSize(10);pdf.setFont(undefined,"normal");
@@ -10813,7 +10819,7 @@ function downloadHrAttendancePDF(){
       const bodyRows=snap.rows.map((r,i)=>[String(i+1),r.name,r.present?"Present":"Absent",r.present?(r.timeIn||"--"):"",r.present?(r.timeOut||"--"):"",r.shift==="night"?"Night":"Day"]);
       pdf.autoTable({startY:y+4,margin:{left:M,right:M},
         head:[["#","Name","Status","In","Out","Shift"]],body:bodyRows,
-        headStyles:{fillColor:[184,134,11],fontSize:8},bodyStyles:{fontSize:8},theme:"grid",
+        headStyles:{fillColor:[126,91,181],fontSize:8},bodyStyles:{fontSize:8},theme:"grid",
         columnStyles:{0:{cellWidth:10},1:{fontStyle:"bold"}},
         didParseCell:function(dc){if(dc.section==="body"&&dc.column.index===2){dc.cell.styles.textColor=dc.cell.raw==="Present"?[34,160,74]:[220,53,69];}}
       });
