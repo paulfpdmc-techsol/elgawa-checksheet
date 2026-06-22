@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0F6E56">
+<meta name="theme-color" content="#A9780A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ELGAWA">
@@ -15,11 +15,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
 <style>
-:root{--navy:#0B5D47;--navy-lt:#17A06F;--teal:#17A06F;--blue-bg:#DFF4EB;--grey:#5c6b66;--lt-grey:#f4faf7;--border:#cfe6db;--white:#fff;--danger:#dc3545;--success:#22a04a;--warn:#f0ad4e;--ducting:#2E75B6;--copper:#C05621;--ahu:#548235;--insulation:#7030A0;--general:#BF8F00;--refrigerant:#0077B6;--drainage:#0096C7;--controls:#E63946;--commissioning:#2D6A4F;--radius:16px;--shadow:0 3px 14px rgba(11,93,71,0.09);--shadow-lg:0 10px 34px rgba(11,93,71,0.15);--hdr-grad:linear-gradient(135deg,#0B5D47 0%,#12936A 55%,#17A06F 100%)}
+:root{--navy:#A9780A;--navy-lt:#C68A0C;--teal:#C68A0C;--blue-bg:#FBF1D5;--grey:#6c6353;--lt-grey:#FCF9F0;--border:#ECDFC0;--white:#fff;--danger:#dc3545;--success:#22a04a;--warn:#f0ad4e;--ducting:#2E75B6;--copper:#C05621;--ahu:#548235;--insulation:#7030A0;--general:#BF8F00;--refrigerant:#0077B6;--drainage:#0096C7;--controls:#E63946;--commissioning:#2D6A4F;--radius:16px;--shadow:0 3px 14px rgba(150,110,10,0.10);--shadow-lg:0 10px 34px rgba(150,110,10,0.16);--hdr-grad:linear-gradient(135deg,#A9780A 0%,#B8840C 55%,#C68A0C 100%)}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{overflow-x:hidden;max-width:100vw}
 img,svg,video,canvas{max-width:100%}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:linear-gradient(180deg,#e8f5ef 0%,var(--lt-grey) 38%,#fbfdfc 100%);color:#26312d;min-height:100vh;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:linear-gradient(180deg,#FBF3DC 0%,var(--lt-grey) 38%,#FFFDF7 100%);color:#2c2820;min-height:100vh;-webkit-tap-highlight-color:transparent}
 input,select,textarea,button{font-family:inherit;transition:border-color .2s,box-shadow .2s}
 /* Narrow phones: keep attendance rows inside the screen */
 @media (max-width:380px){
@@ -236,14 +236,24 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .analysis-wrap{max-width:600px;margin:0 auto;padding:0}
 .analysis-period-tabs{display:flex;gap:4px;margin-bottom:10px;padding:4px;background:white;border-radius:10px;box-shadow:var(--shadow)}
 .ap-tab{flex:1;padding:10px 6px;text-align:center;font-size:11px;font-weight:700;border:none;background:none;border-radius:8px;cursor:pointer;color:var(--grey);transition:all .2s}
-.ap-tab.active{background:linear-gradient(135deg,#0F6E56,#1D9E75);color:white;box-shadow:0 3px 10px rgba(15,110,86,.25)}
+.ap-tab.active{background:linear-gradient(135deg,#A9780A,#E1A91E);color:white;box-shadow:0 3px 10px rgba(169,120,10,.25)}
+.hr-tab{flex:1;padding:12px 8px;text-align:center;font-size:13px;font-weight:700;border:1px solid var(--border);background:white;border-radius:10px;cursor:pointer;color:var(--grey);box-shadow:var(--shadow);transition:all .2s}
+.hr-tab.active{background:var(--hdr-grad);color:white;border-color:transparent;box-shadow:0 3px 12px rgba(169,120,10,.28)}
+.hr-card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
+.hr-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border)}
+.hr-row:last-child{border-bottom:none}
+.hr-mem-name{flex:1;min-width:0;font-weight:600;font-size:13px;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hr-mem-role{font-size:10px;font-weight:700;color:var(--navy);background:var(--blue-bg);padding:2px 8px;border-radius:10px;white-space:nowrap}
+.hr-att-pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;white-space:nowrap}
+.hr-date-nav{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px}
+.hr-date-nav button.arw{border:none;background:var(--navy);color:white;border-radius:50%;width:34px;height:34px;font-size:16px;cursor:pointer}
 .an-card{background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid rgba(15,110,86,.04)}
 .an-card h3{font-size:14px;color:var(--navy);margin-bottom:10px;border-bottom:2px solid var(--blue-bg);padding-bottom:6px;font-weight:700}
 .an-card h4{font-size:12px;color:var(--navy);margin:8px 0 4px;font-weight:700}
-.an-exec{background:linear-gradient(135deg,#f0faf5,white);border-left:4px solid #0F6E56}
-.an-exec h3{color:#0F6E56}
+.an-exec{background:linear-gradient(135deg,#FCF6E6,white);border-left:4px solid #A9780A}
+.an-exec h3{color:#A9780A}
 .an-kpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0}
-.an-kpi-box{background:white;border-radius:10px;padding:10px 6px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.04);border:1px solid rgba(15,110,86,.08)}
+.an-kpi-box{background:white;border-radius:10px;padding:10px 6px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.04);border:1px solid rgba(169,120,10,.10)}
 .an-kpi-box .kn{font-size:20px;font-weight:800;color:var(--navy);letter-spacing:-.5px}
 .an-kpi-box .kl{font-size:8px;color:var(--grey);text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
 .an-team-card{border-left:5px solid var(--navy);padding:12px;margin-bottom:10px;background:var(--lt-grey);border-radius:0 var(--radius) var(--radius) 0;transition:all .2s}
@@ -252,7 +262,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .an-metric{background:white;border-radius:6px;padding:4px 8px;font-size:10px;border:1px solid var(--border)}
 .an-metric b{color:var(--navy)}
 .an-spec-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
-.an-spec{background:rgba(15,110,86,.06);border-radius:4px;padding:3px 6px;font-size:9px;color:#0F6E56;font-weight:600}
+.an-spec{background:rgba(169,120,10,.08);border-radius:4px;padding:3px 6px;font-size:9px;color:#A9780A;font-weight:600}
 .an-blocker{background:#fff5f5;border-left:3px solid var(--danger);padding:6px 10px;margin:4px 0;border-radius:0 6px 6px 0;font-size:11px}
 .an-narrative{font-size:11px;line-height:1.6;color:#444;padding:8px 12px;background:var(--lt-grey);border-radius:8px;margin:8px 0}
 .an-trend-bar{display:flex;align-items:center;gap:6px;font-size:10px;margin:3px 0}
@@ -794,6 +804,14 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
       <div class="hub-stat-row" id="hubStats"></div>
     </div>
     <div class="hub-overview-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <h3 id="hubSubBoardTitle" style="margin:0">📋 Daily Submission Board</h3>
+        <button onclick="renderHubOverview()" style="border:none;background:var(--lt-grey);color:var(--navy);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer">↻ Refresh</button>
+      </div>
+      <p id="hubSubBoardSub" style="font-size:11px;color:var(--grey);margin:4px 0 8px">Which teams have turned in today's checksheet</p>
+      <div id="hubSubmissionBoard"></div>
+    </div>
+    <div class="hub-overview-card">
       <h3>Team Lead Status</h3>
       <div id="hubLeadStatus"></div>
     </div>
@@ -821,6 +839,20 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
     <h3 style="color:var(--navy);font-size:14px;margin-bottom:12px" id="workerHistoryLabel">📋 My Recent History</h3>
     <div id="workerHistory" style="font-size:12px"></div>
   </div>
+</div>
+<!-- HR view — read-only Team Members + Attendance (role "HR") -->
+<div id="hrView" class="hidden" style="max-width:640px;margin:0 auto;padding:16px;padding-bottom:40px">
+  <div style="text-align:center;margin-bottom:14px">
+    <div style="font-size:40px;margin-bottom:4px">👥</div>
+    <h2 style="color:var(--navy);margin:0" id="hrTitle">Human Resources</h2>
+    <p style="color:var(--grey);font-size:13px;margin:4px 0" id="hrUserLabel"></p>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:14px">
+    <button class="hr-tab active" id="hrTabMembersBtn" onclick="switchHrTab('members')">👥 <span id="hrTabMembersLbl">Team Members</span></button>
+    <button class="hr-tab" id="hrTabAttBtn" onclick="switchHrTab('attendance')">📋 <span id="hrTabAttLbl">Attendance</span></button>
+  </div>
+  <div id="hrMembersView"></div>
+  <div id="hrAttendanceView" style="display:none"></div>
 </div>
 <div id="settingsView" class="settings-panel hidden">
   <div class="back-row"><button class="back-btn" onclick="showDash()" id="backBtn1"></button></div>
@@ -862,7 +894,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
         <input type="text" id="newUsername" placeholder="Username" autocapitalize="none">
         <input type="text" id="newFullName" placeholder="Full Name">
         <div style="position:relative"><input type="password" id="newPassword" placeholder="Password" style="padding-right:42px;width:100%;box-sizing:border-box"><button type="button" onclick="togglePeek('newPassword',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button></div>
-        <select id="newRole"><option value="Worker" class="optWorker">Worker</option><option value="Lead Worker" class="optLeadWorker">Lead Worker</option><option value="Team Lead" class="optTeamLead">Team Lead</option><option value="Supervisor" class="optSupervisor">Supervisor</option><option value="Engineer" class="optEngineer">Engineer</option></select>
+        <select id="newRole"><option value="Worker" class="optWorker">Worker</option><option value="Lead Worker" class="optLeadWorker">Lead Worker</option><option value="Team Lead" class="optTeamLead">Team Lead</option><option value="Supervisor" class="optSupervisor">Supervisor</option><option value="Engineer" class="optEngineer">Engineer</option><option value="HR" class="optHR">HR (Team + Attendance only)</option></select>
         <button class="btn btn-success full" onclick="addNewUser()" id="addUserBtn"></button>
       </div>
       <button class="btn btn-primary full" onclick="saveUserChanges()" style="margin-top:10px;font-weight:700;font-size:14px" id="saveUsersBtn">💾 Save Changes</button>
@@ -954,6 +986,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
 <script>
 const BASE_USERS={
   admin:{pass:"elgawa2026",name:"Paul Bassoo",role:"Project Lead",teams:"all"},
+  telisha:{pass:"telisha2026",name:"Telisha Whyte",role:"HR",teams:"all"},
   akeem:{pass:"akeem2026",name:"Akeem Paul",role:"Engineer",teams:"all"},
   shaheed:{pass:"shaheed2026",name:"Shaheed Laismohamedkhan",role:"Engineer",teams:"all"},
   ashish:{pass:"ashish2026",name:"Ashishkumar Moti",role:"Supervisor",teams:"all"},
@@ -1467,6 +1500,17 @@ const T={
   completed:{en:"Completed",es:"Completado",nl:"Voltooid"},
   inProgress:{en:"In Progress",es:"En Progreso",nl:"Bezig"},
   blocked:{en:"Blocked",es:"Bloqueado",nl:"Geblokkeerd"},
+  statusLabel:{en:"Status",es:"Estado",nl:"Status"},
+  statusPick:{en:"Choose status",es:"Elegir estado",nl:"Kies status"},
+  humanResources:{en:"Human Resources",es:"Recursos Humanos",nl:"Personeelszaken"},
+  teamMembers:{en:"Team Members",es:"Miembros del Equipo",nl:"Teamleden"},
+  hrReadOnly:{en:"Read-only access",es:"Acceso de solo lectura",nl:"Alleen-lezen toegang"},
+  hrTotal:{en:"Total",es:"Total",nl:"Totaal"},
+  hrNoMembers:{en:"No team members found",es:"No se encontraron miembros",nl:"Geen teamleden gevonden"},
+  hrPresent:{en:"Present",es:"Presente",nl:"Aanwezig"},
+  hrAbsent:{en:"Absent",es:"Ausente",nl:"Afwezig"},
+  hrNoAtt:{en:"No attendance recorded for this date",es:"No hay asistencia registrada para esta fecha",nl:"Geen aanwezigheid geregistreerd voor deze datum"},
+  roleHR:{en:"HR (Team + Attendance only)",es:"RRHH (Equipo + Asistencia)",nl:"HR (Team + Aanwezigheid)"},
   completionRate:{en:"completion rate",es:"tasa de cumplimiento",nl:"voltooiingsgraad"},
   totalTasks:{en:"total tasks",es:"tareas totales",nl:"totaal taken"},
   downloadReport:{en:"View Report PDF",es:"Ver Reporte PDF",nl:"Bekijk Rapport PDF"},
@@ -1998,6 +2042,7 @@ function applyLang(){
   document.querySelectorAll(".optTeamLead").forEach(el=>{el.textContent=t("roleTeamLead")});
   document.querySelectorAll(".optSupervisor").forEach(el=>{el.textContent=t("roleSupervisor")});
   document.querySelectorAll(".optEngineer").forEach(el=>{el.textContent=t("roleEngineer")});
+  document.querySelectorAll(".optHR").forEach(el=>{el.textContent=t("roleHR")});
   const subtitleMap={ducting:"ductworkInstall",copper:"refrigerantCW",ahu:"ahuInstall",insulation:"thermalAcoustic",general:"siteSupportMat",refrigerant:"refrigerantSupport",drainage:"drainageCondensate",controls:"controlsElectrical",commissioning:"commissioningTesting"};
   Object.keys(subtitleMap).forEach(k=>{if(TEAMS[k])TEAMS[k].subtitle=t(subtitleMap[k])});
   // History tab labels
@@ -2329,6 +2374,19 @@ function showDash(){
   }else{
     if(wsv)wsv.classList.add("hidden");
     stopWorkerRefresh();
+  }
+
+  // ═══ HR ROLE DETECTION ═══ read-only Team Members + Attendance only
+  const hrv=document.getElementById("hrView");
+  if(currentUser&&currentUser.role==="HR"){
+    document.getElementById("dashView").classList.add("hidden");
+    const bn=document.getElementById("bottomNav");if(bn)bn.classList.add("hidden");
+    ["navBtnForms","navBtnReports","navBtnHistory","navBtnHub","navBtnSettings","navDivider"].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.style.display="none";
+    });
+    if(hrv){hrv.classList.remove("hidden");renderHrView()}
+  }else{
+    if(hrv)hrv.classList.add("hidden");
   }
 }
 
@@ -3772,7 +3830,7 @@ function renderWeeklyAnalysis(monday){
       const dayName=d.toLocaleDateString("en-US",{weekday:"short"});
       const dayAnalyses=byDate[ds]||[];
       const dayAgg=dayAnalyses.length?aggregateAnalyses(dayAnalyses):null;
-      html+=`<div class="an-day-box" style="${dayAnalyses.length?'border-color:#0F6E56':'opacity:.5'}">
+      html+=`<div class="an-day-box" style="${dayAnalyses.length?'border-color:#A9780A':'opacity:.5'}">
         <div class="day-name">${dayName}</div>
         <div class="day-num">${dayAgg?dayAgg.work.comp+'%':'—'}</div>
         <div class="day-sub">${dayAgg?dayAgg.manpower.total+' ppl | '+dayAgg.manpower.hrs.toFixed(0)+'h':'No data'}</div>
@@ -4076,7 +4134,7 @@ function _drawGroupedBar(ctx,w,h,teams){
   teams.forEach((t,i)=>{
     const x=40+i*(groupW+gap);
     const wH=chartH*(t.workers/maxVal);const hH=chartH*(t.hours/maxVal);
-    ctx.fillStyle="#0F6E56";ctx.fillRect(x,baseY-wH,barW,wH);
+    ctx.fillStyle="#B8860B";ctx.fillRect(x,baseY-wH,barW,wH);
     ctx.fillStyle="#8B5CF6";ctx.fillRect(x+barW+2,baseY-hH,barW,hH);
     // Label
     ctx.fillStyle="#333";ctx.font="bold 9px sans-serif";ctx.textAlign="center";ctx.textBaseline="top";
@@ -4084,11 +4142,11 @@ function _drawGroupedBar(ctx,w,h,teams){
     ctx.fillText(shortName,x+groupW/2,baseY+2);
     // Values
     ctx.font="8px sans-serif";ctx.textBaseline="bottom";
-    ctx.fillStyle="#0F6E56";ctx.fillText(t.workers,x+barW/2,baseY-wH-1);
+    ctx.fillStyle="#B8860B";ctx.fillText(t.workers,x+barW/2,baseY-wH-1);
     ctx.fillStyle="#8B5CF6";ctx.fillText(t.hours.toFixed(0),x+barW+2+barW/2,baseY-hH-1);
   });
   // Legend
-  ctx.fillStyle="#0F6E56";ctx.fillRect(w-120,5,10,10);ctx.fillStyle="#333";ctx.font="10px sans-serif";ctx.textAlign="left";ctx.fillText("Workers",w-107,14);
+  ctx.fillStyle="#B8860B";ctx.fillRect(w-120,5,10,10);ctx.fillStyle="#333";ctx.font="10px sans-serif";ctx.textAlign="left";ctx.fillText("Workers",w-107,14);
   ctx.fillStyle="#8B5CF6";ctx.fillRect(w-60,5,10,10);ctx.fillStyle="#333";ctx.fillText("Hours",w-47,14);
 }
 
@@ -4300,7 +4358,17 @@ function downloadAnalysisPDF(mode,dateVal){
   _loadAndAnalyze(startDate,endDate,function(analyses){
     if(loading.parentNode)loading.remove();
     if(!analyses.length){showToast(t("anNoData"));return}
-    _buildAnalysisPDF(mode,periodLabel,analyses);
+    // Ensure jsPDF + autotable are actually loaded, THEN build inside a
+    // try/catch so any failure shows a clear message instead of silently
+    // doing nothing (the old behaviour when autotable failed to load).
+    requirePdf(function(){
+      try{
+        _buildAnalysisPDF(mode,periodLabel,analyses);
+      }catch(err){
+        console.error("Analysis PDF build failed:",err);
+        showToast("⚠️ PDF error: "+((err&&err.message)?err.message:"could not generate report"));
+      }
+    });
   });
 }
 
@@ -5086,7 +5154,11 @@ function onTaskChange(sel,idx){
 }
 
 function buildWorkRow(tm,i,row){
-  const statusOpts=["C","IP","NS","BL"];
+  // Stored values stay C/IP/NS/BL (every report keys off these) but the worker
+  // now sees readable, translated labels instead of cryptic codes.
+  const statusOpts=[{v:"C",k:"completed"},{v:"IP",k:"inProgress"},{v:"NS",k:"notStarted"},{v:"BL",k:"blocked"}];
+  const _statusColor=s=>s==="C"?"#155724":s==="IP"?"#856404":s==="BL"?"#721c24":"#555";
+  const _statusBg=s=>s==="C"?"#d4edda":s==="IP"?"#fff3cd":s==="BL"?"#f8d7da":"#fff";
   const taskVal=row.task||"";
   const isOther=taskVal==="Other";
   const isCustom=taskVal&&!COMMON_TASKS.includes(taskVal);
@@ -5096,7 +5168,7 @@ function buildWorkRow(tm,i,row){
   // If it's a custom value not in the list, set the select to "Other"
   const selectVal=isCustom?"Other":taskVal;
 
-  let h=`<div class="entry-card" data-work-row="${i}"><div class="row-head"><span class="row-num">${i+1}</span><select data-work="${i}" data-key="status" onchange="onWorkStatusChange(${i},this.value)"><option value="">--</option>${statusOpts.map(s=>`<option ${row.status===s?"selected":""}>${s}</option>`).join("")}</select></div>
+  let h=`<div class="entry-card" data-work-row="${i}"><div class="row-head"><span class="row-num">${i+1}</span><div style="display:flex;align-items:center;gap:6px"><label style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.3px">${t("statusLabel")}</label><select class="work-status-sel" data-work="${i}" data-key="status" onchange="onWorkStatusChange(${i},this.value)" style="padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;min-height:40px;color:${_statusColor(row.status||"")};background:${_statusBg(row.status||"")}"><option value="">— ${t("statusPick")} —</option>${statusOpts.map(s=>`<option value="${s.v}" ${row.status===s.v?"selected":""}>${t(s.k)}</option>`).join("")}</select></div></div>
   <div class="fields">
     <div class="mini-field"><label>${tm.workLabels[0]}</label>${taskSelectHTML(i,selectVal)}
       <div id="other_work_${i}" class="other-input" style="display:${showOther?"block":"none"}"><input data-work="${i}" data-key="_otherTask" value="${otherVal}" placeholder="${t("otherDesc")}"></div>
@@ -5120,6 +5192,13 @@ function buildWorkRow(tm,i,row){
 
 // Auto-fill % Done when status changes and highlight missing %
 function onWorkStatusChange(rowIdx,status){
+  // Recolor the status dropdown itself so the worker gets instant confirmation
+  // they actually set it (green=done, yellow=in progress, red=blocked).
+  const statSel=document.querySelector(`[data-work="${rowIdx}"][data-key="status"]`);
+  if(statSel){
+    statSel.style.color=status==="C"?"#155724":status==="IP"?"#856404":status==="BL"?"#721c24":"#555";
+    statSel.style.background=status==="C"?"#d4edda":status==="IP"?"#fff3cd":status==="BL"?"#f8d7da":"#fff";
+  }
   const pctSel=document.querySelector(`[data-work="${rowIdx}"][data-key="pctDone"]`);
   if(!pctSel)return;
   // Auto-set: C=100%, NS=0%. For IP/BL, only set if currently empty.
@@ -6773,6 +6852,13 @@ function collectForm(teamKey){
         if(el)r[k]=el.value;
       }
     });
+    // Enforce status/percent consistency so the report can never show a
+    // "Completed" task at 0% (the exact bug that made everything read 0%).
+    if(r.task){
+      if(r.status==="C")r.pctDone="100";
+      else if(r.status==="NS")r.pctDone="0";
+      else if(r.status==="BL"&&!r.pctDone)r.pctDone="0";
+    }
     d.workRows.push(r);
   });
 
@@ -7612,25 +7698,29 @@ function startSubmissionWatch(){
 
 // ═══ PDF ENGINE GUARD ═══
 // The PDF libraries load from a CDN. On weak site signal they can fail to
-// load, which made every PDF button die silently. This loads them on demand
-// and tells the user what's happening instead of doing nothing.
+// load, which made every PDF button die silently. These helpers load them on
+// demand and tell the user what's happening instead of doing nothing.
+// Readiness requires BOTH jsPDF core AND the autotable plugin: checking only
+// jsPDF (the old behaviour) let autotable go missing on flaky networks, so the
+// first pdf.autoTable() call threw inside an async callback and the preview
+// never appeared.
+function _jspdfReady(){return !!(window.jspdf&&window.jspdf.jsPDF)}
+function _autotableReady(){
+  try{return !!(window.jspdf&&window.jspdf.jsPDF&&window.jspdf.jsPDF.API&&typeof window.jspdf.jsPDF.API.autoTable==="function")}catch(e){return false}
+}
+function _loadScript(src){return new Promise(function(res,rej){const sc=document.createElement("script");sc.src=src;sc.onload=function(){res()};sc.onerror=function(){rej(new Error("load failed: "+src))};document.head.appendChild(sc)})}
 function requirePdf(cb){
-  if(window.jspdf&&window.jspdf.jsPDF){cb();return}
+  if(_jspdfReady()&&_autotableReady()){cb();return}
   showToast("⏳ Loading PDF engine…");
   const fail=()=>showToast("⚠️ No internet — PDF engine couldn't load. Connect and try again.");
-  const s=document.createElement("script");
-  s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-  s.onload=function(){
-    const s2=document.createElement("script");
-    s2.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js";
-    s2.onload=function(){cb()};s2.onerror=fail;
-    document.head.appendChild(s2);
-  };
-  s.onerror=fail;
-  document.head.appendChild(s);
+  Promise.resolve()
+    .then(()=>_jspdfReady()?null:_loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"))
+    .then(()=>_autotableReady()?null:_loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"))
+    .then(()=>{if(_jspdfReady()&&_autotableReady())cb();else fail()})
+    .catch(fail);
 }
 function pdfReady(){
-  if(window.jspdf&&window.jspdf.jsPDF)return true;
+  if(_jspdfReady()&&_autotableReady())return true;
   requirePdf(function(){});
   showToast("⏳ PDF engine loading — tap again in a few seconds");
   return false;
@@ -9093,6 +9183,8 @@ try{const u=localStorage.getItem("elg_user");if(u){currentUser=JSON.parse(u);
   // Restore last active tab on refresh
   setTimeout(()=>{
     try{
+      const role=currentUser&&currentUser.role;
+      if(role==="HR"||role==="Worker")return; // these roles have their own dedicated view — never restore tabs
       const savedTab=localStorage.getItem("elg_active_tab");
       if(savedTab&&savedTab!=="forms")switchTab(savedTab);
     }catch(e){}
@@ -10203,6 +10295,9 @@ function renderHubOverview(){
     const todaySheets=Object.values(allSheets).filter(s=>s&&s.teamKey);
     const teamsSubmitted=new Set(todaySheets.map(s=>s.teamKey));
 
+    // ═══ DAILY SUBMISSION BOARD ═══
+    renderSubmissionBoard(todaySheets,teamsSubmitted,date);
+
     // Team lead status
     const USERS=getUsers();
     const leads=Object.entries(USERS).filter(([k,u])=>u.role&&(u.role.includes("Lead")||u.role.includes("Supervisor")||u.role.includes("Engineer"))&&k!=="admin");
@@ -10260,7 +10355,63 @@ function renderHubOverview(){
     statsEl.innerHTML='<div style="text-align:center;width:100%;color:var(--grey)">Could not load — pull Refresh ↻</div>';
     if(leadEl)leadEl.innerHTML='';
     if(unregEl)unregEl.innerHTML='';
+    const sb=document.getElementById("hubSubmissionBoard");
+    if(sb)sb.innerHTML='<div style="text-align:center;padding:12px;color:var(--grey);font-size:12px">Could not load submissions — tap ↻ Refresh</div>';
   });
+}
+
+// Daily Submission Board — at-a-glance: which teams turned in today's checksheet,
+// and a one-tap WhatsApp nudge for the ones that haven't.
+function renderSubmissionBoard(todaySheets,teamsSubmitted,date){
+  const el=document.getElementById("hubSubmissionBoard");
+  if(!el)return;
+  const allTeamKeys=Object.keys(TEAMS);
+  const byTeam={};
+  todaySheets.forEach(s=>{if(!byTeam[s.teamKey])byTeam[s.teamKey]=[];byTeam[s.teamKey].push(s)});
+  const submittedKeys=allTeamKeys.filter(k=>byTeam[k]).sort((a,b)=>getTeamName(a).localeCompare(getTeamName(b)));
+  const missingKeys=allTeamKeys.filter(k=>!byTeam[k]).sort((a,b)=>getTeamName(a).localeCompare(getTeamName(b)));
+
+  let html="";
+  // Summary banner
+  html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:'+(submittedKeys.length?'#eaf7ef':'#fff3cd')+';margin-bottom:10px">'
+    +'<div style="font-size:22px">'+(submittedKeys.length?'✅':'⏳')+'</div>'
+    +'<div><div style="font-weight:800;color:var(--navy);font-size:14px">'+submittedKeys.length+' team'+(submittedKeys.length===1?'':'s')+' reported today</div>'
+    +'<div style="font-size:11px;color:var(--grey)">'+todaySheets.length+' checksheet'+(todaySheets.length===1?'':'s')+' submitted</div></div></div>';
+
+  // Submitted teams (green)
+  submittedKeys.forEach(k=>{
+    const tm=TEAMS[k];const sheets=byTeam[k];
+    const latest=sheets.slice().sort((a,b)=>new Date(b.submittedAt||0)-new Date(a.submittedAt||0))[0];
+    let timeStr="";try{if(latest.submittedAt)timeStr=new Date(latest.submittedAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}catch(e){}
+    const taskCount=sheets.reduce((n,s)=>n+((s.workRows||[]).filter(r=>r.task).length),0);
+    const doneCount=sheets.reduce((n,s)=>n+((s.workRows||[]).filter(r=>r.task&&r.status==="C").length),0);
+    html+='<div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;border:1px solid #d4edda;background:#f6fcf8;margin-bottom:6px">'
+      +'<div style="font-size:18px">'+(tm.icon||'✅')+'</div>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-weight:700;color:var(--navy);font-size:13px">'+escHtml(getTeamName(k))+'</div>'
+      +'<div style="font-size:11px;color:var(--grey)">'+escHtml(latest.teamLead||latest.submittedBy||'—')+(timeStr?' · '+timeStr:'')+' · '+doneCount+'/'+taskCount+' done'+(sheets.length>1?' · '+sheets.length+' sheets':'')+'</div>'
+      +'</div><div style="color:#28a745;font-size:18px;font-weight:800">✓</div></div>';
+  });
+
+  // Not yet reported (muted + nudge)
+  if(missingKeys.length){
+    html+='<div style="font-size:11px;font-weight:700;color:#856404;text-transform:uppercase;letter-spacing:.3px;margin:12px 0 4px">Not yet reported</div>';
+    html+='<div style="font-size:10px;color:#aaa;margin-bottom:6px">May include trades not working today</div>';
+    missingKeys.forEach(k=>{
+      const tm=TEAMS[k];
+      html+='<div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:1px solid #eee;background:#fafafa;margin-bottom:6px">'
+        +'<div style="font-size:16px;opacity:.55">'+(tm.icon||'⬜')+'</div>'
+        +'<div style="flex:1;min-width:0"><div style="font-weight:600;color:#666;font-size:13px">'+escHtml(getTeamName(k))+'</div></div>'
+        +'<button onclick="nudgeTeam(\''+k+'\',\''+date+'\')" style="border:none;background:#25D366;color:white;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">📲 Remind</button></div>';
+    });
+  }
+  el.innerHTML=html;
+}
+
+// Open WhatsApp with a pre-filled reminder for a team that hasn't submitted.
+function nudgeTeam(teamKey,date){
+  const msg="Reminder: please submit today's "+getTeamName(teamKey)+" checksheet ("+date+"). — ELGAWA";
+  window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
 }
 
 function hubConfirmWorker(name,present){
@@ -10483,6 +10634,161 @@ function loadAllSelfAttendance(date){
         resolve(d||{});
       }).catch(()=>resolve({}));
     }else{resolve({})}
+  });
+}
+
+// ═══ HR VIEW — read-only Team Members + Attendance ═══
+let _hrTab="members";let _hrAttDate=null;
+function _hrExcludedNames(){
+  // HR & admin accounts are not field workers — keep them off the lists
+  const users=getUsers();const set=new Set();
+  Object.entries(users).forEach(([k,u])=>{if(u.name&&(u.role==="HR"||k==="admin"))set.add(u.name.toLowerCase())});
+  return set;
+}
+function _hrRoleRank(role){
+  role=role||"Worker";
+  if(role==="Project Lead")return 0;
+  if(role==="Engineer")return 1;
+  if(role==="Supervisor")return 2;
+  if(role.indexOf("Lead")>=0)return 3;
+  return 5;
+}
+function _hrRoleLabel(role){
+  const map={"Worker":t("roleWorker"),"Lead Worker":t("roleLeadWorker"),"Team Lead":t("roleTeamLead"),"Supervisor":t("roleSupervisor"),"Engineer":t("roleEngineer"),"Project Lead":"Project Lead"};
+  return map[role]||role;
+}
+function renderHrView(){
+  const ti=document.getElementById("hrTitle");if(ti)ti.textContent=t("humanResources");
+  const lbl=document.getElementById("hrUserLabel");if(lbl)lbl.textContent=(currentUser?currentUser.name:"")+" · "+t("hrReadOnly");
+  const m=document.getElementById("hrTabMembersLbl");if(m)m.textContent=t("teamMembers");
+  const a=document.getElementById("hrTabAttLbl");if(a)a.textContent=t("attendance");
+  switchHrTab(_hrTab||"members");
+}
+function switchHrTab(tab){
+  _hrTab=tab;
+  const mb=document.getElementById("hrTabMembersBtn"),ab=document.getElementById("hrTabAttBtn");
+  if(mb)mb.classList.toggle("active",tab==="members");
+  if(ab)ab.classList.toggle("active",tab==="attendance");
+  document.getElementById("hrMembersView").style.display=tab==="members"?"block":"none";
+  document.getElementById("hrAttendanceView").style.display=tab==="attendance"?"block":"none";
+  if(tab==="members")renderHrMembers();else renderHrAttendance();
+}
+function renderHrMembers(){
+  const cont=document.getElementById("hrMembersView");if(!cont)return;
+  const users=getUsers();
+  const roleByName={};
+  Object.values(users).forEach(u=>{if(u.name)roleByName[u.name.toLowerCase()]=u.role||"Worker"});
+  const excluded=_hrExcludedNames();
+  const list=getWorkerRoster()
+    .filter(n=>!excluded.has(n.toLowerCase()))
+    .map(n=>({name:n,role:roleByName[n.toLowerCase()]||"Worker"}))
+    .sort((a,b)=>_hrRoleRank(a.role)-_hrRoleRank(b.role)||a.name.localeCompare(b.name));
+  let html='<div class="hr-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0;color:var(--navy);font-size:15px">'+t("teamMembers")+'</h3><span style="font-size:12px;font-weight:700;color:var(--navy);background:var(--blue-bg);padding:3px 10px;border-radius:10px">'+list.length+' '+t("hrTotal")+'</span></div>';
+  if(!list.length)html+='<div class="empty" style="padding:20px;text-align:center;color:var(--grey)">'+t("hrNoMembers")+'</div>';
+  list.forEach((r,i)=>{
+    html+='<div class="hr-row"><span style="font-size:10px;color:var(--grey);width:20px;flex-shrink:0">'+(i+1)+'</span><span class="hr-mem-name">'+escHtml(r.name)+'</span><span class="hr-mem-role">'+escHtml(_hrRoleLabel(r.role))+'</span></div>';
+  });
+  html+='</div>';
+  if(list.length)html+='<div style="text-align:center;margin-top:2px"><button class="btn btn-primary" onclick="downloadHrMembersPDF()" style="padding:11px 22px">📄 '+t("teamMembers")+' PDF</button></div>';
+  cont.innerHTML=html;
+  window._hrMembersSnapshot=list;
+}
+function downloadHrMembersPDF(){
+  const list=window._hrMembersSnapshot;if(!list||!list.length){showToast(t("hrNoMembers"));return}
+  requirePdf(function(){
+    try{
+      const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");
+      const W=215.9,M=14;let y=16;
+      pdf.setFillColor(169,120,10);pdf.rect(0,0,W,26,"F");
+      pdf.setTextColor(255);pdf.setFontSize(15);pdf.setFont(undefined,"bold");
+      pdf.text("ELGAWA GUYANA INC.",W/2,12,{align:"center"});
+      pdf.setFontSize(10);pdf.setFont(undefined,"normal");
+      pdf.text("Team Members — "+getGuyanaDate(),W/2,20,{align:"center"});
+      y=34;
+      pdf.setTextColor(40);pdf.setFontSize(10);pdf.setFont(undefined,"bold");
+      pdf.text("Total: "+list.length,M,y);
+      pdf.autoTable({startY:y+4,margin:{left:M,right:M},
+        head:[["#","Name","Role"]],body:list.map((r,i)=>[String(i+1),r.name,_hrRoleLabel(r.role)]),
+        headStyles:{fillColor:[169,120,10],fontSize:9},bodyStyles:{fontSize:9},theme:"grid",
+        columnStyles:{0:{cellWidth:12},1:{fontStyle:"bold"}}});
+      showPDFPreview(pdf,"ELGAWA_Team_Members_"+getGuyanaDate()+".pdf");
+    }catch(err){console.error("HR members PDF failed:",err);showToast("⚠️ PDF error: "+((err&&err.message)?err.message:"could not generate"));}
+  });
+}
+function renderHrAttendance(){
+  const cont=document.getElementById("hrAttendanceView");if(!cont)return;
+  if(!_hrAttDate)_hrAttDate=getGuyanaDate();
+  const date=_hrAttDate;
+  const d=new Date(date+"T12:00:00");
+  const dayName=d.toLocaleDateString(LANG==="es"?"es":LANG==="nl"?"nl":"en-US",{weekday:"long",month:"short",day:"numeric"});
+  let html='<div class="hr-date-nav"><button class="arw" onclick="_hrAttNav(-1)">◀</button>'
+    +'<div style="text-align:center;flex:1"><div style="font-size:11px;color:var(--grey);font-weight:600">'+dayName+'</div>'
+    +'<input type="date" id="hrAttDateInput" value="'+date+'" onchange="_hrAttSet(this.value)" style="padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:8px;text-align:center;font-weight:600;color:var(--navy)"></div>'
+    +'<button class="arw" onclick="_hrAttNav(1)">▶</button></div>';
+  html+='<div id="hrAttBody"><div class="hr-card"><div style="text-align:center;color:var(--grey);padding:16px">'+t("loadingCloud")+'</div></div></div>';
+  cont.innerHTML=html;
+  const fb=getFirebaseUrl();
+  const done=(data)=>_renderHrAttBody(date,data||{workers:{}});
+  if(fb)cloudLoadAttendance(date).then(cloud=>done(cloud||loadAttendance(date))).catch(()=>done(loadAttendance(date)));
+  else done(loadAttendance(date));
+}
+function _renderHrAttBody(date,data){
+  const body=document.getElementById("hrAttBody");if(!body)return;
+  const workers=data.workers||{};
+  const excluded=_hrExcludedNames();
+  const names=getWorkerRoster().filter(n=>!excluded.has(n.toLowerCase()));
+  Object.keys(workers).forEach(n=>{if(!names.includes(n)&&!workers[n]._removed&&!excluded.has(n.toLowerCase()))names.push(n)});
+  let present=0,absent=0;
+  const rows=names.filter(n=>!(workers[n]&&workers[n]._removed)).map(n=>{
+    const w=workers[n]||{present:false,timeIn:"",timeOut:""};
+    if(w.present)present++;else absent++;
+    return{name:n,present:!!w.present,timeIn:w.timeIn||"",timeOut:w.timeOut||"",shift:w.shift||"day"};
+  });
+  rows.sort((a,b)=>(a.present===b.present?0:(a.present?-1:1))||a.name.localeCompare(b.name));
+  let html='<div class="hr-card"><div style="display:flex;gap:8px;margin-bottom:10px">'
+    +'<div style="flex:1;text-align:center;background:#eaf7ef;border-radius:10px;padding:10px"><div style="font-size:22px;font-weight:800;color:var(--success)">'+present+'</div><div style="font-size:10px;color:var(--grey);font-weight:700">'+t("hrPresent")+'</div></div>'
+    +'<div style="flex:1;text-align:center;background:#fdeeee;border-radius:10px;padding:10px"><div style="font-size:22px;font-weight:800;color:var(--danger)">'+absent+'</div><div style="font-size:10px;color:var(--grey);font-weight:700">'+t("hrAbsent")+'</div></div>'
+    +'<div style="flex:1;text-align:center;background:var(--blue-bg);border-radius:10px;padding:10px"><div style="font-size:22px;font-weight:800;color:var(--navy)">'+rows.length+'</div><div style="font-size:10px;color:var(--grey);font-weight:700">'+t("hrTotal")+'</div></div></div>';
+  if(!rows.length)html+='<div class="empty" style="text-align:center;color:var(--grey);padding:16px">'+t("hrNoAtt")+'</div>';
+  rows.forEach((r,i)=>{
+    const pill=r.present?'<span class="hr-att-pill" style="background:#d4edda;color:#155724">'+t("hrPresent")+(r.shift==="night"?' 🌙':'')+'</span>':'<span class="hr-att-pill" style="background:#f8d7da;color:#721c24">'+t("hrAbsent")+'</span>';
+    const times=r.present?'<span style="font-size:11px;color:var(--grey);white-space:nowrap;margin-right:4px">'+(r.timeIn||'--')+' → '+(r.timeOut||'--')+'</span>':'';
+    html+='<div class="hr-row"><span style="font-size:10px;color:var(--grey);width:20px;flex-shrink:0">'+(i+1)+'</span><span class="hr-mem-name">'+escHtml(r.name)+'</span>'+times+pill+'</div>';
+  });
+  html+='</div><div style="text-align:center;margin-top:6px"><button class="btn btn-primary" onclick="downloadHrAttendancePDF()" style="padding:11px 22px">📄 '+t("downloadAttendancePdf")+'</button></div>';
+  body.innerHTML=html;
+  window._hrAttSnapshot={date:date,rows:rows,present:present,absent:absent};
+}
+function _hrAttNav(dir){
+  const d=new Date((_hrAttDate||getGuyanaDate())+"T12:00:00");d.setDate(d.getDate()+dir);
+  const s=d.toISOString().slice(0,10);
+  if(s>getGuyanaDate())return;
+  _hrAttDate=s;renderHrAttendance();
+}
+function _hrAttSet(v){if(!v)return;_hrAttDate=v;renderHrAttendance();}
+function downloadHrAttendancePDF(){
+  const snap=window._hrAttSnapshot;if(!snap){showToast(t("hrNoAtt"));return}
+  requirePdf(function(){
+    try{
+      const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");
+      const W=215.9,M=14;let y=16;
+      pdf.setFillColor(169,120,10);pdf.rect(0,0,W,26,"F");
+      pdf.setTextColor(255);pdf.setFontSize(15);pdf.setFont(undefined,"bold");
+      pdf.text("ELGAWA GUYANA INC.",W/2,12,{align:"center"});
+      pdf.setFontSize(10);pdf.setFont(undefined,"normal");
+      pdf.text("Attendance Register — "+snap.date,W/2,20,{align:"center"});
+      y=34;
+      pdf.setTextColor(40);pdf.setFontSize(10);pdf.setFont(undefined,"bold");
+      pdf.text("Present: "+snap.present+"    Absent: "+snap.absent+"    Total: "+snap.rows.length,M,y);
+      const bodyRows=snap.rows.map((r,i)=>[String(i+1),r.name,r.present?"Present":"Absent",r.present?(r.timeIn||"--"):"",r.present?(r.timeOut||"--"):"",r.shift==="night"?"Night":"Day"]);
+      pdf.autoTable({startY:y+4,margin:{left:M,right:M},
+        head:[["#","Name","Status","In","Out","Shift"]],body:bodyRows,
+        headStyles:{fillColor:[169,120,10],fontSize:8},bodyStyles:{fontSize:8},theme:"grid",
+        columnStyles:{0:{cellWidth:10},1:{fontStyle:"bold"}},
+        didParseCell:function(dc){if(dc.section==="body"&&dc.column.index===2){dc.cell.styles.textColor=dc.cell.raw==="Present"?[34,160,74]:[220,53,69];}}
+      });
+      showPDFPreview(pdf,"ELGAWA_Attendance_"+snap.date+".pdf");
+    }catch(err){console.error("HR attendance PDF failed:",err);showToast("⚠️ PDF error: "+((err&&err.message)?err.message:"could not generate"));}
   });
 }
 
