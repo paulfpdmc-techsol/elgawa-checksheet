@@ -909,6 +909,12 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
       <div class="admin-users" id="workerRosterList"></div>
       <div class="admin-add">
         <input type="text" id="newWorkerName" placeholder="Worker name" class="full">
+        <select id="newWorkerGroup" class="full" style="font-size:13px">
+          <option value="">ELGAWA Guyana (home)</option>
+          <option value="installation">Installation Crew</option>
+          <option value="ducting">Ducting / Movers</option>
+          <option value="suriname">Suriname ELGAWA</option>
+        </select>
         <button class="btn btn-success full" onclick="addWorkerToRoster()" id="addWorkerBtn"></button>
       </div>
     </div>
@@ -1088,6 +1094,9 @@ function getWorkerRoster(){
   // pay dropdowns, the HR roster, etc. (e.g. Suriname crew who went home).
   const allUsersRaw={...BASE_USERS,...getCustomUsers()};
   getDisabledUsers().forEach(u=>{if(allUsersRaw[u]&&allUsersRaw[u].name)removedSet.add(allUsersRaw[u].name.toLowerCase())});
+  // HR-role accounts review the app — they are NOT field workers, so keep them
+  // out of the roster (and therefore out of attendance, pay dropdowns, etc.).
+  Object.values(allUsersRaw).forEach(u=>{if(u&&u.role==="HR"&&u.name)removedSet.add(u.name.toLowerCase())});
   // Include ALL personnel: base roster + custom workers + login users. Respect removed list for ALL sources.
   const roster=[
     ...BASE_WORKER_ROSTER.filter(n=>!removedSet.has(n.toLowerCase())),
@@ -3010,8 +3019,8 @@ function renderAttendanceReport(date,daySheets){
 function downloadToolReport(date){
   loadSaved();
   const fb=getFirebaseUrl();
-  if(fb){cloudLoadSheets(date).then(cloud=>{_buildToolPDF(date,mergeSheets(savedSheets.filter(s=>s.date===date),cloud))}).catch(()=>{showToast("⚠️ Cloud unavailable, using local data");_buildToolPDF(date,savedSheets.filter(s=>s.date===date))})}
-  else{_buildToolPDF(date,savedSheets.filter(s=>s.date===date))}
+  if(fb){cloudLoadSheets(date).then(cloud=>{const ds=mergeSheets(savedSheets.filter(s=>s.date===date),cloud);safePdf(()=>_buildToolPDF(date,ds))}).catch(()=>{showToast("⚠️ Cloud unavailable, using local data");safePdf(()=>_buildToolPDF(date,savedSheets.filter(s=>s.date===date)))})}
+  else{safePdf(()=>_buildToolPDF(date,savedSheets.filter(s=>s.date===date)))}
 }
 function _buildToolPDF(date,daySheets){
   if(!pdfReady())return;
@@ -3042,8 +3051,8 @@ function _buildToolPDF(date,daySheets){
 function downloadAttendanceReport(date){
   loadSaved();
   const fb=getFirebaseUrl();
-  if(fb){cloudLoadSheets(date).then(cloud=>{_buildAttendancePDF(date,mergeSheets(savedSheets.filter(s=>s.date===date),cloud))}).catch(()=>{showToast("⚠️ Cloud unavailable, using local data");_buildAttendancePDF(date,savedSheets.filter(s=>s.date===date))})}
-  else{_buildAttendancePDF(date,savedSheets.filter(s=>s.date===date))}
+  if(fb){cloudLoadSheets(date).then(cloud=>{const ds=mergeSheets(savedSheets.filter(s=>s.date===date),cloud);safePdf(()=>_buildAttendancePDF(date,ds))}).catch(()=>{showToast("⚠️ Cloud unavailable, using local data");safePdf(()=>_buildAttendancePDF(date,savedSheets.filter(s=>s.date===date)))})}
+  else{safePdf(()=>_buildAttendancePDF(date,savedSheets.filter(s=>s.date===date)))}
 }
 function _buildAttendancePDF(date,daySheets){
   if(!pdfReady())return;
@@ -3297,7 +3306,7 @@ function downloadMonthlyPDF(monthVal){
   getMonthSheets(monthVal).then(allSheets=>{
     const ld=document.getElementById("monthlyLoading");if(ld)ld.remove();
     if(!allSheets.length){showToast(t("noDataMonth"));return}
-    _buildMonthlyPDF(monthVal,allSheets);
+    safePdf(()=>_buildMonthlyPDF(monthVal,allSheets));
   }).catch(()=>{
     const ld=document.getElementById("monthlyLoading");if(ld)ld.remove();
     showToast(t("errorLoadingData"));
@@ -5093,10 +5102,18 @@ function downloadReport(date){
   // something — opening the preview where Save/Share live.
   showToast("⏳ Building report for "+date+"…");
   const go=(cloudSheets)=>{
-    const pdf=buildReportPDF(date,cloudSheets||[]);
-    if(pdf){showPDFPreview(pdf,`ELGAWA_Daily_Report_${date}.pdf`)}
-    else if(window.jspdf&&window.jspdf.jsPDF){showToast("No checksheets found for "+date)}
-    // (if the PDF engine is missing, pdfReady already explained it)
+    // Ensure the PDF engine (jsPDF + autotable) is actually loaded, THEN build
+    // inside try/catch so it can't hang silently on "Building report…".
+    requirePdf(function(){
+      try{
+        const pdf=buildReportPDF(date,cloudSheets||[]);
+        if(pdf){showPDFPreview(pdf,`ELGAWA_Daily_Report_${date}.pdf`)}
+        else{showToast("No checksheets found for "+date)}
+      }catch(err){
+        console.error("Daily report PDF failed:",err);
+        showToast("⚠️ PDF error: "+((err&&err.message)?err.message:"could not build report"));
+      }
+    });
   };
   if(getFirebaseUrl()){cloudLoadSheets(date).then(go).catch(()=>go([]))}
   else go([]);
@@ -7734,9 +7751,16 @@ function pdfReady(){
   showToast("⏳ PDF engine loading — tap again in a few seconds");
   return false;
 }
+// Shared error reporter so a PDF builder can never fail silently.
+function _pdfErr(err){console.error("PDF build failed:",err);showToast("⚠️ PDF error: "+((err&&err.message)?err.message:"could not generate"));}
+// Run buildFn once the engine is guaranteed loaded, inside try/catch. Use this
+// to wrap any PDF builder so it self-heals (loads engine) and surfaces errors.
+function safePdf(buildFn){requirePdf(function(){try{buildFn()}catch(err){_pdfErr(err)}})}
 function generatePDF(data,mode){
   if(!data||!data.teamKey){showToast("⚠️ Cannot generate PDF — report data missing");return}
-  if(!window.jspdf||!window.jspdf.jsPDF){requirePdf(function(){generatePDF(data,mode)});return}
+  // Need jsPDF + autotable both loaded; self-heal then retry if not.
+  if(!_jspdfReady()||!_autotableReady()){requirePdf(function(){generatePDF(data,mode)});return}
+  try{
   const tm=TEAMS[data.teamKey];
   const fn=`Checksheet_${tm.name.replace(/\s/g,"_")}_${data.date||"undated"}.pdf`;
   const pdf=buildPDFDoc(data);
@@ -7747,6 +7771,7 @@ function generatePDF(data,mode){
   }else if(mode==="preview"){
     showPDFPreview(pdf,fn);
   }else{pdf.save(fn)}
+  }catch(err){_pdfErr(err)}
 }
 
 // Universal PDF preview modal
@@ -8137,9 +8162,17 @@ function addWorkerToRoster(){
   custom.push(name);
   saveCustomWorkers(custom);
   saveRemovedWorkers(getRemovedWorkers().filter(n=>n.toLowerCase()!==name.toLowerCase())); // un-tombstone on re-add
+  // Assign to the chosen crew at registration (blank = ELGAWA Guyana home / no pay group).
+  const grpSel=document.getElementById("newWorkerGroup");
+  const grp=grpSel?grpSel.value:"";
+  if(grp){
+    const rates={installation:7000,ducting:7000,suriname:7000};
+    const payR=getPayRoster();payR[name]={group:grp,rate:rates[grp]||7000};savePayRosterData(payR);
+  }
   if(typeof cloudSaveUsers==="function")cloudSaveUsers();
-  inp.value="";
+  inp.value="";if(grpSel)grpSel.value="";
   renderWorkerRoster();
+  if(typeof renderPayRoster==="function")renderPayRoster();
   showToast(t("workerAdded"));
 }
 function removeWorker(name){
@@ -8187,9 +8220,9 @@ function editWorkerName(oldName){
 function editWorkerGroup(name){
   const payR=getPayRoster();
   const current=payR[name]?payR[name].group:"unassigned";
-  const groups=[{id:"installation",label:"Installation Crew",rate:7000},{id:"ducting",label:"Ducting / Movers",rate:7000},{id:"suriname",label:"Suriname ELGAWA",rate:7000},{id:"guyana",label:"ELGAWA Guyana Team",rate:7000}];
+  const groups=[{id:"installation",label:"Installation Crew",rate:7000},{id:"ducting",label:"Ducting / Movers",rate:7000},{id:"suriname",label:"Suriname ELGAWA",rate:7000}];
   let optHtml=groups.map(g=>'<option value="'+g.id+'" '+(current===g.id?'selected':'')+'>'+g.label+' ($'+g.rate.toLocaleString()+'/day)</option>').join("");
-  optHtml+='<option value="_remove" '+(current==="unassigned"?"selected":"")+'>Unassigned (remove from pay roster)</option>';
+  optHtml+='<option value="_remove" '+((current==="unassigned"||current==="guyana")?"selected":"")+'>ELGAWA Guyana (home — no crew)</option>';
   showModal("Change Group — "+name,'<select id="_editWGroup" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px">'+optHtml+'</select>',function(){
     const sel=document.getElementById("_editWGroup").value;
     if(sel==="_remove"){delete payR[name]}
@@ -9122,7 +9155,7 @@ function renderWeeklyRegister(refDate){
 
 function generateWeeklyAttPDF(){
   const d=window._weekAttData;if(!d){showToast("⏳ Loading attendance data... please wait and try again");renderWeeklyRegister(document.getElementById("attDate").value||getGuyanaDate());return}
-  if(!pdfReady())return;
+  if(!_jspdfReady()||!_autotableReady()){requirePdf(generateWeeklyAttPDF);return}
   try{
   const{jsPDF}=window.jspdf;
   const pdf=new jsPDF("l","mm","a4");
@@ -9227,6 +9260,9 @@ try{const u=localStorage.getItem("elg_user");if(u){currentUser=JSON.parse(u);
   },100);
 }}catch(e){}
 setTimeout(()=>{document.getElementById("splash").classList.add("hide");setTimeout(()=>document.getElementById("splash").style.display="none",500)},1200);
+// Warm up the PDF engine in the background so every PDF button is ready the
+// first time it's tapped (loads instantly from the service-worker cache).
+setTimeout(()=>{try{if(typeof requirePdf==="function"&&!(_jspdfReady()&&_autotableReady()))requirePdf(function(){})}catch(e){}},2500);
 if("serviceWorker" in navigator){
   navigator.serviceWorker.register("./sw.js").then(reg=>{
     reg.addEventListener("updatefound",()=>{
@@ -9618,7 +9654,7 @@ function savePayRoster(){showToast("✅ Payment roster saved")}
 // PDF Download
 function downloadPayPDF(){
   const d=window._paySheetData;if(!d)return;
-  if(!pdfReady())return;
+  if(!_jspdfReady()||!_autotableReady()){requirePdf(downloadPayPDF);return}
   const{jsPDF}=window.jspdf;const pdf=new jsPDF("l","mm","a4");const M=14;let y=20;
   pdf.setFontSize(16);pdf.setTextColor(15,110,86);pdf.text("ELGAWA Guyana Inc. — Weekly Payment Sheet",M,y);y+=6;
   pdf.setFontSize(10);pdf.setTextColor(100);pdf.text(d.range,M,y);y+=10;
@@ -10764,21 +10800,30 @@ function renderHrAttendance(){
   html+='<div id="hrAttBody"><div class="hr-card"><div style="text-align:center;color:var(--grey);padding:16px">'+t("loadingCloud")+'</div></div></div>';
   cont.innerHTML=html;
   const fb=getFirebaseUrl();
-  const done=(data)=>_renderHrAttBody(date,data||{workers:{}});
-  if(fb)cloudLoadAttendance(date).then(cloud=>done(cloud||loadAttendance(date))).catch(()=>done(loadAttendance(date)));
-  else done(loadAttendance(date));
+  // Pull BOTH the attendance register AND the payment-entry data for the day,
+  // then merge — so HR sees the full register no matter where it was captured.
+  const attP=fb?cloudLoadAttendance(date).then(c=>c||loadAttendance(date)).catch(()=>loadAttendance(date)):Promise.resolve(loadAttendance(date));
+  let payP;try{payP=Promise.resolve(loadPayDayData(getISOWeek(date),date)).catch(()=>null)}catch(e){payP=Promise.resolve(null)}
+  Promise.all([attP,payP])
+    .then(([att,pay])=>_renderHrAttBody(date,att||{workers:{}},pay||{}))
+    .catch(()=>_renderHrAttBody(date,{workers:{}},{}));
 }
-function _renderHrAttBody(date,data){
+function _renderHrAttBody(date,data,payData){
   const body=document.getElementById("hrAttBody");if(!body)return;
   const workers=data.workers||{};
+  payData=payData||{};
   const excluded=_hrExcludedNames();
   const names=getWorkerRoster().filter(n=>!excluded.has(n.toLowerCase()));
   Object.keys(workers).forEach(n=>{if(!names.includes(n)&&!workers[n]._removed&&!excluded.has(n.toLowerCase()))names.push(n)});
   let present=0,absent=0;
   const rows=names.filter(n=>!(workers[n]&&workers[n]._removed)).map(n=>{
     const w=workers[n]||{present:false,timeIn:"",timeOut:""};
-    if(w.present)present++;else absent++;
-    return{name:n,present:!!w.present,timeIn:w.timeIn||"",timeOut:w.timeOut||"",shift:w.shift||"day"};
+    // Present if marked in the attendance register OR given shifts in payment entry.
+    const payShifts=payData[n];
+    const viaPay=(!w.present&&typeof payShifts==="number"&&payShifts>0);
+    const isPresent=!!w.present||viaPay;
+    if(isPresent)present++;else absent++;
+    return{name:n,present:isPresent,timeIn:w.timeIn||"",timeOut:w.timeOut||"",shift:w.shift||"day",viaPay:viaPay};
   });
   rows.sort((a,b)=>(a.present===b.present?0:(a.present?-1:1))||a.name.localeCompare(b.name));
   let html='<div class="hr-card"><div style="display:flex;gap:8px;margin-bottom:10px">'
@@ -10788,7 +10833,7 @@ function _renderHrAttBody(date,data){
   if(!rows.length)html+='<div class="empty" style="text-align:center;color:var(--grey);padding:16px">'+t("hrNoAtt")+'</div>';
   rows.forEach((r,i)=>{
     const pill=r.present?'<span class="hr-att-pill" style="background:#d4edda;color:#155724">'+t("hrPresent")+(r.shift==="night"?' 🌙':'')+'</span>':'<span class="hr-att-pill" style="background:#f8d7da;color:#721c24">'+t("hrAbsent")+'</span>';
-    const times=r.present?'<span style="font-size:11px;color:var(--grey);white-space:nowrap;margin-right:4px">'+(r.timeIn||'--')+' → '+(r.timeOut||'--')+'</span>':'';
+    const times=r.present?(r.viaPay?'<span style="font-size:10px;color:var(--grey);white-space:nowrap;margin-right:4px;font-style:italic">via pay</span>':'<span style="font-size:11px;color:var(--grey);white-space:nowrap;margin-right:4px">'+(r.timeIn||'--')+' → '+(r.timeOut||'--')+'</span>'):'';
     html+='<div class="hr-row"><span style="font-size:10px;color:var(--grey);width:20px;flex-shrink:0">'+(i+1)+'</span><span class="hr-mem-name">'+escHtml(r.name)+'</span>'+times+pill+'</div>';
   });
   html+='</div><div style="text-align:center;margin-top:6px"><button class="btn btn-primary" onclick="downloadHrAttendancePDF()" style="padding:11px 22px">📄 '+t("downloadAttendancePdf")+'</button></div>';
