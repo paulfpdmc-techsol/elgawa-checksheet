@@ -644,6 +644,9 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
   </div>
   <div id="fbHealthBanner" class="fb-expiry-warn"></div>
   <div id="tabForms">
+    <button onclick="openMyAttendance()" id="myAttendanceBtn" style="width:100%;margin-bottom:10px;padding:12px;border:none;border-radius:12px;background:var(--teal);color:white;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(11,93,71,.25)">🕐 My Sign In / Sign Out</button>
+    <button onclick="openMyProfile()" id="myProfileDashBtn" style="width:100%;margin-bottom:10px;padding:11px;border:1.5px solid var(--navy);border-radius:12px;background:white;color:var(--navy);font-size:14px;font-weight:700;cursor:pointer">👤 My Profile</button>
+    <button onclick="openWorkerProfiles()" id="workforceProfilesBtn" style="display:none;width:100%;margin-bottom:10px;padding:11px;border:none;border-radius:12px;background:var(--navy);color:white;font-size:14px;font-weight:700;cursor:pointer">👥 Workforce Profiles</button>
     <div class="settings-row" id="settingsRow">
     <button class="pill-btn" onclick="exportCSV()" id="exportBtn" style="display:none">📊 Export CSV</button></div>
     <div class="view-toggle-row" id="viewToggleRow">
@@ -832,6 +835,9 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
   <div id="hubPersonnelView" style="display:none"></div>
 </div>
 <div id="workerSignInView" class="hidden" style="max-width:500px;margin:0 auto;padding:16px">
+  <div id="workerBackRow" style="display:none;margin-bottom:10px">
+    <button class="btn-s" onclick="closeMyAttendance()" style="font-size:13px;padding:8px 16px;border:1.5px solid var(--border);background:white;color:var(--navy);border-radius:8px;cursor:pointer;font-weight:600">◀ Back to Dashboard</button>
+  </div>
   <div style="text-align:center;margin-bottom:16px">
     <div style="font-size:48px;margin-bottom:8px">🏗️</div>
     <h2 style="color:var(--navy);margin:0" id="workerGreeting">Good Morning</h2>
@@ -843,6 +849,17 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
     <h3 style="color:var(--navy);font-size:14px;margin-bottom:12px" id="workerHistoryLabel">📋 My Recent History</h3>
     <div id="workerHistory" style="font-size:12px"></div>
   </div>
+  <button onclick="openMyProfile()" style="width:100%;margin-top:14px;padding:12px;border:none;border-radius:12px;background:var(--navy);color:white;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(11,93,71,.2)">👤 My Profile</button>
+</div>
+<!-- My Profile — self-serve worker/staff information form (pending admin approval) -->
+<div id="myProfileView" class="hidden" style="max-width:520px;margin:0 auto;padding:16px">
+  <div style="margin-bottom:10px"><button class="btn-s" onclick="closeMyProfile()" style="font-size:13px;padding:8px 16px;border:1.5px solid var(--border);background:white;color:var(--navy);border-radius:8px;cursor:pointer;font-weight:600">◀ Back</button></div>
+  <div id="myProfileBody"></div>
+</div>
+<!-- Workforce Profiles — HR/admin roster of everyone with photos, grouped by team -->
+<div id="workerProfilesView" class="hidden" style="max-width:680px;margin:0 auto;padding:16px;padding-bottom:40px">
+  <div style="margin-bottom:10px"><button class="btn-s" onclick="closeWorkerProfiles()" style="font-size:13px;padding:8px 16px;border:1.5px solid var(--border);background:white;color:var(--navy);border-radius:8px;cursor:pointer;font-weight:600">◀ Back</button></div>
+  <div id="workerProfilesBody"></div>
 </div>
 <!-- HR view — read-only Team Members + Attendance (role "HR") -->
 <div id="hrView" class="hidden" style="max-width:640px;margin:0 auto;padding:16px;padding-bottom:40px">
@@ -854,6 +871,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
   <div style="display:flex;gap:6px;margin-bottom:14px">
     <button class="hr-tab active" id="hrTabMembersBtn" onclick="switchHrTab('members')">👥 <span id="hrTabMembersLbl">Team Members</span></button>
     <button class="hr-tab" id="hrTabAttBtn" onclick="switchHrTab('attendance')">📋 <span id="hrTabAttLbl">Attendance</span></button>
+    <button class="hr-tab" id="hrTabProfBtn" onclick="openWorkerProfiles()">👤 <span>Profiles</span></button>
   </div>
   <div id="hrMembersView"></div>
   <div id="hrAttendanceView" style="display:none"></div>
@@ -2380,6 +2398,10 @@ function showDash(){
   const ib=document.querySelector(".install-banner span");
   if(ib)ib.textContent=t("installApp");
 
+  // Workforce Profiles roster button — admin only (holds addresses/IDs)
+  const wpBtn=document.getElementById("workforceProfilesBtn");
+  if(wpBtn)wpBtn.style.display=(currentUser&&currentUser.username==="admin")?"block":"none";
+
   // ═══ WORKER ROLE DETECTION ═══
   const wsv=document.getElementById("workerSignInView");
   if(currentUser&&currentUser.role==="Worker"){
@@ -2725,6 +2747,24 @@ function renderReportData(date,daySheets){
       <div class="stat-box"><div class="num">${totalHrs.toFixed(1)}</div><div class="lbl">${t("totalHours")}</div></div>
       <div class="stat-box"><div class="num">${avgHrsPerMan}</div><div class="lbl">${t("avgHrsPerson")}</div></div>
       <div class="stat-box"><div class="num">${totalOT.toFixed(1)}</div><div class="lbl">${t("overtimeHrs")}</div></div>
+    </div></div>`;
+
+  // Technical Solutions KPIs (auto-computed from existing checksheet data)
+  const _qOK=daySheets.flatMap(s=>(s.checkItems||[]).filter(c=>c.status==="done")).length;
+  const _qFail=daySheets.flatMap(s=>(s.checkItems||[]).filter(c=>c.status==="notdone")).length;
+  const _qTot=_qOK+_qFail;
+  const _ftp=_qTot?Math.round(_qOK/_qTot*100):null;
+  const _reworkCount=allWork.filter(w=>/rework/i.test((w.task||"")+" "+(w.area||""))).length
+    +allIssues.filter(i=>/rework|call.?back/i.test(i.issue||"")).length;
+  const _reworkPct=tasksTotal?Math.round(_reworkCount/tasksTotal*100):0;
+  const _cP=_ftp==null?"var(--grey)":(_ftp>=90?"var(--success)":(_ftp>=80?"var(--warn)":"var(--danger)"));
+  const _cR=_reworkPct<=5?"var(--success)":(_reworkPct<=10?"var(--warn)":"var(--danger)");
+  const _cA=completionRate>=90?"var(--success)":(completionRate>=75?"var(--warn)":"var(--danger)");
+  html+=`<div class="rpt-card"><h3>Technical Solutions KPIs</h3>
+    <div class="rpt-stat">
+      <div class="stat-box"><div class="num" style="color:${_cP}">${_ftp==null?"—":_ftp+"%"}</div><div class="lbl">First-Time Pass<br><span style="font-size:9px;color:var(--grey)">Target 90%</span></div></div>
+      <div class="stat-box"><div class="num" style="color:${_cR}">${_reworkPct}%</div><div class="lbl">Rework / Callback<br><span style="font-size:9px;color:var(--grey)">Target &le;5%</span></div></div>
+      <div class="stat-box"><div class="num" style="color:${_cA}">${completionRate}%</div><div class="lbl">Schedule Adherence<br><span style="font-size:9px;color:var(--grey)">Target 90%</span></div></div>
     </div></div>`;
 
   html+=`<div class="rpt-card"><h3>${t("taskAnalysis")}</h3>
@@ -3860,7 +3900,7 @@ function renderWeeklyAnalysis(monday){
     html+=_renderTeamCards(analyses,agg);
     html+=_renderBlockerSection(agg);
     html+=_renderNarrative(agg,`${monday} - ${sundayStr}`,"weekly");
-    html+=`<div style="text-align:center;margin:12px 0"><button class="btn btn-primary" onclick="downloadAnalysisPDF('weekly','${monday}')" style="padding:10px 24px">📄 Preview PDF</button></div>`;
+    html+=`<div style="text-align:center;margin:12px 0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" onclick="downloadAnalysisPDF('weekly','${monday}')" style="padding:10px 24px">📄 Preview PDF</button><button class="btn btn-outline" onclick="exportKpiExcel('${monday}')" style="padding:10px 24px">⬇️ KPI to Excel</button></div>`;
     res.innerHTML=html;
   });
 }
@@ -4687,6 +4727,37 @@ function buildReportPDF(date,extraSheets){
     ],
     headStyles:{fillColor:nv,fontSize:8},bodyStyles:{fontSize:8},theme:"grid",
     columnStyles:{0:{fontStyle:"bold",cellWidth:40},2:{fontStyle:"bold",cellWidth:40}}
+  });
+  y=pdf.lastAutoTable.finalY+6;
+
+  // Technical Solutions KPIs (auto-computed, same as on-screen panel)
+  const _kQOK=daySheets.flatMap(s=>(s.checkItems||[]).filter(c=>c.status==="done")).length;
+  const _kQFail=daySheets.flatMap(s=>(s.checkItems||[]).filter(c=>c.status==="notdone")).length;
+  const _kQTot=_kQOK+_kQFail;const _kFtp=_kQTot?Math.round(_kQOK/_kQTot*100):null;
+  const _kIss=daySheets.flatMap(s=>(s.issueRows||[]).filter(r=>r.issue));
+  const _kRwk=allWork.filter(w=>/rework/i.test((w.task||"")+" "+(w.area||""))).length
+    +_kIss.filter(i=>/rework|call.?back/i.test(i.issue||"")).length;
+  const _kRPct=tasksTotal?Math.round(_kRwk/tasksTotal*100):0;
+  const _kSt=(ok,warn)=>ok?"PASS":(warn?"WATCH":"MISS");
+  const _kpiBody=[
+    ["First-Time Pass",_kFtp==null?"—":_kFtp+"%","90%",_kFtp==null?"—":_kSt(_kFtp>=90,_kFtp>=80)],
+    ["Rework / Callback",_kRPct+"%","<=5%",_kSt(_kRPct<=5,_kRPct<=10)],
+    ["Schedule Adherence",completionRate+"%","90%",_kSt(completionRate>=90,completionRate>=75)]
+  ];
+  pdf.setFontSize(11);pdf.setTextColor(...nv);pdf.setFont(undefined,"bold");
+  pdf.text("Technical Solutions KPIs",M,y);y+=2;
+  pdf.autoTable({startY:y,margin:{left:M,right:M},
+    head:[["KPI","Result","Target","Status"]],body:_kpiBody,
+    headStyles:{fillColor:nv,fontSize:8},bodyStyles:{fontSize:8},theme:"grid",
+    columnStyles:{0:{fontStyle:"bold",cellWidth:55},3:{fontStyle:"bold"}},
+    didParseCell:function(d){
+      if(d.section==="body"&&d.column.index===3){
+        const v=d.cell.raw;
+        if(v==="PASS")d.cell.styles.textColor=[30,140,80];
+        else if(v==="WATCH")d.cell.styles.textColor=[200,140,0];
+        else if(v==="MISS")d.cell.styles.textColor=[200,50,50];
+      }
+    }
   });
   y=pdf.lastAutoTable.finalY+6;
 
@@ -7735,6 +7806,60 @@ function _autotableReady(){
   try{return !!(window.jspdf&&window.jspdf.jsPDF&&window.jspdf.jsPDF.API&&typeof window.jspdf.jsPDF.API.autoTable==="function")}catch(e){return false}
 }
 function _loadScript(src){return new Promise(function(res,rej){const sc=document.createElement("script");sc.src=src;sc.onload=function(){res()};sc.onerror=function(){rej(new Error("load failed: "+src))};document.head.appendChild(sc)})}
+function _xlsxReady(){return typeof XLSX!=="undefined"}
+function requireXlsx(cb){
+  if(_xlsxReady()){cb();return}
+  showToast("⏳ Loading Excel engine…");
+  _loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js")
+    .then(function(){_xlsxReady()?cb():showToast("⚠️ No internet — Excel engine couldn't load. Connect and try again.")})
+    .catch(function(){showToast("⚠️ No internet — Excel engine couldn't load. Connect and try again.")});
+}
+// Build a weekly Technical Solutions KPI workbook (one row per day + week average)
+// straight from the same data the Hub analysis uses, then download it.
+function exportKpiExcel(monday){
+  const sun=new Date(monday+"T12:00:00");sun.setDate(sun.getDate()+6);
+  const sundayStr=sun.toISOString().split("T")[0];
+  showToast("⏳ Building KPI Excel…");
+  _loadAndAnalyze(monday,sundayStr,function(analyses){
+    if(!analyses.length){showToast("No data for "+monday+" → "+sundayStr);return}
+    requireXlsx(function(){
+      try{
+        const byDate={};analyses.forEach(function(a){(byDate[a.date]=byDate[a.date]||[]).push(a)});
+        const rows=[["ELGAWA Technical Solutions — Weekly KPIs"],
+          ["Week",monday+" to "+sundayStr],
+          ["Targets","First-Time Pass 90% | Rework/Callback ≤5% | Schedule Adherence 90% | High Risks Open 0"],
+          [],
+          ["Date","Sheets","First-Time Pass %","Rework / Callback %","Schedule Adherence %","High Risks Open"]];
+        const d=new Date(monday+"T12:00:00");
+        let sF=0,sR=0,sA=0,nDays=0,totHigh=0;
+        for(let i=0;i<7;i++){
+          const ds=d.toISOString().split("T")[0];
+          const da=byDate[ds]||[];
+          if(da.length){
+            const ag=aggregateAnalyses(da);
+            const tasks=da.flatMap(function(a){return a.work.tasks||[]});
+            const rwk=tasks.filter(function(x){return /rework/i.test((x.task||"")+" "+(x.area||""))}).length
+              +(ag.issues.all||[]).filter(function(x){return /rework|call.?back/i.test(x.issue||"")}).length;
+            const rPct=tasks.length?Math.round(rwk/tasks.length*100):0;
+            rows.push([ds,ag.totalSheets,ag.quality.avg,rPct,ag.work.comp,ag.issues.high]);
+            sF+=ag.quality.avg;sR+=rPct;sA+=ag.work.comp;totHigh+=ag.issues.high;nDays++;
+          }else{
+            rows.push([ds,0,"","","",""]);
+          }
+          d.setDate(d.getDate()+1);
+        }
+        rows.push([]);
+        rows.push(["WEEK AVERAGE","",nDays?Math.round(sF/nDays):"",nDays?Math.round(sR/nDays):"",nDays?Math.round(sA/nDays):"",totHigh]);
+        const ws=XLSX.utils.aoa_to_sheet(rows);
+        ws["!cols"]=[{wch:12},{wch:8},{wch:18},{wch:20},{wch:22},{wch:16}];
+        const wb=XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb,ws,"TS Weekly KPIs");
+        XLSX.writeFile(wb,"ELGAWA_TS_KPIs_"+monday+".xlsx");
+        showToast("✅ KPI Excel downloaded");
+      }catch(err){console.error("KPI Excel failed:",err);showToast("⚠️ Excel error: "+((err&&err.message)?err.message:"could not build"));}
+    });
+  });
+}
 function requirePdf(cb){
   if(_jspdfReady()&&_autotableReady()){cb();return}
   showToast("⏳ Loading PDF engine…");
@@ -10758,7 +10883,9 @@ function renderHrMembers(){
   let html='<div class="hr-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0;color:var(--navy);font-size:15px">'+t("teamMembers")+'</h3><span style="font-size:12px;font-weight:700;color:var(--navy);background:var(--blue-bg);padding:3px 10px;border-radius:10px">'+list.length+' '+t("hrTotal")+'</span></div>';
   if(!list.length)html+='<div class="empty" style="padding:20px;text-align:center;color:var(--grey)">'+t("hrNoMembers")+'</div>';
   list.forEach((r,i)=>{
-    html+='<div class="hr-row"><span style="font-size:10px;color:var(--grey);width:20px;flex-shrink:0">'+(i+1)+'</span><span class="hr-mem-name">'+escHtml(r.name)+'</span><span class="hr-mem-role">'+escHtml(_hrRoleLabel(r.role))+'</span></div>';
+    const _team=getPersonTeam(r.name);
+    const _teamTag=_team?'<span style="font-size:9px;color:var(--navy);background:var(--blue-bg);padding:1px 7px;border-radius:8px;margin-left:4px">'+escHtml(_team)+'</span>':'';
+    html+='<div class="hr-row"><span style="font-size:10px;color:var(--grey);width:20px;flex-shrink:0">'+(i+1)+'</span><span class="hr-mem-name">'+escHtml(r.name)+_teamTag+'</span><span class="hr-mem-role">'+escHtml(_hrRoleLabel(r.role))+'</span></div>';
   });
   html+='</div>';
   if(list.length)html+='<div style="text-align:center;margin-top:2px"><button class="btn btn-primary" onclick="downloadHrMembersPDF()" style="padding:11px 22px">📄 '+t("teamMembers")+' PDF</button></div>';
@@ -10874,6 +11001,310 @@ function downloadHrAttendancePDF(){
 }
 
 // ═══ WORKER SIGN-IN VIEW ═══
+// ═══════════════════════════════════════════════════════
+// WORKER PROFILES — self-serve info page (pending admin approval) + HR roster
+// ═══════════════════════════════════════════════════════
+const TRADES=["HVAC Technician","Pipefitter / Brazer","Sheet Metal / Duct","Electrical","Helper / Labourer","Supervisor","Engineer","Driver / Logistics"];
+const BLOOD_TYPES=["A+","A-","B+","B-","AB+","AB-","O+","O-","Unknown"];
+
+function getPersonTeam(name){
+  if(!name)return"";
+  try{const r=getPayRoster();const e=r[name];if(e&&e.group&&PAY_GROUPS[e.group])return PAY_GROUPS[e.group].label;}catch(e){}
+  return"";
+}
+function calcAge(dob){
+  if(!dob)return"";
+  const d=new Date(dob+"T12:00:00");if(isNaN(d))return"";
+  const now=getGuyanaTimeNow();let a=now.getFullYear()-d.getFullYear();
+  const m=now.getMonth()-d.getMonth();if(m<0||(m===0&&now.getDate()<d.getDate()))a--;
+  return a>=0&&a<120?a:"";
+}
+function saveWorkerProfile(username,data){
+  try{localStorage.setItem("elg_profile_"+username,JSON.stringify(data))}catch(e){}
+  const fb=getFirebaseUrl();
+  if(fb)fetch(fb+"/workerProfiles/"+username+".json",{method:"PUT",body:JSON.stringify(data)}).catch(()=>{});
+}
+function loadWorkerProfile(username){
+  return new Promise(resolve=>{
+    const fb=getFirebaseUrl();
+    if(fb){
+      fetch(fb+"/workerProfiles/"+username+".json").then(fbJson).then(d=>{
+        if(d){try{localStorage.setItem("elg_profile_"+username,JSON.stringify(d))}catch(e){}}
+        resolve(d||null);
+      }).catch(()=>{try{const l=localStorage.getItem("elg_profile_"+username);resolve(l?JSON.parse(l):null)}catch(e){resolve(null)}});
+    }else{try{const l=localStorage.getItem("elg_profile_"+username);resolve(l?JSON.parse(l):null)}catch(e){resolve(null)}}
+  });
+}
+function loadAllProfiles(){
+  return new Promise(resolve=>{
+    const fb=getFirebaseUrl();
+    if(fb)fetch(fb+"/workerProfiles.json").then(fbJson).then(d=>resolve(d||{})).catch(()=>resolve({}));
+    else resolve({});
+  });
+}
+// Compress a selected photo to a small square-ish jpeg for Firebase storage.
+function _compressProfilePhoto(file,cb){
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const img=new Image();
+    img.onload=function(){
+      const canvas=document.createElement("canvas");
+      const maxW=400;let w=img.width,h=img.height;
+      if(w>maxW){h=Math.round(h*(maxW/w));w=maxW}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      cb(canvas.toDataURL("image/jpeg",0.6));
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+let _myProfilePhoto="";
+// _profileTarget tells the form whose profile is being edited. self=true means
+// the logged-in user editing their own (saves pending). Admin editing someone
+// else sets self=false and the save is auto-approved (admin is the approver).
+let _profileTarget=null;
+function openMyProfile(){
+  if(!currentUser)return;
+  _profileTarget={key:currentUser.username,name:currentUser.name,role:currentUser.role||"Worker",self:true};
+  ["dashView","workerSignInView","workerProfilesView"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add("hidden")});
+  const bn=document.getElementById("bottomNav");if(bn)bn.classList.add("hidden");
+  const v=document.getElementById("myProfileView");if(v)v.classList.remove("hidden");
+  window.scrollTo(0,0);
+  renderMyProfile();
+}
+// Admin opens any person's profile to fill/correct it for them.
+function adminEditProfile(key,name,role){
+  _profileTarget={key:key,name:name,role:role||"Worker",self:false};
+  ["dashView","workerProfilesView"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add("hidden")});
+  const bn=document.getElementById("bottomNav");if(bn)bn.classList.add("hidden");
+  const v=document.getElementById("myProfileView");if(v)v.classList.remove("hidden");
+  window.scrollTo(0,0);
+  renderMyProfile();
+}
+function closeMyProfile(){
+  const v=document.getElementById("myProfileView");if(v)v.classList.add("hidden");
+  // Admin editing someone else returns to the Workforce Profiles list.
+  if(_profileTarget&&!_profileTarget.self){_profileTarget=null;const wp=document.getElementById("workerProfilesView");if(wp){wp.classList.remove("hidden");renderWorkerProfiles();}return;}
+  _profileTarget=null;
+  if(currentUser&&currentUser.role==="Worker"){const w=document.getElementById("workerSignInView");if(w){w.classList.remove("hidden");renderWorkerSignIn();}return;}
+  const bn=document.getElementById("bottomNav");if(bn)bn.classList.remove("hidden");
+  const dv=document.getElementById("dashView");if(dv)dv.classList.remove("hidden");
+}
+function renderMyProfile(){
+  const body=document.getElementById("myProfileBody");if(!body)return;
+  if(!_profileTarget)_profileTarget={key:currentUser.username,name:currentUser.name,role:currentUser.role||"Worker",self:true};
+  const tgt=_profileTarget;
+  const username=tgt.key;
+  body.innerHTML='<div style="text-align:center;color:var(--grey);padding:20px">Loading…</div>';
+  loadWorkerProfile(username).then(p=>{
+    p=p||{};_myProfilePhoto=p.photo||"";
+    const team=getPersonTeam(tgt.name)||p.team||"";
+    const opt=(arr,sel)=>arr.map(o=>'<option'+(o===sel?' selected':'')+'>'+o+'</option>').join("");
+    const fld=(lbl,id,val,type)=>'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:3px">'+lbl+'</label><input id="'+id+'" type="'+(type||"text")+'" value="'+(val?String(val).replace(/"/g,"&quot;"):"")+'" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px"></div>';
+    const status=p.approved?'<span style="background:var(--teal);color:white;font-size:11px;padding:3px 10px;border-radius:10px">✅ Approved</span>':(p.savedAt?'<span style="background:#f59e0b;color:white;font-size:11px;padding:3px 10px;border-radius:10px">⏳ Pending approval</span>':'');
+    body.innerHTML=''
+      +'<div style="text-align:center;margin-bottom:14px"><h2 style="color:var(--navy);margin:0">'+(tgt.self?'👤 My Profile':'✏️ Edit Profile')+'</h2><p style="color:var(--grey);font-size:13px;margin:4px 0">'+escHtml(tgt.name)+' &nbsp; '+status+'</p></div>'
+      +'<div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:16px">'
+      +'<div style="text-align:center;margin-bottom:14px">'
+      +'<div id="ppPreview" style="width:110px;height:110px;border-radius:50%;margin:0 auto 8px;background:#eef2f5 center/cover no-repeat;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:34px;color:#bbb"'+(_myProfilePhoto?' style2':'')+'>'+(_myProfilePhoto?'':'📷')+'</div>'
+      +'<label style="font-size:12px;color:var(--navy);font-weight:600;cursor:pointer"><input type="file" accept="image/*" onchange="_onProfilePhoto(this)" style="display:none">📷 Add / change photo</label>'
+      +'</div>'
+      +fld("Full Name","pf_name",p.name||tgt.name)
+      +'<div style="display:flex;gap:8px"><div style="flex:1">'+fld("Date of Birth","pf_dob",p.dob,"date")+'</div><div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:3px">Gender</label><select id="pf_gender" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">'+opt(["","Male","Female","Other"],p.gender||"")+'</select></div></div>'
+      +fld("Nationality","pf_nat",p.nationality)
+      +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:3px">Skill / Trade</label><select id="pf_trade" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">'+opt([""].concat(TRADES),p.trade||"")+'</select></div>'
+      +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:3px">Team</label><input value="'+escHtml(team||"Not assigned")+'" disabled style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:#f5f5f5;color:var(--grey)"></div>'
+      +fld("Cellphone","pf_phone",p.phone,"tel")
+      +fld("Address","pf_address",p.address)
+      +fld("National ID / Passport #","pf_id",p.idnum)
+      +'<div style="display:flex;gap:8px"><div style="flex:1">'+fld("Emergency Contact Name","pf_emname",p.emName)+'</div><div style="flex:1">'+fld("Emergency Phone","pf_emphone",p.emPhone,"tel")+'</div></div>'
+      +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:3px">Blood Type</label><select id="pf_blood" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">'+opt(BLOOD_TYPES,p.blood||"Unknown")+'</select></div>'
+      +fld("Start Date","pf_start",p.startDate,"date")
+      +'<button onclick="submitMyProfile()" style="width:100%;margin-top:8px;padding:13px;border:none;border-radius:10px;background:var(--teal);color:white;font-size:15px;font-weight:700;cursor:pointer">💾 Save Profile (sends for approval)</button>'
+      +'</div>';
+    if(_myProfilePhoto)_setPPPreview(_myProfilePhoto);
+  });
+}
+function _setPPPreview(dataUrl){
+  const el=document.getElementById("ppPreview");if(!el)return;
+  el.style.backgroundImage="url('"+dataUrl+"')";el.textContent="";
+}
+function _onProfilePhoto(input){
+  const f=input.files&&input.files[0];if(!f)return;
+  _compressProfilePhoto(f,function(durl){_myProfilePhoto=durl;_setPPPreview(durl);});
+}
+function submitMyProfile(){
+  if(!currentUser)return;
+  const tgt=_profileTarget||{key:currentUser.username,name:currentUser.name,role:currentUser.role||"Worker",self:true};
+  const g=id=>{const e=document.getElementById(id);return e?e.value.trim():"";};
+  const finalName=g("pf_name")||tgt.name;
+  const adminEdit=!tgt.self;
+  const data={
+    name:finalName,dob:g("pf_dob"),gender:g("pf_gender"),
+    nationality:g("pf_nat"),trade:g("pf_trade"),team:getPersonTeam(finalName),
+    phone:g("pf_phone"),address:g("pf_address"),idnum:g("pf_id"),
+    emName:g("pf_emname"),emPhone:g("pf_emphone"),blood:g("pf_blood"),startDate:g("pf_start"),
+    photo:_myProfilePhoto||"",username:tgt.key,role:tgt.role||"Worker",
+    approved:adminEdit,savedAt:new Date().toISOString()
+  };
+  if(adminEdit){data.approvedBy=currentUser.name;data.approvedAt=new Date().toISOString();}
+  saveWorkerProfile(tgt.key,data);
+  if(adminEdit){showToast("✅ Saved & approved");closeMyProfile();}
+  else{showToast("✅ Profile saved — pending admin approval");renderMyProfile();}
+}
+// ─── HR / Admin: Workforce Profiles roster ───
+function openWorkerProfiles(){
+  if(!currentUser)return;
+  ["dashView","hrView"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add("hidden")});
+  const bn=document.getElementById("bottomNav");if(bn)bn.classList.add("hidden");
+  const v=document.getElementById("workerProfilesView");if(v)v.classList.remove("hidden");
+  window.scrollTo(0,0);renderWorkerProfiles();
+}
+function closeWorkerProfiles(){
+  const v=document.getElementById("workerProfilesView");if(v)v.classList.add("hidden");
+  if(currentUser&&currentUser.role==="HR"){const h=document.getElementById("hrView");if(h){h.classList.remove("hidden");}return;}
+  const bn=document.getElementById("bottomNav");if(bn)bn.classList.remove("hidden");
+  const dv=document.getElementById("dashView");if(dv)dv.classList.remove("hidden");
+}
+function renderWorkerProfiles(){
+  const body=document.getElementById("workerProfilesBody");if(!body)return;
+  const isAdmin=currentUser&&currentUser.username==="admin";
+  body.innerHTML='<div style="text-align:center;color:var(--grey);padding:20px">Loading…</div>';
+  loadAllProfiles().then(all=>{
+    all=all||{};
+    const entries=Object.keys(all).map(u=>({u:u,p:all[u]})).filter(x=>x.p&&x.p.name);
+    const total=entries.length,pending=entries.filter(x=>!x.p.approved).length;
+    // key -> {name,role} for the Edit buttons
+    window._profileMap={};entries.forEach(x=>{window._profileMap[x.u]={name:x.p.name,role:x.p.role||"Worker"};});
+    // group by team
+    const groups={};
+    entries.forEach(x=>{const tm=getPersonTeam(x.p.name)||x.p.team||"Unassigned";(groups[tm]=groups[tm]||[]).push(x);});
+    let html='<div style="text-align:center;margin-bottom:12px"><h2 style="color:var(--navy);margin:0">👥 Workforce Profiles</h2>'
+      +'<p style="color:var(--grey);font-size:13px;margin:4px 0">'+total+' on file · '+pending+' pending</p>'
+      +'<button onclick="downloadWorkforceProfilesPDF()" class="btn btn-primary" style="padding:10px 20px;margin-top:4px">📄 Workforce PDF</button></div>';
+    // Admin: start/fill a profile for any roster person who has none yet
+    if(isAdmin){
+      const haveNames=new Set(entries.map(x=>(x.p.name||"").toLowerCase()));
+      const users=getUsers();const nameToUser={};Object.keys(users).forEach(u=>{if(users[u].name)nameToUser[users[u].name.toLowerCase()]={u:u,role:users[u].role||"Worker"};});
+      window._addProfileMap={};
+      let optsHtml='<option value="">— select a worker —</option>';
+      getAllPersonnel().filter(n=>!haveNames.has(n.toLowerCase())).forEach(n=>{
+        const mu=nameToUser[n.toLowerCase()];
+        const key=mu?mu.u:("p_"+n.toLowerCase().replace(/[^a-z0-9]+/g,"_"));
+        window._addProfileMap[key]={name:n,role:mu?mu.role:"Worker"};
+        optsHtml+='<option value="'+key+'">'+escHtml(n)+'</option>';
+      });
+      html+='<div style="background:white;border-radius:10px;box-shadow:var(--shadow);padding:12px;margin-bottom:14px">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px">✏️ Fill a profile for a worker</div>'
+        +'<div style="display:flex;gap:8px"><select id="addProfilePick" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">'+optsHtml+'</select>'
+        +'<button onclick="adminStartNewProfile()" style="padding:9px 14px;border:none;border-radius:8px;background:var(--navy);color:white;font-weight:700;cursor:pointer">Start</button></div></div>';
+    }
+    if(!total){html+='<div style="text-align:center;color:var(--grey);padding:16px">No profiles yet.'+(isAdmin?' Pick a worker above to fill one, or workers can fill their own from their sign-in screen.':' Workers fill theirs from the Profile button on their sign-in screen.')+'</div>';body.innerHTML=html;return;}
+    Object.keys(groups).sort().forEach(tm=>{
+      html+='<h3 style="color:var(--navy);font-size:14px;margin:14px 0 6px">'+escHtml(tm)+' <span style="font-size:11px;color:var(--grey)">('+groups[tm].length+')</span></h3>';
+      groups[tm].sort((a,b)=>a.p.name.localeCompare(b.p.name)).forEach(x=>{
+        const p=x.p;const age=calcAge(p.dob);
+        const av=p.photo?'<div style="width:46px;height:46px;border-radius:50%;background:#eef2f5 center/cover no-repeat;background-image:url(\''+p.photo+'\');flex-shrink:0"></div>':'<div style="width:46px;height:46px;border-radius:50%;background:var(--navy);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0">'+escHtml((p.name||"?").charAt(0))+'</div>';
+        const badge=p.approved?'<span style="background:var(--teal);color:white;font-size:10px;padding:2px 8px;border-radius:8px">Approved</span>':'<span style="background:#f59e0b;color:white;font-size:10px;padding:2px 8px;border-radius:8px">Pending</span>';
+        html+='<div style="display:flex;gap:10px;align-items:center;background:white;border-radius:10px;box-shadow:var(--shadow);padding:10px;margin-bottom:6px">'
+          +av
+          +'<div style="flex:1;min-width:0"><div style="font-weight:700;color:var(--navy);font-size:14px">'+escHtml(p.name)+'</div>'
+          +'<div style="font-size:11px;color:var(--grey)">'+escHtml(p.trade||"—")+(age!==""?' · '+age+'y':'')+(p.phone?' · '+escHtml(p.phone):'')+'</div></div>'
+          +'<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">'+badge
+          +(isAdmin?'<button onclick="adminEditProfileByKey(\''+x.u+'\')" style="font-size:11px;padding:4px 10px;border:1.5px solid var(--navy);border-radius:6px;background:white;color:var(--navy);font-weight:700;cursor:pointer">Edit</button>':'')
+          +(isAdmin&&!p.approved?'<button onclick="approveProfile(\''+x.u+'\')" style="font-size:11px;padding:4px 10px;border:none;border-radius:6px;background:var(--teal);color:white;font-weight:700;cursor:pointer">Approve</button>':'')
+          +'</div></div>';
+      });
+    });
+    body.innerHTML=html;
+  });
+}
+function adminEditProfileByKey(key){
+  const m=window._profileMap&&window._profileMap[key];
+  adminEditProfile(key,m?m.name:key,m?m.role:"Worker");
+}
+function adminStartNewProfile(){
+  const sel=document.getElementById("addProfilePick");if(!sel||!sel.value){showToast("Pick a worker first");return;}
+  const key=sel.value;const m=window._addProfileMap&&window._addProfileMap[key];
+  adminEditProfile(key,m?m.name:key,m?m.role:"Worker");
+}
+function approveProfile(username){
+  loadWorkerProfile(username).then(p=>{
+    if(!p)return;
+    p.approved=true;p.approvedBy=currentUser.name;p.approvedAt=new Date().toISOString();
+    saveWorkerProfile(username,p);
+    showToast("✅ Approved "+(p.name||username));
+    renderWorkerProfiles();
+  });
+}
+function downloadWorkforceProfilesPDF(){
+  requirePdf(function(){
+    loadAllProfiles().then(all=>{
+      all=all||{};
+      const entries=Object.keys(all).map(u=>all[u]).filter(p=>p&&p.name);
+      if(!entries.length){showToast("No profiles to export");return;}
+      try{
+        const{jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","letter");
+        const W=215.9,M=14;let y=0;
+        const groups={};entries.forEach(p=>{const tm=getPersonTeam(p.name)||p.team||"Unassigned";(groups[tm]=groups[tm]||[]).push(p);});
+        pdf.setFillColor(15,110,86);pdf.rect(0,0,W,24,"F");
+        pdf.setTextColor(255);pdf.setFontSize(15);pdf.setFont(undefined,"bold");
+        pdf.text("ELGAWA GUYANA INC.",W/2,11,{align:"center"});
+        pdf.setFontSize(10);pdf.setFont(undefined,"normal");
+        pdf.text("Workforce Profiles — "+getGuyanaDate(),W/2,19,{align:"center"});
+        y=32;
+        Object.keys(groups).sort().forEach(tm=>{
+          if(y>250){pdf.addPage();y=18;}
+          pdf.setTextColor(15,110,86);pdf.setFontSize(12);pdf.setFont(undefined,"bold");
+          pdf.text(tm+" ("+groups[tm].length+")",M,y);y+=5;
+          groups[tm].sort((a,b)=>a.name.localeCompare(b.name)).forEach(p=>{
+            if(y>250){pdf.addPage();y=18;}
+            const ch=26;
+            pdf.setDrawColor(210);pdf.setLineWidth(0.2);pdf.roundedRect(M,y,W-2*M,ch,2,2,"S");
+            if(p.photo){try{pdf.addImage(p.photo,"JPEG",M+2,y+2,22,22);}catch(e){}}
+            const tx=M+28;let ty=y+5;
+            pdf.setTextColor(20);pdf.setFontSize(11);pdf.setFont(undefined,"bold");
+            pdf.text(String(p.name||""),tx,ty);ty+=5;
+            pdf.setFontSize(8);pdf.setFont(undefined,"normal");pdf.setTextColor(70);
+            const age=calcAge(p.dob);
+            const l1=[p.trade||"—",age!==""?age+"y":"",p.gender||"",p.nationality||""].filter(Boolean).join("  |  ");
+            const l2=["Cell: "+(p.phone||"—"),"ID: "+(p.idnum||"—"),"Blood: "+(p.blood||"—")].join("  |  ");
+            const l3=["Emergency: "+(p.emName||"—")+" "+(p.emPhone||""),p.approved?"APPROVED":"PENDING"].join("  |  ");
+            const l4="Address: "+(p.address||"—");
+            pdf.text(l1,tx,ty);ty+=4;pdf.text(l2,tx,ty);ty+=4;pdf.text(l3,tx,ty);ty+=4;
+            pdf.text(pdf.splitTextToSize(l4,W-2*M-30),tx,ty);
+            y+=ch+3;
+          });
+          y+=2;
+        });
+        showPDFPreview(pdf,"ELGAWA_Workforce_Profiles_"+getGuyanaDate()+".pdf");
+      }catch(err){console.error("Workforce PDF failed:",err);showToast("⚠️ PDF error: "+((err&&err.message)?err.message:"could not generate"));}
+    });
+  });
+}
+// Universal sign-in/out: any logged-in user (engineer, team lead, supervisor,
+// admin) can open the same self sign-in screen workers use. Records save to the
+// same selfAttendance node and appear in the admin Self Sign-In Records list as
+// pending until confirmed daily.
+function openMyAttendance(){
+  if(!currentUser)return;
+  const dv=document.getElementById("dashView");if(dv)dv.classList.add("hidden");
+  const bn=document.getElementById("bottomNav");if(bn)bn.classList.add("hidden");
+  const back=document.getElementById("workerBackRow");if(back)back.style.display="block";
+  const wsv=document.getElementById("workerSignInView");
+  if(wsv){wsv.classList.remove("hidden");renderWorkerSignIn();}
+  window.scrollTo(0,0);
+}
+function closeMyAttendance(){
+  stopWorkerRefresh();
+  const wsv=document.getElementById("workerSignInView");if(wsv)wsv.classList.add("hidden");
+  const back=document.getElementById("workerBackRow");if(back)back.style.display="none";
+  // Workers have no dashboard to return to; keep them on the sign-in screen.
+  if(currentUser&&currentUser.role==="Worker"){if(wsv)wsv.classList.remove("hidden");return;}
+  const bn=document.getElementById("bottomNav");if(bn)bn.classList.remove("hidden");
+  const dv=document.getElementById("dashView");if(dv)dv.classList.remove("hidden");
+}
 function renderWorkerSignIn(){
   const now=getGuyanaTimeNow();
   const hour=now.getHours();
