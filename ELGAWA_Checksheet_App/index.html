@@ -10963,9 +10963,61 @@ function _renderHrAttBody(date,data,payData){
     const times=r.present?(r.viaPay?'<span style="font-size:10px;color:var(--grey);white-space:nowrap;margin-right:4px;font-style:italic">via pay</span>':'<span style="font-size:11px;color:var(--grey);white-space:nowrap;margin-right:4px">'+(r.timeIn||'--')+' → '+(r.timeOut||'--')+'</span>'):'';
     html+='<div class="hr-row"><span style="font-size:10px;color:var(--grey);width:20px;flex-shrink:0">'+(i+1)+'</span><span class="hr-mem-name">'+escHtml(r.name)+'</span>'+times+pill+'</div>';
   });
-  html+='</div><div style="text-align:center;margin-top:6px"><button class="btn btn-primary" onclick="downloadHrAttendancePDF()" style="padding:11px 22px">📄 '+t("downloadAttendancePdf")+'</button></div>';
+  html+='</div><div style="text-align:center;margin-top:6px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'
+    +'<button class="btn btn-primary" onclick="downloadHrAttendancePDF()" style="padding:11px 20px">📄 '+t("downloadAttendancePdf")+'</button>'
+    +'<button class="btn btn-primary" onclick="downloadHrWeeklyRegisterPDF()" style="padding:11px 20px;background:var(--navy)">📅 Weekly Register</button></div>';
   body.innerHTML=html;
   window._hrAttSnapshot={date:date,rows:rows,present:present,absent:absent};
+}
+// Weekly attendance register PDF for HR — names x 7 days (Mon-Sun) of the
+// selected week, built only from the APPROVED register (+ pay-derived presence).
+function downloadHrWeeklyRegisterPDF(){
+  const refDate=_hrAttDate||getGuyanaDate();
+  const monday=getWeekMondayFromDate(refDate);
+  const days=[];const d0=new Date(monday+"T12:00:00");
+  for(let i=0;i<7;i++){const ds=new Date(d0);ds.setDate(d0.getDate()+i);days.push(ds.toISOString().slice(0,10));}
+  showToast("⏳ Building weekly register…");
+  const fb=getFirebaseUrl();
+  const loaders=days.map(ds=>{
+    const attP=fb?cloudLoadAttendance(ds).then(c=>c||loadAttendance(ds)).catch(()=>loadAttendance(ds)):Promise.resolve(loadAttendance(ds));
+    let payP;try{payP=Promise.resolve(loadPayDayData(getISOWeek(ds),ds)).catch(()=>null)}catch(e){payP=Promise.resolve(null)}
+    return Promise.all([attP,payP]).then(r=>({date:ds,att:r[0]||{workers:{}},pay:r[1]||{}}));
+  });
+  Promise.all(loaders).then(daysData=>{
+    requirePdf(function(){
+      try{
+        const excluded=_hrExcludedNames();
+        const nameSet=new Set(getWorkerRoster().filter(n=>!excluded.has(n.toLowerCase())));
+        daysData.forEach(dd=>{Object.keys(dd.att.workers||{}).forEach(n=>{if(!(dd.att.workers[n]&&dd.att.workers[n]._removed)&&!excluded.has(n.toLowerCase()))nameSet.add(n);});});
+        const names=[...nameSet].sort((a,b)=>a.localeCompare(b));
+        const isPresent=(n,dd)=>{const w=(dd.att.workers||{})[n];const ps=dd.pay[n];return !!(w&&w.present)||(typeof ps==="number"&&ps>0);};
+        const dayTotals=daysData.map(()=>0);
+        const bodyRows=names.map((n,i)=>{
+          let cnt=0;const cells=daysData.map((dd,di)=>{if(isPresent(n,dd)){cnt++;dayTotals[di]++;return"P";}return"";});
+          return [String(i+1),n].concat(cells).concat([String(cnt)]);
+        });
+        const totalRow=["","Daily Present"].concat(dayTotals.map(String)).concat([""]);
+        const{jsPDF}=window.jspdf;const pdf=new jsPDF("l","mm","letter");
+        const W=279.4,M=12;
+        pdf.setFillColor(126,91,181);pdf.rect(0,0,W,22,"F");
+        pdf.setTextColor(255);pdf.setFontSize(15);pdf.setFont(undefined,"bold");
+        pdf.text("ELGAWA GUYANA INC.",W/2,10,{align:"center"});
+        pdf.setFontSize(10);pdf.setFont(undefined,"normal");
+        pdf.text("Weekly Attendance Register — "+monday+" to "+days[6],W/2,17,{align:"center"});
+        const head=[["#","Name"].concat(daysData.map(dd=>{const dt=new Date(dd.date+"T12:00:00");return dt.toLocaleDateString("en-US",{weekday:"short"})+" "+dd.date.slice(5);})).concat(["Days"])];
+        pdf.autoTable({startY:26,margin:{left:M,right:M},
+          head:head,body:bodyRows,foot:[totalRow],
+          headStyles:{fillColor:[126,91,181],fontSize:8},bodyStyles:{fontSize:8},footStyles:{fillColor:[230,230,240],textColor:40,fontStyle:"bold",fontSize:8},theme:"grid",
+          columnStyles:{0:{cellWidth:8},1:{fontStyle:"bold",cellWidth:46}},
+          didParseCell:function(dc){
+            if(dc.section==="body"&&dc.column.index>=2&&dc.column.index<=8){dc.cell.styles.halign="center";if(dc.cell.raw==="P")dc.cell.styles.textColor=[34,160,74];}
+            if(dc.section==="body"&&dc.column.index===9){dc.cell.styles.halign="center";dc.cell.styles.fontStyle="bold";}
+          }
+        });
+        showPDFPreview(pdf,"ELGAWA_Weekly_Register_"+monday+".pdf");
+      }catch(err){console.error("Weekly register PDF failed:",err);showToast("⚠️ PDF error: "+((err&&err.message)?err.message:"could not generate"));}
+    });
+  });
 }
 function _hrAttNav(dir){
   const d=new Date((_hrAttDate||getGuyanaDate())+"T12:00:00");d.setDate(d.getDate()+dir);
@@ -11103,15 +11155,27 @@ function renderMyProfile(){
     const opt=(arr,sel)=>arr.map(o=>'<option'+(o===sel?' selected':'')+'>'+o+'</option>').join("");
     const fld=(lbl,id,val,type)=>'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:3px">'+lbl+'</label><input id="'+id+'" type="'+(type||"text")+'" value="'+(val?String(val).replace(/"/g,"&quot;"):"")+'" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px"></div>';
     const status=p.approved?'<span style="background:var(--teal);color:white;font-size:11px;padding:3px 10px;border-radius:10px">✅ Approved</span>':(p.savedAt?'<span style="background:#f59e0b;color:white;font-size:11px;padding:3px 10px;border-radius:10px">⏳ Pending approval</span>':'');
+    // Date of Birth as Day / Month / Year dropdowns (typing the year beats scrolling a wheel back decades)
+    const _dp=(p.dob||"").split("-");
+    const _ss='style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px"';
+    const _nowY=getGuyanaTimeNow().getFullYear();
+    let _dOpts='<option value="">Day</option>';for(let d=1;d<=31;d++){const dv=("0"+d).slice(-2);_dOpts+='<option value="'+dv+'"'+(_dp[2]===dv?' selected':'')+'>'+d+'</option>';}
+    const _mNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    let _mOpts='<option value="">Month</option>';_mNames.forEach((mn,i)=>{const mv=("0"+(i+1)).slice(-2);_mOpts+='<option value="'+mv+'"'+(_dp[1]===mv?' selected':'')+'>'+mn+'</option>';});
+    let _yOpts='<option value="">Year</option>';for(let y=_nowY-15;y>=1950;y--){_yOpts+='<option'+(_dp[0]===String(y)?' selected':'')+'>'+y+'</option>';}
+    const dobField='<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:3px">Date of Birth</label><div style="display:flex;gap:6px"><select id="pf_dob_d" '+_ss+'>'+_dOpts+'</select><select id="pf_dob_m" '+_ss+'>'+_mOpts+'</select><select id="pf_dob_y" '+_ss+'>'+_yOpts+'</select></div></div>';
     body.innerHTML=''
       +'<div style="text-align:center;margin-bottom:14px"><h2 style="color:var(--navy);margin:0">'+(tgt.self?'👤 My Profile':'✏️ Edit Profile')+'</h2><p style="color:var(--grey);font-size:13px;margin:4px 0">'+escHtml(tgt.name)+' &nbsp; '+status+'</p></div>'
       +'<div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:16px">'
       +'<div style="text-align:center;margin-bottom:14px">'
       +'<div id="ppPreview" style="width:110px;height:110px;border-radius:50%;margin:0 auto 8px;background:#eef2f5 center/cover no-repeat;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:34px;color:#bbb"'+(_myProfilePhoto?' style2':'')+'>'+(_myProfilePhoto?'':'📷')+'</div>'
-      +'<label style="font-size:12px;color:var(--navy);font-weight:600;cursor:pointer"><input type="file" accept="image/*" onchange="_onProfilePhoto(this)" style="display:none">📷 Add / change photo</label>'
+      +'<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'
+      +'<label style="font-size:12px;color:white;background:var(--navy);font-weight:700;cursor:pointer;padding:8px 14px;border-radius:8px"><input type="file" accept="image/*" capture="user" onchange="_onProfilePhoto(this)" style="display:none">📷 Take Photo</label>'
+      +'<label style="font-size:12px;color:var(--navy);background:white;border:1.5px solid var(--navy);font-weight:700;cursor:pointer;padding:8px 14px;border-radius:8px"><input type="file" accept="image/*" onchange="_onProfilePhoto(this)" style="display:none">🖼️ Upload</label>'
       +'</div>'
       +fld("Full Name","pf_name",p.name||tgt.name)
-      +'<div style="display:flex;gap:8px"><div style="flex:1">'+fld("Date of Birth","pf_dob",p.dob,"date")+'</div><div style="flex:1"><label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:3px">Gender</label><select id="pf_gender" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">'+opt(["","Male","Female","Other"],p.gender||"")+'</select></div></div>'
+      +dobField
+      +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:3px">Gender</label><select id="pf_gender" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">'+opt(["","Male","Female","Other"],p.gender||"")+'</select></div>'
       +fld("Nationality","pf_nat",p.nationality)
       +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:3px">Skill / Trade</label><select id="pf_trade" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">'+opt([""].concat(TRADES),p.trade||"")+'</select></div>'
       +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:3px">Team</label><input value="'+escHtml(team||"Not assigned")+'" disabled style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:#f5f5f5;color:var(--grey)"></div>'
@@ -11140,8 +11204,10 @@ function submitMyProfile(){
   const g=id=>{const e=document.getElementById(id);return e?e.value.trim():"";};
   const finalName=g("pf_name")||tgt.name;
   const adminEdit=!tgt.self;
+  const _dy=g("pf_dob_y"),_dm=g("pf_dob_m"),_dd=g("pf_dob_d");
+  const _dob=(_dy&&_dm&&_dd)?(_dy+"-"+_dm+"-"+_dd):"";
   const data={
-    name:finalName,dob:g("pf_dob"),gender:g("pf_gender"),
+    name:finalName,dob:_dob,gender:g("pf_gender"),
     nationality:g("pf_nat"),trade:g("pf_trade"),team:getPersonTeam(finalName),
     phone:g("pf_phone"),address:g("pf_address"),idnum:g("pf_id"),
     emName:g("pf_emname"),emPhone:g("pf_emphone"),blood:g("pf_blood"),startDate:g("pf_start"),
@@ -11402,8 +11468,13 @@ function workerSignIn(){
   const date=getGuyanaDate();
   const username=currentUser.username;
   const timeStr=("0"+now.getHours()).slice(-2)+":"+("0"+now.getMinutes()).slice(-2);
-  const data={signIn:timeStr,signOut:null,source:"self",confirmed:false,name:currentUser.name,timestamp:Date.now(),shifts:[]};
+  const _auto=(currentUser&&currentUser.username==="admin");
+  const data={signIn:timeStr,signOut:null,source:"self",confirmed:_auto,name:currentUser.name,timestamp:Date.now(),shifts:[]};
+  if(_auto){data.confirmedBy=currentUser.name;data.confirmedAt=new Date().toISOString();}
   saveSelfAttendance(date,username,data);
+  // Auto-confirmed (admin) sign-ins go straight into the main attendance
+  // register so they show in HR's sheet without a separate approval step.
+  if(_auto&&typeof _attMarkWorker==="function"){_attMarkWorker(date,data.name,{present:true,timeIn:timeStr,timeOut:"",confirmedByAdmin:true,selfSignIn:true});}
   renderWorkerStatus(data,date);
 }
 
@@ -11417,6 +11488,8 @@ function workerSignOut(){
     data.signOut=timeStr;
     data.totalMins=calcMinsBetween(data.signIn,data.signOut);
     saveSelfAttendance(date,username,data);
+    // Push the sign-out time into the register too for already-confirmed records.
+    if(data.confirmed&&typeof _attMarkWorker==="function"){_attMarkWorker(date,data.name||currentUser.name,{present:true,timeIn:data.signIn||"",timeOut:timeStr,confirmedByAdmin:true,selfSignIn:true});}
     renderWorkerStatus(data,date);
   });
 }
@@ -11436,7 +11509,7 @@ function startNewShift(){
       data.signIn=timeStr;
       data.signOut=null;
       data.totalMins=0;
-      data.confirmed=false;
+      data.confirmed=(currentUser&&currentUser.username==="admin");
       data.timestamp=Date.now();
       saveSelfAttendance(date,username,data);
       renderWorkerStatus(data,date);
