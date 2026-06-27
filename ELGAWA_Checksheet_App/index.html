@@ -3842,7 +3842,7 @@ function renderDailyAnalysis(date){
     html+=_renderTeamCards(analyses,agg);
     html+=_renderBlockerSection(agg);
     html+=_renderNarrative(agg,date,"daily");
-    html+=`<div style="text-align:center;margin:12px 0"><button class="btn btn-primary" onclick="downloadAnalysisPDF('daily','${date}')" style="padding:10px 24px">📄 Preview PDF</button></div>`;
+    html+=`<div style="text-align:center;margin:12px 0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" onclick="downloadAnalysisPDF('daily','${date}')" style="padding:10px 20px">📄 View / Save PDF</button><button class="btn btn-outline" onclick="shareAnalysisText('daily','${date}')" style="padding:10px 20px">📲 Share Summary</button></div>`;
     res.innerHTML=html;
   });
 }
@@ -3900,7 +3900,7 @@ function renderWeeklyAnalysis(monday){
     html+=_renderTeamCards(analyses,agg);
     html+=_renderBlockerSection(agg);
     html+=_renderNarrative(agg,`${monday} - ${sundayStr}`,"weekly");
-    html+=`<div style="text-align:center;margin:12px 0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" onclick="downloadAnalysisPDF('weekly','${monday}')" style="padding:10px 24px">📄 Preview PDF</button><button class="btn btn-outline" onclick="exportKpiExcel('${monday}')" style="padding:10px 24px">⬇️ KPI to Excel</button></div>`;
+    html+=`<div style="text-align:center;margin:12px 0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" onclick="downloadAnalysisPDF('weekly','${monday}')" style="padding:10px 20px">📄 View / Save PDF</button><button class="btn btn-outline" onclick="shareAnalysisText('weekly','${monday}')" style="padding:10px 20px">📲 Share Summary</button><button class="btn btn-outline" onclick="exportKpiExcel('${monday}')" style="padding:10px 20px">⬇️ KPI Excel</button></div>`;
     res.innerHTML=html;
   });
 }
@@ -3960,7 +3960,7 @@ function renderMonthlyAnalysisView(monthVal){
     html+=_renderTeamCards(analyses,agg);
     html+=_renderBlockerSection(agg);
     html+=_renderNarrative(agg,monthName,"monthly");
-    html+=`<div style="text-align:center;margin:12px 0"><button class="btn btn-primary" onclick="downloadAnalysisPDF('monthly','${monthVal}')" style="padding:10px 24px">📄 Preview PDF</button></div>`;
+    html+=`<div style="text-align:center;margin:12px 0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" onclick="downloadAnalysisPDF('monthly','${monthVal}')" style="padding:10px 20px">📄 View / Save PDF</button><button class="btn btn-outline" onclick="shareAnalysisText('monthly','${monthVal}')" style="padding:10px 20px">📲 Share Summary</button></div>`;
     res.innerHTML=html;
   });
 }
@@ -4391,6 +4391,28 @@ function _renderNarrative(agg,period,mode){
 
 
 // --- Analysis PDF Export ---
+// Share the analysis as plain TEXT (WhatsApp / native share / clipboard).
+// Works even when the PDF engine or network is struggling, so the Director can
+// always get the numbers out. Reuses the same on-screen summary content.
+function shareAnalysisText(mode,dateVal){
+  let startDate,endDate,label;
+  if(mode==="daily"){startDate=endDate=dateVal;label=dateVal;}
+  else if(mode==="weekly"){startDate=dateVal;const sun=new Date(dateVal+"T12:00:00");sun.setDate(sun.getDate()+6);endDate=sun.toISOString().split("T")[0];label="Week of "+dateVal;}
+  else{const[y,m]=dateVal.split("-").map(Number);startDate=dateVal+"-01";endDate=y+"-"+String(m).padStart(2,"0")+"-"+new Date(y,m,0).getDate();label=new Date(dateVal+"-15").toLocaleDateString("en-US",{month:"long",year:"numeric"});}
+  showToast("⏳ Preparing summary…");
+  _loadAndAnalyze(startDate,endDate,function(analyses){
+    if(!analyses.length){showToast(t("anNoData"));return}
+    const agg=aggregateAnalyses(analyses);
+    const tmp=document.createElement("div");
+    try{tmp.innerHTML=_renderExecSummary(agg,label,mode)+_renderNarrative(agg,label,mode);}catch(e){tmp.textContent="";}
+    const body=(tmp.textContent||"").replace(/[ \t]+/g," ").replace(/\n{3,}/g,"\n\n").trim();
+    const title=mode.charAt(0).toUpperCase()+mode.slice(1);
+    const txt="*ELGAWA GUYANA INC.*\n"+title+" Analysis — "+label+"\nPasha Global Hotel — HVAC\n\n"+body+"\n\n— Generated from ELGAWA Checksheet App";
+    if(navigator.share){navigator.share({title:"ELGAWA "+title+" Analysis",text:txt}).catch(()=>{});}
+    else if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>{showToast("📋 Summary copied — paste into WhatsApp/email");window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");}).catch(()=>window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank"));}
+    else{window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");}
+  });
+}
 function downloadAnalysisPDF(mode,dateVal){
   const loading=document.createElement("div");
   loading.className="an-card";loading.style.cssText="text-align:center;padding:20px";
@@ -7344,6 +7366,55 @@ function importChecksheet(){
 // Default Firebase URL — set once, works on ALL devices automatically
 const DEFAULT_FIREBASE_URL="https://elgawa-checksheet-default-rtdb.firebaseio.com";
 function getFirebaseUrl(){return localStorage.getItem("elg_firebase_url")||DEFAULT_FIREBASE_URL}
+
+// ─── Database security: automatic anonymous sign-in ───────────────────────────
+// The database is reached by plain REST calls with no login token, so it can
+// only be protected by Firebase rules if the app sends an auth token. This block
+// signs the device in anonymously and attaches the token (?auth=) to every
+// database request automatically.
+//
+// SAFE BY DEFAULT: while FB_API_KEY is the placeholder below, this whole block
+// does NOTHING — the app behaves exactly as before. It only activates once you
+// (1) paste your Firebase Web API key, (2) enable Anonymous sign-in in the
+// Firebase console, and (3) set the security rules to require auth. See the
+// notes handed over with this change.
+const FB_API_KEY="AIzaSyA-AUWf2X8_tUhDv4N9-AjcWEiWgxhOCxs"; // Firebase Web API key (public client key — safe to embed)
+let _fbToken=null;
+function _fbAuthEnabled(){return typeof FB_API_KEY==="string"&&FB_API_KEY.indexOf("PASTE_")!==0&&FB_API_KEY.length>10;}
+const _origFetch=window.fetch.bind(window);
+function _fbSignInAnon(){
+  if(!_fbAuthEnabled())return Promise.resolve(null);
+  return _origFetch("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+FB_API_KEY,
+    {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({returnSecureToken:true})})
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(d){if(d&&d.idToken)_fbToken=d.idToken;return _fbToken;})
+    .catch(function(){return null;});
+}
+// Wrap fetch so EVERY database call carries the token. Non-database calls and
+// the sign-in call itself are untouched. If a call is rejected for missing auth
+// (401/403), sign in and retry once — so timing on startup can never lock us out.
+window.fetch=function(input,init){
+  var url=(typeof input==="string")?input:((input&&input.url)||"");
+  var isFb=url.indexOf("firebaseio.com")>-1;
+  if(isFb&&_fbToken){
+    var sep=url.indexOf("?")>-1?"&":"?";var u=url+sep+"auth="+encodeURIComponent(_fbToken);
+    input=(typeof input==="string")?u:new Request(u,input);
+  }
+  return _origFetch(input,init).then(function(res){
+    if(isFb&&(res.status===401||res.status===403)&&_fbAuthEnabled()){
+      return _fbSignInAnon().then(function(tok){
+        if(!tok)return res;
+        var base=url.replace(/([?&])auth=[^&]*/,"$1").replace(/[?&]$/,"");
+        var sep=base.indexOf("?")>-1?"&":"?";var u2=base+sep+"auth="+encodeURIComponent(tok);
+        return _origFetch((typeof input==="string")?u2:new Request(u2,init));
+      });
+    }
+    return res;
+  });
+};
+// Sign in as soon as the app loads, and refresh the token before it expires (~1h).
+_fbSignInAnon();
+setInterval(_fbSignInAnon,55*60*1000);
 function saveFirebaseUrl(url){
   url=url.trim().replace(/\/+$/,"");
   localStorage.setItem("elg_firebase_url",url);
@@ -7806,11 +7877,20 @@ function _autotableReady(){
   try{return !!(window.jspdf&&window.jspdf.jsPDF&&window.jspdf.jsPDF.API&&typeof window.jspdf.jsPDF.API.autoTable==="function")}catch(e){return false}
 }
 function _loadScript(src){return new Promise(function(res,rej){const sc=document.createElement("script");sc.src=src;sc.onload=function(){res()};sc.onerror=function(){rej(new Error("load failed: "+src))};document.head.appendChild(sc)})}
+// Try several CDNs in order — if one is slow or blocked on a phone's mobile
+// network (common in Guyana), fall through to the next instead of failing.
+function _loadScriptAny(urls){
+  return urls.reduce(function(p,u){return p.catch(function(){return _loadScript(u)})},Promise.reject());
+}
 function _xlsxReady(){return typeof XLSX!=="undefined"}
 function requireXlsx(cb){
   if(_xlsxReady()){cb();return}
   showToast("⏳ Loading Excel engine…");
-  _loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js")
+  _loadScriptAny([
+    "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
+    "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
+    "https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"
+  ])
     .then(function(){_xlsxReady()?cb():showToast("⚠️ No internet — Excel engine couldn't load. Connect and try again.")})
     .catch(function(){showToast("⚠️ No internet — Excel engine couldn't load. Connect and try again.")});
 }
@@ -7865,8 +7945,16 @@ function requirePdf(cb){
   showToast("⏳ Loading PDF engine…");
   const fail=()=>showToast("⚠️ No internet — PDF engine couldn't load. Connect and try again.");
   Promise.resolve()
-    .then(()=>_jspdfReady()?null:_loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"))
-    .then(()=>_autotableReady()?null:_loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"))
+    .then(()=>_jspdfReady()?null:_loadScriptAny([
+      "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+      "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js",
+      "https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"
+    ]))
+    .then(()=>_autotableReady()?null:_loadScriptAny([
+      "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js",
+      "https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js",
+      "https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"
+    ]))
     .then(()=>{if(_jspdfReady()&&_autotableReady())cb();else fail()})
     .catch(fail);
 }
@@ -7965,10 +8053,12 @@ function showPDFPreview(pdfDoc,filename){
       contentDiv.innerHTML='<div style="text-align:center;padding:40px"><p>Could not render preview.</p><button onclick="window.open(\''+url+'\');this.closest(\'.modal-overlay\')._closeFn()" style="background:var(--navy);color:white;border:none;border-radius:8px;padding:12px 24px;font-size:14px;cursor:pointer;margin-top:12px">Open in Browser</button></div>';
     });
   }else if(isMobile){
-    // Mobile without pdf.js loaded: open in new tab
-    contentDiv.innerHTML='<div style="text-align:center;padding:40px"><p style="color:var(--grey)">Loading preview...</p></div>';
-    window.open(url);
-    contentDiv.innerHTML='<div style="text-align:center;padding:40px"><p>PDF opened in new tab</p><button onclick="window.open(\''+url+'\')" style="background:var(--navy);color:white;border:none;border-radius:8px;padding:12px 24px;font-size:14px;cursor:pointer;margin-top:12px">Open Again</button></div>';
+    // Mobile without pdf.js loaded. Do NOT auto window.open here — it runs after
+    // async PDF generation, so the phone blocks it as a popup and nothing shows.
+    // Give a tap button instead (a real user gesture is allowed to open).
+    contentDiv.innerHTML='<div style="text-align:center;padding:40px"><div style="font-size:32px">📄</div><p style="margin:10px 0;color:var(--grey)">Your PDF is ready.</p>'
+      +'<button onclick="window.open(\''+url+'\')" style="background:var(--navy);color:white;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px">Open PDF</button>'
+      +'<p style="margin-top:10px;font-size:12px;color:var(--grey)">or use 💾 Save / 📤 Share above</p></div>';
   }else{
     // Desktop: use iframe as before
     const iframe=document.createElement("iframe");
@@ -8294,11 +8384,29 @@ function addWorkerToRoster(){
     const rates={installation:7000,ducting:7000,suriname:7000};
     const payR=getPayRoster();payR[name]={group:grp,rate:rates[grp]||7000};savePayRosterData(payR);
   }
+  // Streamline: every worker also gets a login so they can sign in / sign out
+  // and fill their own profile. Username + password are auto-generated from the
+  // first name (password = username); admin can change it later in Manage Users.
+  let _loginMsg;
+  const _hasLogin=Object.values(getUsers()).some(u=>u&&u.name&&u.name.toLowerCase()===name.toLowerCase());
+  if(_hasLogin){
+    _loginMsg='<b>'+name+'</b> added to the roster. They already have a login, so no new one was created.';
+  }else{
+    let _base=name.split(/\s+/)[0].toLowerCase().replace(/[^a-z0-9]/g,"")||"worker";
+    let _uname=_base,_k=2;
+    while(getUsers()[_uname]||getCustomUsers()[_uname]||_uname==="admin"){_uname=_base+_k;_k++;}
+    const _pass=_uname+"2026";
+    const _cu=getCustomUsers();_cu[_uname]={pass:_pass,name:name,role:"Worker",teams:"all"};saveCustomUsers(_cu);
+    saveRemovedUsers(getRemovedUsers().filter(u=>u!==_uname));
+    USERS=getUsers();
+    _loginMsg='<b>'+name+'</b> is on the roster and now has a login.<br><br>Username: <b>'+_uname+'</b><br>Password: <b>'+_pass+'</b><br><br>Password is the username followed by 2026. Write it down for them. You can change it in Manage Users.';
+  }
   if(typeof cloudSaveUsers==="function")cloudSaveUsers();
   inp.value="";if(grpSel)grpSel.value="";
   renderWorkerRoster();
   if(typeof renderPayRoster==="function")renderPayRoster();
-  showToast(t("workerAdded"));
+  if(typeof renderUserList==="function")renderUserList();
+  showModal("Worker added",_loginMsg,function(){},{okText:"Got it",cancelText:"Close"});
 }
 function removeWorker(name){
   showModal(t("confirm")||"Confirm",(t("removeWorkerConfirm")||"Remove worker %s?").replace("%s",name),()=>{
@@ -9346,7 +9454,26 @@ document.addEventListener("change",e=>{if(e.target.dataset.key==="ot"&&e.target.
 
 let deferredPrompt;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;document.querySelector(".install-banner").style.display="flex"});
-function installApp(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.querySelector(".install-banner").style.display="none"})}}
+function installApp(){
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.querySelector(".install-banner").style.display="none"});return;}
+  // No native install prompt available (always the case on iPhone/iPad; also some
+  // Androids that haven't fired beforeinstallprompt). Show manual steps so the
+  // button never does nothing.
+  const ua=navigator.userAgent||"";
+  const isIOS=/(iPhone|iPad|iPod)/i.test(ua)||(/(Macintosh)/i.test(ua)&&navigator.maxTouchPoints>1);
+  const inApp=window.matchMedia("(display-mode:standalone)").matches||window.navigator.standalone;
+  if(inApp){showToast("✅ App is already installed");return;}
+  const isChrome=/Chrome|CriOS/i.test(ua);
+  let msg;
+  if(isIOS){
+    msg="📲 Install on iPhone / iPad:\n\n1. Open this page in SAFARI (not Chrome)\n2. Tap the Share button  ⬆️  at the bottom\n3. Scroll down, tap \"Add to Home Screen\"\n4. Tap \"Add\" (top right)\n\nThe ELGAWA icon will appear on your home screen.";
+  }else if(isChrome){
+    msg="📲 Install on Android:\n\n1. Tap the ⋮ menu (top-right of Chrome)\n2. Tap \"Install app\" (or \"Add to Home screen\")\n3. Tap \"Install\"\n\nIf you don't see it, refresh the page and try again.";
+  }else{
+    msg="📲 To install:\n\nOpen this page in Chrome (Android) or Safari (iPhone), then use the browser menu and choose \"Install app\" / \"Add to Home Screen\".";
+  }
+  alert(msg);
+}
 function dismissInstall(){document.querySelector(".install-banner").style.display="none";try{sessionStorage.setItem("elg_install_dismissed","1")}catch(e){}}
 // Show install banner every visit until app is installed (standalone mode)
 (function(){
@@ -9389,14 +9516,26 @@ setTimeout(()=>{document.getElementById("splash").classList.add("hide");setTimeo
 // first time it's tapped (loads instantly from the service-worker cache).
 setTimeout(()=>{try{if(typeof requirePdf==="function"&&!(_jspdfReady()&&_autotableReady()))requirePdf(function(){})}catch(e){}},2500);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("./sw.js").then(reg=>{
+  // updateViaCache:"none" forces the browser to re-fetch sw.js from the network
+  // every time instead of its HTTP cache. Without this, iPhones/iPads keep
+  // serving the OLD service worker for days and never pick up new versions.
+  navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>{
+    let _reloadedForUpdate=false;
     reg.addEventListener("updatefound",()=>{
       const nw=reg.installing;
       if(nw){nw.addEventListener("statechange",()=>{
-        if(nw.state==="activated"){window.location.reload()}
+        // Only reload when a NEW worker takes over an already-controlled page
+        // (avoids a reload on the very first install).
+        if(nw.state==="activated"&&navigator.serviceWorker.controller&&!_reloadedForUpdate){
+          _reloadedForUpdate=true;window.location.reload();
+        }
       })}
     });
     reg.update().catch(()=>{});
+    // iOS especially won't auto-check. Re-check whenever the app is reopened or
+    // brought back to the foreground, plus hourly while open.
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)reg.update().catch(()=>{})});
+    setInterval(()=>reg.update().catch(()=>{}),60*60*1000);
   }).catch(()=>{});
 }
 scheduleNotification();
@@ -11062,7 +11201,9 @@ const BLOOD_TYPES=["A+","A-","B+","B-","AB+","AB-","O+","O-","Unknown"];
 function getPersonTeam(name){
   if(!name)return"";
   try{const r=getPayRoster();const e=r[name];if(e&&e.group&&PAY_GROUPS[e.group])return PAY_GROUPS[e.group].label;}catch(e){}
-  return"";
+  // Anyone not in a named crew (incl. the "unassigned" home group) is ELGAWA Guyana —
+  // never show "Unassigned" as a company/category.
+  return"ELGAWA Guyana";
 }
 function calcAge(dob){
   if(!dob)return"";
@@ -11074,7 +11215,11 @@ function calcAge(dob){
 function saveWorkerProfile(username,data){
   try{localStorage.setItem("elg_profile_"+username,JSON.stringify(data))}catch(e){}
   const fb=getFirebaseUrl();
-  if(fb)fetch(fb+"/workerProfiles/"+username+".json",{method:"PUT",body:JSON.stringify(data)}).catch(()=>{});
+  if(!fb)return Promise.resolve(false);
+  // Return a promise that resolves true only if the cloud actually accepted the
+  // write, so the caller can warn the worker instead of falsely saying "saved".
+  return fetch(fb+"/workerProfiles/"+username+".json",{method:"PUT",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}})
+    .then(r=>!!(r&&r.ok)).catch(()=>false);
 }
 function loadWorkerProfile(username){
   return new Promise(resolve=>{
@@ -11215,9 +11360,17 @@ function submitMyProfile(){
     approved:adminEdit,savedAt:new Date().toISOString()
   };
   if(adminEdit){data.approvedBy=currentUser.name;data.approvedAt=new Date().toISOString();}
-  saveWorkerProfile(tgt.key,data);
-  if(adminEdit){showToast("✅ Saved & approved");closeMyProfile();}
-  else{showToast("✅ Profile saved — pending admin approval");renderMyProfile();}
+  Promise.resolve(saveWorkerProfile(tgt.key,data)).then(synced=>{
+    if(adminEdit){
+      showToast(synced?"✅ Saved & approved":"⚠️ Saved on this device but NOT synced — check internet and Save again");
+      closeMyProfile();
+    }else if(synced){
+      showToast("✅ Profile saved — pending admin approval");renderMyProfile();
+    }else{
+      showToast("⚠️ Saved on this phone but NOT sent to the office. Connect to internet and tap Save again.");
+      renderMyProfile();
+    }
+  });
 }
 // ─── HR / Admin: Workforce Profiles roster ───
 function openWorkerProfiles(){
@@ -11384,6 +11537,24 @@ function renderWorkerSignIn(){
   loadSelfAttendance(date,username).then(data=>{
     renderWorkerStatus(data,date);
     renderWorkerHistory();
+  });
+  // Nudge every worker to complete their profile until it exists & is approved.
+  loadWorkerProfile(username).then(p=>{
+    const host=document.getElementById("workerSignStatus");
+    let nudge=document.getElementById("workerProfileNudge");
+    if(p&&p.approved){if(nudge)nudge.remove();return;}
+    if(!nudge&&host&&host.parentNode){
+      nudge=document.createElement("div");nudge.id="workerProfileNudge";
+      host.parentNode.insertBefore(nudge,host);
+    }
+    if(nudge){
+      const pending=p&&!p.approved;
+      nudge.innerHTML='<div onclick="openMyProfile()" style="cursor:pointer;background:linear-gradient(135deg,#fff7ed,#ffedd5);border:2px solid #f59e0b;border-radius:12px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px">'
+        +'<div style="font-size:26px">👤</div>'
+        +'<div style="flex:1"><div style="font-weight:700;color:#b45309;font-size:14px">'+(pending?'Profile sent — pending approval':'Please complete your profile')+'</div>'
+        +'<div style="font-size:12px;color:#92400e">'+(pending?'Tap to review or update your details.':'Tap here to add your details (name, ID, phone, emergency contact).')+'</div></div>'
+        +'<div style="font-size:18px;color:#b45309">›</div></div>';
+    }
   });
   startWorkerRefresh();
 }
