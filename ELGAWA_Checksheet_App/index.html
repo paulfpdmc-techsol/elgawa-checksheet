@@ -10,10 +10,14 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
 <title>ELGAWA Daily Checksheet</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
+<!-- PDF/Excel libraries load with `defer` so the app screen appears immediately
+     instead of waiting for ~1.5MB of CDN scripts on weak mobile signal. They
+     finish loading in the background; requirePdf() also self-heals on demand.
+     `defer` (not async) keeps order so jsPDF loads before its autotable plugin. -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>window.addEventListener("DOMContentLoaded",function(){if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";});</script>
 <style>
 :root{--navy:#7E5BB5;--navy-lt:#D6A41C;--teal:#D6A41C;--blue-bg:#EFE6F7;--grey:#6b6472;--lt-grey:#FAF7FB;--border:#E6DCEF;--white:#fff;--danger:#dc3545;--success:#22a04a;--warn:#f0ad4e;--ducting:#2E75B6;--copper:#C05621;--ahu:#548235;--insulation:#7030A0;--general:#BF8F00;--refrigerant:#0077B6;--drainage:#0096C7;--controls:#E63946;--commissioning:#2D6A4F;--radius:16px;--shadow:0 3px 14px rgba(126,91,181,0.12);--shadow-lg:0 10px 34px rgba(126,91,181,0.18);--hdr-grad:linear-gradient(135deg,#7E5BB5 0%,#9F7AC4 42%,#D6A41C 100%)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -2100,8 +2104,35 @@ function applyLang(){
   if(fv&&!fv.classList.contains("hidden")&&_formTeamKey){openForm(_formTeamKey,_collectFormData())}
 }
 
-function loadSaved(){try{savedSheets=JSON.parse(localStorage.getItem("elg_sheets")||"[]")}catch(e){savedSheets=[]}}
-function saveSaved(){try{localStorage.setItem("elg_sheets",JSON.stringify(savedSheets))}catch(e){console.error("Save failed:",e);showToast(t("storageFull"))}}
+function loadSaved(){
+  try{savedSheets=JSON.parse(localStorage.getItem("elg_sheets")||"[]")}catch(e){savedSheets=[]}
+  // Proactively trim on every open so the ~5MB local store never overflows.
+  _pruneSheets();
+  try{localStorage.setItem("elg_sheets",JSON.stringify(savedSheets))}catch(e){}
+}
+// The cloud (Firebase) holds the full history; the browser's ~5MB local store only
+// needs recent sheets for offline use. Base64 PHOTOS are the bulk, so photos on
+// older sheets are dropped locally — they stay safe in the cloud. This is what
+// prevents the "Storage full" error (it's the browser cap, not the phone's memory).
+function _pruneSheets(keepDays,photoDays){
+  try{
+    keepDays=keepDays||45; photoDays=photoDays||7;
+    const base=new Date((getGuyanaDate()||new Date().toISOString().slice(0,10))+"T12:00:00");
+    const cut=new Date(base); cut.setDate(cut.getDate()-keepDays);
+    const pcut=new Date(base); pcut.setDate(pcut.getDate()-photoDays);
+    savedSheets=savedSheets.filter(s=>{const d=new Date(((s&&s.date)||"1970-01-01")+"T12:00:00");return isNaN(d.getTime())||d>=cut;});
+    savedSheets.forEach(s=>{const d=new Date(((s&&s.date)||"1970-01-01")+"T12:00:00");if(!isNaN(d.getTime())&&d<pcut&&s&&s.photos&&s.photos.length){s.photos=[];}});
+  }catch(e){}
+}
+function saveSaved(){
+  try{localStorage.setItem("elg_sheets",JSON.stringify(savedSheets));return;}catch(e){}
+  // Storage full — free space (older history stays in the cloud) then retry, so a
+  // save (and therefore a share) never silently fails.
+  _pruneSheets(30,3);
+  try{localStorage.setItem("elg_sheets",JSON.stringify(savedSheets));showToast("🧹 Freed local space — older sheets stay in the cloud");return;}catch(e){}
+  try{savedSheets.forEach(s=>{if(s&&s.photos)s.photos=[];});localStorage.setItem("elg_sheets",JSON.stringify(savedSheets));showToast("🧹 Freed local space — photos stay in the cloud");return;}catch(e){}
+  showToast(t("storageFull"));
+}
 
 function togglePeek(inputId,btn){const inp=document.getElementById(inputId);if(inp.type==="password"){inp.type="text";btn.style.color="var(--navy)";btn.title="Hide password"}else{inp.type="password";btn.style.color="var(--grey)";btn.title="Show password"}}
 
@@ -3844,6 +3875,9 @@ function renderDailyAnalysis(date){
     html+=_renderNarrative(agg,date,"daily");
     html+=`<div style="text-align:center;margin:12px 0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" onclick="downloadAnalysisPDF('daily','${date}')" style="padding:10px 20px">📄 View / Save PDF</button><button class="btn btn-outline" onclick="shareAnalysisText('daily','${date}')" style="padding:10px 20px">📲 Share Summary</button></div>`;
     res.innerHTML=html;
+    // Trend: load the previous day and swap arrows into the effectiveness panel.
+    const _pd=new Date(date+"T12:00:00");_pd.setDate(_pd.getDate()-1);const _pds=_pd.toISOString().split("T")[0];
+    _loadAndAnalyze(_pds,_pds,function(pa){const prevAgg=pa&&pa.length?aggregateAnalyses(pa):null;if(!prevAgg)return;const el=document.getElementById("effCard");if(el)el.outerHTML=_renderEffectiveness(agg,prevAgg);});
   });
 }
 
@@ -3902,6 +3936,10 @@ function renderWeeklyAnalysis(monday){
     html+=_renderNarrative(agg,`${monday} - ${sundayStr}`,"weekly");
     html+=`<div style="text-align:center;margin:12px 0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" onclick="downloadAnalysisPDF('weekly','${monday}')" style="padding:10px 20px">📄 View / Save PDF</button><button class="btn btn-outline" onclick="shareAnalysisText('weekly','${monday}')" style="padding:10px 20px">📲 Share Summary</button><button class="btn btn-outline" onclick="exportKpiExcel('${monday}')" style="padding:10px 20px">⬇️ KPI Excel</button></div>`;
     res.innerHTML=html;
+    // Trend: load the previous week and swap arrows into the effectiveness panel.
+    const _pm=new Date(monday+"T12:00:00");_pm.setDate(_pm.getDate()-7);const _pms=_pm.toISOString().split("T")[0];
+    const _ps=new Date(_pms+"T12:00:00");_ps.setDate(_ps.getDate()+6);const _pss=_ps.toISOString().split("T")[0];
+    _loadAndAnalyze(_pms,_pss,function(pa){const prevAgg=pa&&pa.length?aggregateAnalyses(pa):null;if(!prevAgg)return;const el=document.getElementById("effCard");if(el)el.outerHTML=_renderEffectiveness(agg,prevAgg);});
   });
 }
 
@@ -3962,6 +4000,10 @@ function renderMonthlyAnalysisView(monthVal){
     html+=_renderNarrative(agg,monthName,"monthly");
     html+=`<div style="text-align:center;margin:12px 0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" onclick="downloadAnalysisPDF('monthly','${monthVal}')" style="padding:10px 20px">📄 View / Save PDF</button><button class="btn btn-outline" onclick="shareAnalysisText('monthly','${monthVal}')" style="padding:10px 20px">📲 Share Summary</button></div>`;
     res.innerHTML=html;
+    // Trend: load the previous month and swap arrows into the effectiveness panel.
+    const _pmd=new Date(y,m-2,1);const _ppfx=_pmd.getFullYear()+"-"+String(_pmd.getMonth()+1).padStart(2,"0");
+    const _pfirst=_ppfx+"-01";const _plast=_ppfx+"-"+new Date(_pmd.getFullYear(),_pmd.getMonth()+1,0).getDate();
+    _loadAndAnalyze(_pfirst,_plast,function(pa){const prevAgg=pa&&pa.length?aggregateAnalyses(pa):null;if(!prevAgg)return;const el=document.getElementById("effCard");if(el)el.outerHTML=_renderEffectiveness(agg,prevAgg);});
   });
 }
 
@@ -3997,6 +4039,63 @@ function _loadAndAnalyze(startDate,endDate,callback){
 
 // --- Shared rendering helpers ---
 
+// Effectiveness — are the man-hours converting into completed work, and is the
+// crew the right size? Built only from data already captured (attendance hours +
+// checksheet task completion). Hrs/Completed-Task is the core efficiency number;
+// the verdict reads crew adequacy from completion + overtime + hours-per-person.
+function _renderEffectiveness(agg,prevAgg){
+  const mp=agg.manpower||{}, wk=agg.work||{};
+  const hrs=mp.hrs||0, ot=mp.ot||0, done=wk.done||0, total=wk.total||0, comp=wk.comp||0;
+  const otPct=hrs?Math.round(ot/hrs*100):0;
+  const util=parseFloat(mp.avgHrsPerPerson)||0;
+  const hrsPerTask=done?(hrs/done):0;
+  // Previous-period values for trend arrows (hrs/task: lower=better; completion: higher=better; OT: lower=better)
+  let pHrsTask=null,pComp=null,pOtPct=null;
+  if(prevAgg&&prevAgg.manpower&&prevAgg.work){
+    pHrsTask=prevAgg.work.done?(prevAgg.manpower.hrs/prevAgg.work.done):null;
+    pComp=(prevAgg.work.comp!=null)?prevAgg.work.comp:null;
+    pOtPct=prevAgg.manpower.hrs?Math.round(prevAgg.manpower.ot/prevAgg.manpower.hrs*100):null;
+  }
+  const arrow=(cur,prev,higherBetter)=>{
+    if(prev==null||!isFinite(cur)||!isFinite(prev))return"";
+    const d=cur-prev;
+    if(Math.abs(d)<0.05)return ' <span style="color:var(--grey);font-size:12px">▬</span>';
+    return ' <span style="color:'+((higherBetter?d>0:d<0)?'var(--success)':'var(--danger)')+';font-size:12px">'+(d>0?'▲':'▼')+'</span>';
+  };
+  let trendLine="";
+  if(pHrsTask!=null&&done){
+    const d=hrsPerTask-pHrsTask;
+    if(Math.abs(d)<0.05)trendLine="Efficiency steady vs last period.";
+    else if(d<0)trendLine="More efficient than last period — "+hrsPerTask.toFixed(1)+" vs "+pHrsTask.toFixed(1)+" hrs per completed task.";
+    else trendLine="Less efficient than last period — "+hrsPerTask.toFixed(1)+" vs "+pHrsTask.toFixed(1)+" hrs per completed task.";
+  }
+  let verdict,advice,col;
+  if(hrs<=0){verdict="No hours logged";advice="No attendance recorded for this period, so effectiveness can't be measured.";col="var(--grey)";}
+  else if(done===0){verdict="Hours in, little marked done";advice="Time is being logged but few or no tasks are completing — usually blockers or tasks not being closed out. Check what's holding the crew up.";col="var(--danger)";}
+  else if(comp>=80&&otPct<15){verdict="Effective & right-sized";advice="Strong completion without heavy overtime — the current crew size is working well.";col="var(--success)";}
+  else if(comp>=80&&otPct>=15){verdict="Keeping up — on overtime";advice="Targets are being met but leaning on "+otPct+"% overtime. You may be slightly under-staffed; adding crew could cut OT cost.";col="var(--warn)";}
+  else if(comp<60&&otPct>=15){verdict="Behind & stretched";advice="Low completion despite "+otPct+"% overtime points to blockers or too few people for the workload. Clear blockers first, then reassess headcount.";col="var(--danger)";}
+  else if(comp<60&&util>0&&util<6){verdict="Hours not converting to output";advice="Low completion with light hours-per-person suggests idle time or more crew than the available work needs. Open more work fronts or rebalance.";col="var(--danger)";}
+  else{verdict="Mixed — monitor";advice="Effort and output are middling. Watch blockers and crew balance over the next few days.";col="var(--warn)";}
+  return `<div id="effCard" class="an-card">
+    <h3>⚙️ Effectiveness — Manpower vs Completion</h3>
+    <div class="an-kpi">
+      <div class="an-kpi-box"><div class="kn" style="font-size:22px">${hrs.toFixed(0)}</div><div class="kl">Man-Hours</div></div>
+      <div class="an-kpi-box"><div class="kn" style="font-size:22px">${comp}%${arrow(comp,pComp,true)}</div><div class="kl">Completion</div></div>
+      <div class="an-kpi-box"><div class="kn" style="font-size:22px">${done?hrsPerTask.toFixed(1):"—"}${arrow(hrsPerTask,pHrsTask,false)}</div><div class="kl">Hrs / Completed Task</div></div>
+    </div>
+    <div class="an-kpi">
+      <div class="an-kpi-box"><div class="kn" style="font-size:18px">${done}/${total}</div><div class="kl">Tasks Completed</div></div>
+      <div class="an-kpi-box"><div class="kn" style="font-size:18px;color:${otPct>=15?'var(--warn)':'var(--success)'}">${otPct}%${arrow(otPct,pOtPct,false)}</div><div class="kl">Overtime</div></div>
+      <div class="an-kpi-box"><div class="kn" style="font-size:18px">${util.toFixed(1)}</div><div class="kl">Hrs / Person</div></div>
+    </div>
+    ${trendLine?`<div style="font-size:12px;color:var(--grey);margin-top:6px;text-align:center">📈 ${trendLine}</div>`:""}
+    <div style="margin-top:8px;padding:10px;border-radius:8px;background:var(--lt-grey);border-left:4px solid ${col}">
+      <div style="font-weight:700;color:${col};font-size:14px">${verdict}</div>
+      <div style="font-size:12px;color:var(--grey);margin-top:3px">${advice}</div>
+    </div>
+  </div>`;
+}
 function _renderExecSummary(agg,period,mode){
   const productivityScore=Math.min(100,Math.round((agg.work.comp*0.4)+(agg.quality.avg*0.3)+((100-Math.min(100,agg.issues.high*20))*0.3)));
   const effScore=agg.manpower.total?Math.min(100,Math.round(parseFloat(agg.manpower.avgHrsPerPerson)/8*100)):0;
@@ -4015,6 +4114,8 @@ function _renderExecSummary(agg,period,mode){
       <div class="an-kpi-box"><div class="kn" style="color:${productivityScore>=70?'var(--success)':(productivityScore>=50?'var(--warn)':'var(--danger)')}">${productivityScore}</div><div class="kl">Productivity Index</div></div>
     </div>
   </div>`;
+
+  html+=_renderEffectiveness(agg);
 
   // ── Executive Narrative (academic style) ──
   const teamsActive=Object.keys(agg.byTeam).length;
@@ -4492,6 +4593,7 @@ function _buildAnalysisPDF(mode,periodLabel,analyses){
       ["Task Completion Rate",agg.work.comp+"%","≥80%",agg.work.comp>=80?"✓ On Track":"✗ Below Target"],
       ["Total Workforce",""+agg.manpower.total,"—","—"],
       ["Total Man-Hours",agg.manpower.hrs.toFixed(1),"—","—"],
+      ["Man-Hours / Completed Task",agg.work.done?(agg.manpower.hrs/agg.work.done).toFixed(1):"—","lower = better",agg.work.done?"—":"⚠ No tasks done"],
       ["Avg Hours/Person",agg.manpower.avgHrsPerPerson,"7-8 hrs",parseFloat(agg.manpower.avgHrsPerPerson)>=7?"✓ Optimal":"⚠ Underutilized"],
       ["Overtime Ratio",otPct+"%","≤15%",parseFloat(otPct)<=15?"✓ Within Limit":"⚠ Elevated"],
       ["Quality Score",agg.quality.avg+"%","≥80%",agg.quality.avg>=80?"✓ Acceptable":"✗ Below Standard"],
@@ -7256,7 +7358,6 @@ function _doFinalSubmit(tk,mode){
   // Share via WhatsApp only if mode is "share"
   if(mode==="share"){
     const fn=`Checksheet_${tm.name.replace(/\s/g,"_")}_${d.date||"undated"}.pdf`;
-    const pdfDoc=buildPDFDoc(d);
     const importData={...d,photos:[]};
     const importCode=generateImportCode(importData);
     const workDone=(d.workRows||[]).filter(r=>r.task&&r.status==="C").map(r=>r.task).join(", ");
@@ -7269,15 +7370,22 @@ function _doFinalSubmit(tk,mode){
     if(issues)msg+=`\n⚠️ ${t("whatsappIssuesLabel")} ${issues}`;
     if(toolAlerts)msg+=`\n🔧 ${t("whatsappToolAlerts")} ${toolAlerts}`;
     msg+=`\n\n📋 ${t("whatsappImportCode")}:\n${importCode}`;
-    if(navigator.share&&navigator.canShare){
-      const blob=pdfDoc.output("blob");
-      const file=new File([blob],fn,{type:"application/pdf"});
-      navigator.share({title:`ELGAWA ${tm.name}`,text:msg,files:[file]}).catch(()=>{
-        pdfDoc.save(fn);window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
-      });
-    }else{
-      pdfDoc.save(fn);window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
-    }
+    // Build the PDF only once the engine is ready (scripts now load deferred) and
+    // always fall back to the WhatsApp text, so a share can never fail silently.
+    requirePdf(function(){
+      try{
+        const pdfDoc=buildPDFDoc(d);
+        if(navigator.share&&navigator.canShare){
+          const blob=pdfDoc.output("blob");
+          const file=new File([blob],fn,{type:"application/pdf"});
+          navigator.share({title:`ELGAWA ${tm.name}`,text:msg,files:[file]}).catch(()=>{
+            try{pdfDoc.save(fn);}catch(e){}window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+          });
+        }else{
+          try{pdfDoc.save(fn);}catch(e){}window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+        }
+      }catch(err){try{_pdfErr(err);}catch(e){}window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);}
+    });
   }
   showToast(t("saved"));
   showSubmitConfirmation(tm.name,tm.color);
@@ -9463,6 +9571,14 @@ function installApp(){
   const isIOS=/(iPhone|iPad|iPod)/i.test(ua)||(/(Macintosh)/i.test(ua)&&navigator.maxTouchPoints>1);
   const inApp=window.matchMedia("(display-mode:standalone)").matches||window.navigator.standalone;
   if(inApp){showToast("✅ App is already installed");return;}
+  // Opened inside another app's in-app browser (WhatsApp / Facebook / Instagram)?
+  // Those can't install web apps and won't show an install option — so tell the
+  // user to reopen the link in a real browser first.
+  const inAppBrowser=/FBAN|FBAV|FB_IAB|Instagram|Line\/|MicroMessenger|; wv\)/i.test(ua);
+  if(inAppBrowser){
+    alert("📲 You're opening this inside another app (like WhatsApp or Facebook) — it can't install the app from here.\n\nTo install:\n1. Tap the ⋮ or ••• menu in this window\n2. Choose \"Open in Chrome\" (Android) or \"Open in Safari\" (iPhone)\n3. Then tap the Install button again.");
+    return;
+  }
   const isChrome=/Chrome|CriOS/i.test(ua);
   let msg;
   if(isIOS){
@@ -11104,6 +11220,7 @@ function _renderHrAttBody(date,data,payData){
   });
   html+='</div><div style="text-align:center;margin-top:6px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'
     +'<button class="btn btn-primary" onclick="downloadHrAttendancePDF()" style="padding:11px 20px">📄 '+t("downloadAttendancePdf")+'</button>'
+    +'<button class="btn btn-primary" onclick="downloadHrAttendanceExcel()" style="padding:11px 20px;background:#22a04a">📊 Excel</button>'
     +'<button class="btn btn-primary" onclick="downloadHrWeeklyRegisterPDF()" style="padding:11px 20px;background:var(--navy)">📅 Weekly Register</button></div>';
   body.innerHTML=html;
   window._hrAttSnapshot={date:date,rows:rows,present:present,absent:absent};
@@ -11165,6 +11282,24 @@ function _hrAttNav(dir){
   _hrAttDate=s;renderHrAttendance();
 }
 function _hrAttSet(v){if(!v)return;_hrAttDate=v;renderHrAttendance();}
+function downloadHrAttendanceExcel(){
+  const snap=window._hrAttSnapshot;if(!snap){showToast(t("hrNoAtt"));return}
+  requireXlsx(function(){
+    try{
+      const rows=[["ELGAWA GUYANA INC. — Daily Attendance",""],["Date",snap.date],[]];
+      rows.push(["#","Name","Status","Time In","Time Out","Shift"]);
+      snap.rows.forEach((r,i)=>rows.push([i+1,r.name,r.present?"Present":"Absent",r.present?(r.timeIn||""):"",r.present?(r.timeOut||""):"",r.shift==="night"?"Night":"Day"]));
+      rows.push([]);
+      rows.push(["Present",snap.present,"Absent",snap.absent,"Total",snap.rows.length]);
+      const ws=XLSX.utils.aoa_to_sheet(rows);
+      ws["!cols"]=[{wch:6},{wch:28},{wch:10},{wch:10},{wch:10},{wch:8}];
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,"Attendance");
+      XLSX.writeFile(wb,"ELGAWA_Attendance_"+snap.date+".xlsx");
+      showToast("📊 Attendance Excel downloaded");
+    }catch(err){showToast("⚠️ Excel error: "+((err&&err.message)?err.message:"could not generate"));}
+  });
+}
 function downloadHrAttendancePDF(){
   const snap=window._hrAttSnapshot;if(!snap){showToast(t("hrNoAtt"));return}
   requirePdf(function(){
