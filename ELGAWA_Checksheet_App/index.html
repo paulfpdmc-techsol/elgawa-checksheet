@@ -7514,7 +7514,11 @@ window.fetch=function(input,init){
         if(!tok)return res;
         var base=url.replace(/([?&])auth=[^&]*/,"$1").replace(/[?&]$/,"");
         var sep=base.indexOf("?")>-1?"&":"?";var u2=base+sep+"auth="+encodeURIComponent(tok);
-        return _origFetch((typeof input==="string")?u2:new Request(u2,init));
+        // Pass init through on the retry. The old line dropped it, so a PUT
+        // retried after a token expiry became a GET that "succeeded" — the
+        // write was silently lost. All database calls here use string URLs,
+        // so url+init reconstructs the original request exactly.
+        return _origFetch(u2,init);
       });
     }
     return res;
@@ -8124,42 +8128,67 @@ function showPDFPreview(pdfDoc,filename){
   overlay.appendChild(contentDiv);
 
   if(isMobile&&window.pdfjsLib){
-    // Mobile: render PDF pages as canvas images using pdf.js
+    // Mobile: render pages with pdf.js — SEQUENTIALLY, in small batches.
+    // The old code rendered EVERY page at once in parallel; on photo-heavy
+    // reports (daily report = dozens of pages with site photos) that filled
+    // phone memory with full-size canvases and froze the tab on
+    // "Rendering preview..." — the reason report previews never loaded.
+    // Now: first 4 pages render one at a time, the rest behind a
+    // "Show more pages" button. A watchdog swaps in an Open/Save screen if
+    // page 1 hasn't appeared in 15s, so there is always a way to the PDF.
     contentDiv.innerHTML='<div style="text-align:center;padding:40px;color:var(--grey)"><div style="font-size:24px">⏳</div><p style="margin-top:8px">Rendering preview...</p></div>';
-    const arrBuf=pdfDoc.output("arraybuffer");
-    pdfjsLib.getDocument({data:arrBuf}).promise.then(function(pdfFile){
-      contentDiv.innerHTML="";
-      var totalPages=pdfFile.numPages;
-      // Pre-create ordered placeholders so pages always appear in correct order
-      var placeholders=[];
-      for(var p=1;p<=totalPages;p++){
-        var ph=document.createElement("div");
-        ph.dataset.page=p;
-        contentDiv.appendChild(ph);
-        placeholders.push(ph);
-      }
-      for(var p=1;p<=totalPages;p++){
-        (function(pageNum){
-          pdfFile.getPage(pageNum).then(function(page){
-            var scale=Math.min((window.innerWidth-24)/page.getViewport({scale:1}).width, 2);
-            var viewport=page.getViewport({scale:scale});
-            var canvas=document.createElement("canvas");
-            canvas.width=viewport.width;
-            canvas.height=viewport.height;
+    const fallbackUI=function(msg){
+      contentDiv.innerHTML='<div style="text-align:center;padding:40px"><div style="font-size:32px">📄</div><p style="margin:10px 0;color:var(--grey)">'+(msg||"Your PDF is ready.")+'</p>'
+        +'<button onclick="window.open(\''+url+'\')" style="background:var(--navy);color:white;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px">Open PDF</button>'
+        +'<p style="margin-top:10px;font-size:12px;color:var(--grey)">or use 💾 Save / 📤 Share above</p></div>';
+    };
+    let firstPageDone=false;
+    const watchdog=setTimeout(function(){if(!firstPageDone)fallbackUI("Preview is slow on this phone — open or save it instead.");},15000);
+    try{
+      pdfjsLib.getDocument({data:pdfDoc.output("arraybuffer")}).promise.then(function(pdfFile){
+        const totalPages=pdfFile.numPages;
+        contentDiv.innerHTML="";
+        const pagesDiv=document.createElement("div");
+        contentDiv.appendChild(pagesDiv);
+        const moreBtn=document.createElement("button");
+        moreBtn.style.cssText="display:block;width:calc(100% - 24px);margin:10px 12px;background:var(--teal);color:white;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer";
+        const BATCH=4;
+        let next=1,busy=false;
+        function renderOne(pageNum){
+          return pdfFile.getPage(pageNum).then(function(page){
+            const scale=Math.min((window.innerWidth-24)/page.getViewport({scale:1}).width,1.5);
+            const viewport=page.getViewport({scale:scale});
+            const canvas=document.createElement("canvas");
+            canvas.width=viewport.width;canvas.height=viewport.height;
             canvas.style.cssText="width:100%;height:auto;display:block;border-bottom:1px solid #eee";
-            var ctx=canvas.getContext("2d");
-            page.render({canvasContext:ctx,viewport:viewport}).promise.catch(function(){
-              canvas.style.cssText="width:100%;height:60px;display:flex;align-items:center;justify-content:center;background:#fff5f5;border-bottom:1px solid #eee";
-              placeholders[pageNum-1].innerHTML='<div style="text-align:center;padding:8px;color:#e74c3c;font-size:12px">Page '+pageNum+' failed to render</div>';
+            return page.render({canvasContext:canvas.getContext("2d"),viewport:viewport}).promise.then(function(){
+              pagesDiv.appendChild(canvas);
+              firstPageDone=true;clearTimeout(watchdog);
+              try{page.cleanup()}catch(e){}
             });
-            placeholders[pageNum-1].appendChild(canvas);
+          }).catch(function(){
+            const err=document.createElement("div");
+            err.style.cssText="text-align:center;padding:8px;color:#e74c3c;font-size:12px;border-bottom:1px solid #eee";
+            err.textContent="Page "+pageNum+" failed to render";
+            pagesDiv.appendChild(err);
           });
-        })(p);
-      }
-    }).catch(function(){
-      // Fallback: open in new tab
-      contentDiv.innerHTML='<div style="text-align:center;padding:40px"><p>Could not render preview.</p><button onclick="window.open(\''+url+'\');this.closest(\'.modal-overlay\')._closeFn()" style="background:var(--navy);color:white;border:none;border-radius:8px;padding:12px 24px;font-size:14px;cursor:pointer;margin-top:12px">Open in Browser</button></div>';
-    });
+        }
+        function renderBatch(){
+          if(busy)return;busy=true;
+          const stop=Math.min(next+BATCH-1,totalPages);
+          moreBtn.disabled=true;moreBtn.textContent="⏳ Rendering…";
+          let chain=Promise.resolve();
+          for(let p=next;p<=stop;p++){(function(pn){chain=chain.then(function(){return renderOne(pn)});})(p);}
+          chain.then(function(){
+            next=stop+1;busy=false;moreBtn.disabled=false;
+            if(next>totalPages){if(moreBtn.parentNode)moreBtn.remove();}
+            else{moreBtn.textContent="⬇️ Show more pages ("+(totalPages-next+1)+" left)";if(moreBtn.parentNode!==contentDiv)contentDiv.appendChild(moreBtn);}
+          });
+        }
+        moreBtn.onclick=renderBatch;
+        renderBatch();
+      }).catch(function(){clearTimeout(watchdog);fallbackUI("Could not render the preview.");});
+    }catch(e){clearTimeout(watchdog);fallbackUI("Could not render the preview.");}
   }else if(isMobile){
     // Mobile without pdf.js loaded. Do NOT auto window.open here — it runs after
     // async PDF generation, so the phone blocks it as a popup and nothing shows.
@@ -9276,6 +9305,27 @@ function updateAttTime(input){
   data.workers[name][field]=input.value;
   saveAttendanceLocal(_attDate,data);
   _attAutoCloudSave();
+  _syncRegisterEditToSelf(_attDate,name,data.workers[name]);
+}
+// Register time edits flow back into the worker's self sign-in record (when
+// one exists), so the Self Sign-In screen and the attendance register never
+// show different clocks. Workers with no self record are left alone.
+function _syncRegisterEditToSelf(date,fullName,w){
+  try{
+    const users=getUsers();
+    const uname=Object.keys(users).find(u=>users[u].name&&users[u].name.toLowerCase()===String(fullName).toLowerCase());
+    if(!uname)return;
+    loadSelfAttendance(date,uname).then(rec=>{
+      if(!rec)return;
+      if((rec.signIn||"")===(w.timeIn||"")&&(rec.signOut||"")===(w.timeOut||""))return;
+      if(w.timeIn)rec.signIn=w.timeIn;
+      rec.signOut=w.timeOut||null;
+      if(rec.signIn&&rec.signOut)rec.totalMins=calcMinsBetween(rec.signIn,rec.signOut);
+      rec.editedBy=(currentUser&&currentUser.username)||"admin";
+      rec.editedAt=Date.now();
+      saveSelfAttendance(date,uname,rec);
+    });
+  }catch(e){}
 }
 
 function toggleShift(name){
@@ -9805,16 +9855,25 @@ function renderPayWorkerList(){
   document.getElementById("payDayTotal").textContent="$"+total.toLocaleString();
 }
 function setPayShift(name,shifts){_payData[name]=shifts;renderPayWorkerList()}
+// ═══ PAYROLL KEY ENCODING ═══
+// Same rule as attendance (v133): Firebase rejects keys containing . # $ / [ ]
+// anywhere in the written object. Pay data is keyed by worker full names, and
+// "Jose N. Queipo" is on the installation roster — so every whole-day pay PUT
+// containing his row came back HTTP 400 while the toast still said saved.
+// Names are %hex-encoded going to the cloud and decoded coming back; the
+// local copy always keeps raw names.
+function _encFlat(o){const out={};Object.keys(o||{}).forEach(k=>{out[_fbEncKey(k)]=o[k]});return out}
+function _decFlat(o){const out={};Object.keys(o||{}).forEach(k=>{out[_fbDecKey(k)]=o[k]});return out}
 function savePayEntry(){
   const date=getPayDate();const weekKey=getISOWeek(date);
   try{const local=JSON.parse(localStorage.getItem("elg_payroll")||"{}");if(!local[weekKey])local[weekKey]={};local[weekKey][date]=_payData;localStorage.setItem("elg_payroll",JSON.stringify(local))}catch(e){}
   const fb=getFirebaseUrl();
-  if(fb){fetch(fb+"/payroll/"+weekKey+"/"+date+".json",{method:"PUT",body:JSON.stringify(_payData),headers:{"Content-Type":"application/json"}}).then(()=>showToast("✅ Attendance saved for "+date)).catch(()=>showToast("⚠️ Saved locally, cloud sync failed"))}
+  if(fb){fetch(fb+"/payroll/"+weekKey+"/"+date+".json",{method:"PUT",body:JSON.stringify(_encFlat(_payData)),headers:{"Content-Type":"application/json"}}).then(r=>{if(r.ok)showToast("✅ Attendance saved for "+date);else showToast("⚠️ Cloud rejected pay save (HTTP "+r.status+") — kept locally")}).catch(()=>showToast("⚠️ Saved locally, cloud sync failed"))}
   else{showToast("✅ Saved locally")}
 }
 function loadPayDayData(weekKey,date){
   const fb=getFirebaseUrl();
-  if(fb){return fetch(fb+"/payroll/"+weekKey+"/"+date+".json").then(fbJson).then(d=>{if(d){try{const l=JSON.parse(localStorage.getItem("elg_payroll")||"{}");if(!l[weekKey])l[weekKey]={};l[weekKey][date]=d;localStorage.setItem("elg_payroll",JSON.stringify(l))}catch(e){}return d}try{return JSON.parse(localStorage.getItem("elg_payroll")||"{}")[weekKey]?.[date]||null}catch(e){return null}}).catch(()=>{try{return JSON.parse(localStorage.getItem("elg_payroll")||"{}")[weekKey]?.[date]||null}catch(e){return null}})}
+  if(fb){return fetch(fb+"/payroll/"+weekKey+"/"+date+".json").then(fbJson).then(d=>{if(d){d=_decFlat(d);try{const l=JSON.parse(localStorage.getItem("elg_payroll")||"{}");if(!l[weekKey])l[weekKey]={};l[weekKey][date]=d;localStorage.setItem("elg_payroll",JSON.stringify(l))}catch(e){}return d}try{return JSON.parse(localStorage.getItem("elg_payroll")||"{}")[weekKey]?.[date]||null}catch(e){return null}}).catch(()=>{try{return JSON.parse(localStorage.getItem("elg_payroll")||"{}")[weekKey]?.[date]||null}catch(e){return null}})}
   try{return Promise.resolve(JSON.parse(localStorage.getItem("elg_payroll")||"{}")[weekKey]?.[date]||null)}catch(e){return Promise.resolve(null)}
 }
 
@@ -9866,12 +9925,12 @@ function saveSurinameEntry(){
   updateSurData();const weekStart=getSurWeekStart();const weekKey=getISOWeek(weekStart);
   try{const l=JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}");l[weekKey]=_surData;localStorage.setItem("elg_payroll_sur",JSON.stringify(l))}catch(e){}
   const fb=getFirebaseUrl();
-  if(fb){fetch(fb+"/payroll/"+weekKey+"/suriname.json",{method:"PUT",body:JSON.stringify(_surData),headers:{"Content-Type":"application/json"}}).then(()=>showToast("✅ Suriname data saved")).catch(()=>showToast("⚠️ Saved locally, cloud sync failed"))}
+  if(fb){fetch(fb+"/payroll/"+weekKey+"/suriname.json",{method:"PUT",body:JSON.stringify(_encWorkers(_surData)),headers:{"Content-Type":"application/json"}}).then(r=>{if(r.ok)showToast("✅ Suriname data saved");else showToast("⚠️ Cloud rejected save (HTTP "+r.status+") — kept locally")}).catch(()=>showToast("⚠️ Saved locally, cloud sync failed"))}
   else{showToast("✅ Saved locally")}
 }
 function loadSurinameData(weekKey){
   const fb=getFirebaseUrl();
-  if(fb){return fetch(fb+"/payroll/"+weekKey+"/suriname.json").then(fbJson).then(d=>{if(d){try{const l=JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}");l[weekKey]=d;localStorage.setItem("elg_payroll_sur",JSON.stringify(l))}catch(e){}return d}try{return JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}")[weekKey]||null}catch(e){return null}}).catch(()=>{try{return JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}")[weekKey]||null}catch(e){return null}})}
+  if(fb){return fetch(fb+"/payroll/"+weekKey+"/suriname.json").then(fbJson).then(d=>{if(d){d=_decWorkers(d);try{const l=JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}");l[weekKey]=d;localStorage.setItem("elg_payroll_sur",JSON.stringify(l))}catch(e){}return d}try{return JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}")[weekKey]||null}catch(e){return null}}).catch(()=>{try{return JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}")[weekKey]||null}catch(e){return null}})}
   try{return Promise.resolve(JSON.parse(localStorage.getItem("elg_payroll_sur")||"{}")[weekKey]||null)}catch(e){return Promise.resolve(null)}
 }
 
@@ -9972,7 +10031,7 @@ function paySheetEditCell(workerName,dayIdx,dateStr,td){
     // Save
     try{const l=JSON.parse(localStorage.getItem("elg_payroll")||"{}");if(!l[weekKey])l[weekKey]={};l[weekKey][dateStr]=data;localStorage.setItem("elg_payroll",JSON.stringify(l))}catch(e){}
     const fb=getFirebaseUrl();
-    if(fb)fetch(fb+"/payroll/"+weekKey+"/"+dateStr+".json",{method:"PUT",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}}).catch(()=>{});
+    if(fb)fetch(fb+"/payroll/"+weekKey+"/"+dateStr+".json",{method:"PUT",body:JSON.stringify(_encFlat(data)),headers:{"Content-Type":"application/json"}}).then(r=>{if(!r.ok)showToast("⚠️ Cloud rejected pay save (HTTP "+r.status+")")}).catch(()=>{});
     renderPaySheet();
   });
 }
@@ -9998,7 +10057,7 @@ function paySheetEditWorker(workerName,group){
         if(!data)data={};data[workerName]=val;
         try{const l=JSON.parse(localStorage.getItem("elg_payroll")||"{}");if(!l[weekKey])l[weekKey]={};l[weekKey][day]=data;localStorage.setItem("elg_payroll",JSON.stringify(l))}catch(e){}
         const fb=getFirebaseUrl();
-        if(fb)fetch(fb+"/payroll/"+weekKey+"/"+day+".json",{method:"PUT",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}}).catch(()=>{});
+        if(fb)fetch(fb+"/payroll/"+weekKey+"/"+day+".json",{method:"PUT",body:JSON.stringify(_encFlat(data)),headers:{"Content-Type":"application/json"}}).then(r=>{if(!r.ok)showToast("⚠️ Cloud rejected pay save (HTTP "+r.status+")")}).catch(()=>{});
       });
     });
     setTimeout(()=>{renderPaySheet();showToast("Updated "+workerName)},500);
@@ -11593,6 +11652,7 @@ function approveProfile(username){
   });
 }
 function downloadWorkforceProfilesPDF(){
+  showToast("⏳ Building profiles PDF…");
   requirePdf(function(){
     loadAllProfiles().then(all=>{
       all=all||{};
@@ -12078,13 +12138,16 @@ function saveSelfAttEdit(date,username){
     data.editedBy=currentUser.username;
     data.editedAt=Date.now();
     saveSelfAttendance(date,username,data);
-    // If this worker is already on the register, keep the register's times in
-    // step with the admin's edit (confirm still controls presence).
+    // Keep the register in step with the admin's edit. The old check only
+    // looked at the LOCAL register copy — if this device hadn't opened that
+    // date's attendance yet, the corrected times never reached the register
+    // and the two screens showed different clocks. Confirmed records now
+    // always sync through _attMarkWorker (which rebases on the freshest
+    // cloud/local copy, so nothing gets stomped).
     try{
       const fullName=data.name||((getUsers()[username]||{}).name)||username;
-      const att=(_attDate===date&&_attData)?_attData:loadAttendance(date);
-      if(att&&att.workers&&att.workers[fullName]&&att.workers[fullName].present){
-        _attMarkWorker(date,fullName,{timeIn:inVal,timeOut:outVal||""});
+      if(data.confirmed){
+        _attMarkWorker(date,fullName,{present:true,timeIn:inVal,timeOut:outVal||"",confirmedByAdmin:true,selfSignIn:true});
       }
     }catch(e){}
     // Close modal
@@ -12096,6 +12159,8 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v165 — Firebase rules are now LIVE (auth != null, published by Paul), so two dormant bugs became urgent and are fixed here: (1) auth-retry after token expiry now passes the request options through (a retried PUT stayed a PUT; before it silently became a GET and the write was lost); (2) payroll cloud saves now %hex-encode worker-name keys exactly like attendance has since v133 ("Jose N. Queipo" on the installation roster made every whole-day pay PUT fail HTTP 400 while still toasting success) — all 4 payroll write sites encode, both loaders decode, and every payroll save now checks the response and warns instead of lying.
+// Build: v164 — PDF preview no longer freezes phones (pages render sequentially in batches of 4 with a Show-more button + 15s watchdog fallback; was: every page at once in parallel, which hung photo-heavy daily/weekly/monthly reports and the workforce profiles PDF). Attendance clock fixes: admin edits to self sign-in times now ALWAYS sync into the register for confirmed records (old code checked only the local register copy), and register time edits flow back into the worker's self sign-in record, so the two screens can't disagree.
 // Build: v127 — bolder visual theme (pill bottom-nav, accent headers, gradient stats), self sign-in table restacked to fit narrow screens, team category badges (ELGAWA Guyana Team / Suriname ELGAWA)
 // Build: v126 — visual refresh, viewport fixes, back/forward buttons, 3 daily reminders (chime+vibrate), hub bug fixes (/checksheets source, crash guards)
 // Build: v125 — fbJson hardening, attendance auto-sync, home/refresh buttons, live Firebase health banner
