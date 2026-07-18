@@ -2030,6 +2030,7 @@ const T={
   wBtnSignOut:{en:"SIGN OUT",es:"SALIDA",nl:"AFMELDEN"},
   wConfirmSignIn:{en:"Sign in for today?",es:"¿Registrar entrada para hoy?",nl:"Aanmelden voor vandaag?"},
   wConfirmSignOut:{en:"Sign out and end your shift?",es:"¿Registrar salida y terminar tu turno?",nl:"Afmelden en dienst beëindigen?"},
+  wAutoSignedOut:{en:"Signed out automatically at 5:00 PM",es:"Salida registrada automáticamente a las 5:00 PM",nl:"Automatisch afgemeld om 17:00"},
 };
 function t(key){return(T[key]&&T[key][LANG])||T[key]&&T[key]["en"]||key}
 
@@ -9575,6 +9576,28 @@ function renderWeeklyRegister(refDate){
   });
 }
 
+// v169: jsPDF's built-in fonts have no real ✓ / — glyphs (they printed as
+// specks), so the weekly register marks are DRAWN: green cell + tick for
+// present, red cell + dash for absent, amber for Saturday — same look as the
+// on-screen weekly sheet.
+function _pdfDrawMark(pdf,c,marks){
+  if(c.section!=="body")return;
+  const m=marks[c.row.index]&&marks[c.row.index][c.column.index];
+  if(!m)return;
+  const x=c.cell.x,y=c.cell.y,w=c.cell.width,h=c.cell.height;
+  if(m==="t"){
+    pdf.setDrawColor(21,120,60);pdf.setLineWidth(0.6);
+    pdf.line(x+w*0.32,y+h*0.52,x+w*0.45,y+h*0.68);
+    pdf.line(x+w*0.45,y+h*0.68,x+w*0.70,y+h*0.32);
+  }else if(m==="d"){
+    pdf.setDrawColor(150,150,150);pdf.setLineWidth(0.5);
+    pdf.line(x+w*0.38,y+h*0.5,x+w*0.62,y+h*0.5);
+  }
+}
+const _PDF_GREEN=[212,237,218],_PDF_RED=[248,215,218],_PDF_AMBER=[255,238,186];
+function _pdfCellP(sat){return{content:"",styles:{fillColor:sat?_PDF_AMBER:_PDF_GREEN}}}
+function _pdfCellA(){return{content:"",styles:{fillColor:_PDF_RED}}}
+
 // v168: one-day attendance register PDF, built from the data on screen.
 // This is the sheet Paul submits each day; the weekly register PDF stays
 // the end-of-week / week-to-date submission.
@@ -9657,44 +9680,44 @@ function generateWeeklyAttPDF(){
   pdf.text("Generated: "+new Date().toLocaleDateString(),M,y);y+=8;
 
   const head=[["Worker",...idxs.map(i=>dayNames[i]+"\n"+d.workDates[i].slice(5)),...(withSat?["Sat\n"+d.satDate.slice(5)]:[]),"Days"]];
-  const body=[];
+  const body=[];const marks=[];
 
   d.roster.forEach(name=>{
-    const row=[name];let worked=0;
+    const row=[name];const mrow=[""];let worked=0;
     idxs.forEach(i=>{
       const w=d.weekData[i].data.workers&&d.weekData[i].data.workers[name];
       const p=w&&w.present;
       if(p)worked++;
-      row.push(p?"✓":"—");
+      row.push(p?_pdfCellP(false):_pdfCellA());mrow.push(p?"t":"d");
     });
     if(withSat){
       const satW=d.weekData[5].data.workers&&d.weekData[5].data.workers[name];
       const satP=satW&&satW.present;if(satP)worked++;
-      row.push(satP?"✓":"—");
+      row.push(satP?_pdfCellP(true):_pdfCellA());mrow.push(satP?"t":"d");
     }
-    row.push(worked+"/"+denom);
-    body.push(row);
+    row.push(worked+"/"+denom);mrow.push("");
+    body.push(row);marks.push(mrow);
   });
 
   d.allMovers.forEach(name=>{
-    const row=["📦 "+name];let worked=0;
+    const row=[name+" (mover)"];const mrow=[""];let worked=0;
     idxs.forEach(i=>{
       const movers=d.weekData[i].data.movers||[];
       const found=movers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);
       if(found)worked++;
-      row.push(found?"✓":"");
+      row.push(found?_pdfCellP(false):_pdfCellA());mrow.push(found?"t":"d");
     });
     if(withSat){
       const satMovers=d.weekData[5].data.movers||[];
       const satFound=satMovers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);
       if(satFound)worked++;
-      row.push(satFound?"✓":"");
+      row.push(satFound?_pdfCellP(true):_pdfCellA());mrow.push(satFound?"t":"d");
     }
-    row.push(worked+"/"+denom);
-    body.push(row);
+    row.push(worked+"/"+denom);mrow.push("");
+    body.push(row);marks.push(mrow);
   });
 
-  pdf.autoTable({head:head,body:body,startY:y,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid"});
+  pdf.autoTable({head:head,body:body,startY:y,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid",didDrawCell:function(c){_pdfDrawMark(pdf,c,marks)}});
   y=pdf.lastAutoTable.finalY+10;
 
   const fY=y+10;
@@ -9744,22 +9767,23 @@ function generateWeeklyFinancePDF(){
     const workers=getPayGroupWorkers(gk);
     workers.forEach(w=>inPayRoster.add(w.name));
     if(!workers.length)return;
-    const body=[];let gDays=0,gAmt=0;
+    const body=[];const marks=[];let gDays=0,gAmt=0;
     workers.forEach(w=>{
-      const row=[w.name];let worked=0;
-      idxs.forEach(i=>{const p=presentOn(i,w.name);if(p)worked++;row.push(p?"✓":"—")});
-      if(withSat){const p=presentOn(5,w.name);if(p)worked++;row.push(p?"✓":"—")}
+      const row=[w.name];const mrow=[""];let worked=0;
+      idxs.forEach(i=>{const p=presentOn(i,w.name);if(p)worked++;row.push(p?_pdfCellP(false):_pdfCellA());mrow.push(p?"t":"d")});
+      if(withSat){const p=presentOn(5,w.name);if(p)worked++;row.push(p?_pdfCellP(true):_pdfCellA());mrow.push(p?"t":"d")}
       const amt=worked*(w.rate||0);
       gDays+=worked;gAmt+=amt;
-      row.push(String(worked),(w.rate||0).toLocaleString(),amt.toLocaleString());
-      body.push(row);
+      row.push(String(worked),(w.rate||0).toLocaleString(),amt.toLocaleString());mrow.push("","","");
+      body.push(row);marks.push(mrow);
     });
     grandDays+=gDays;grandAmt+=gAmt;
     body.push([{content:"Subtotal — "+PAY_GROUPS[gk].label,colSpan:1+denom,styles:{fontStyle:"bold",fillColor:[240,244,248]}},{content:String(gDays),styles:{fontStyle:"bold",fillColor:[240,244,248]}},{content:"",styles:{fillColor:[240,244,248]}},{content:gAmt.toLocaleString(),styles:{fontStyle:"bold",fillColor:[240,244,248]}}]);
+    marks.push([]);
     if(y>165){pdf.addPage();y=20}
     pdf.setFontSize(11);pdf.setTextColor(15,110,86);
     pdf.text(PAY_GROUPS[gk].label,M,y);
-    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid"});
+    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid",didDrawCell:function(c){_pdfDrawMark(pdf,c,marks)}});
     y=pdf.lastAutoTable.finalY+9;
   });
 
@@ -9767,33 +9791,37 @@ function generateWeeklyFinancePDF(){
   // one silently drops off the pay register.
   const unassigned=d.roster.filter(n=>!inPayRoster.has(n));
   if(unassigned.length){
+    const marks=[];
     const body=unassigned.map(name=>{
-      const row=[name];let worked=0;
-      idxs.forEach(i=>{const p=presentOn(i,name);if(p)worked++;row.push(p?"✓":"—")});
-      if(withSat){const p=presentOn(5,name);if(p)worked++;row.push(p?"✓":"—")}
-      row.push(String(worked),"","");
+      const row=[name];const mrow=[""];let worked=0;
+      idxs.forEach(i=>{const p=presentOn(i,name);if(p)worked++;row.push(p?_pdfCellP(false):_pdfCellA());mrow.push(p?"t":"d")});
+      if(withSat){const p=presentOn(5,name);if(p)worked++;row.push(p?_pdfCellP(true):_pdfCellA());mrow.push(p?"t":"d")}
+      row.push(String(worked),"","");mrow.push("","","");
+      marks.push(mrow);
       return row;
     });
     if(y>165){pdf.addPage();y=20}
     pdf.setFontSize(11);pdf.setTextColor(180,80,0);
     pdf.text("Not on any pay group — assign in Payments > Roster",M,y);
-    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[180,80,0],textColor:255,fontStyle:"bold"},theme:"grid"});
+    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[180,80,0],textColor:255,fontStyle:"bold"},theme:"grid",didDrawCell:function(c){_pdfDrawMark(pdf,c,marks)}});
     y=pdf.lastAutoTable.finalY+9;
   }
 
   // Movers (ad-hoc names on the day sheets) — days only, pay per arrangement
   if(d.allMovers.length){
+    const marks=[];
     const body=d.allMovers.map(name=>{
-      const row=[name];let worked=0;
-      idxs.forEach(i=>{const movers=d.weekData[i].data.movers||[];const found=movers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);if(found)worked++;row.push(found?"✓":"—")});
-      if(withSat){const movers=d.weekData[5].data.movers||[];const found=movers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);if(found)worked++;row.push(found?"✓":"—")}
-      row.push(String(worked),"per arr.","");
+      const row=[name];const mrow=[""];let worked=0;
+      idxs.forEach(i=>{const movers=d.weekData[i].data.movers||[];const found=movers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);if(found)worked++;row.push(found?_pdfCellP(false):_pdfCellA());mrow.push(found?"t":"d")});
+      if(withSat){const movers=d.weekData[5].data.movers||[];const found=movers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);if(found)worked++;row.push(found?_pdfCellP(true):_pdfCellA());mrow.push(found?"t":"d")}
+      row.push(String(worked),"per arr.","");mrow.push("","","");
+      marks.push(mrow);
       return row;
     });
     if(y>165){pdf.addPage();y=20}
     pdf.setFontSize(11);pdf.setTextColor(15,110,86);
     pdf.text("Movers (ad-hoc)",M,y);
-    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid"});
+    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid",didDrawCell:function(c){_pdfDrawMark(pdf,c,marks)}});
     y=pdf.lastAutoTable.finalY+9;
   }
 
@@ -11357,7 +11385,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v167";
+const APP_VERSION="v169";
 const WP_DAYRATE_GYD=7000,WP_FX=216;
 const WP_SECTIONS=[
  {ref:"AW-01",name:"P3 duct panels - order 1",unit:"m2",qty:9168,labour:154771.60},
@@ -12319,7 +12347,35 @@ function renderWorkerSignIn(){
   startWorkerRefresh();
 }
 
+// v169: site day ends 17:00 and workers often forget to sign out. Any open
+// sign-in gets closed at 17:00 automatically — on the worker's own phone the
+// moment it's past 5 (with a nudge), and on Paul's side when the record is
+// viewed or confirmed. Flagged autoOut so real late finishes can be spotted
+// and edited by hand. Sign-ins at or after 17:00 (night work) are left alone.
+function _autoCloseSignOut(date,username,data){
+  if(!data||!data.signIn||data.signOut)return false;
+  if((data.signIn||"")>="17:00")return false;
+  const today=getGuyanaDate();
+  if(date>today)return false;
+  if(date===today){
+    const now=getGuyanaTimeNow();
+    if(now.getHours()<17)return false;
+  }
+  data.signOut="17:00";
+  data.totalMins=calcMinsBetween(data.signIn,"17:00");
+  data.autoOut=true;
+  saveSelfAttendance(date,username,data);
+  if(data.confirmed&&typeof _attMarkWorker==="function"){
+    _attMarkWorker(date,data.name||username,{present:true,timeIn:data.signIn||"",timeOut:"17:00",confirmedByAdmin:true,selfSignIn:true});
+  }
+  return true;
+}
+
 function renderWorkerStatus(data,date){
+  if(data&&data.signIn&&!data.signOut&&currentUser&&_autoCloseSignOut(date,currentUser.username,data)){
+    showToast("👋 "+t("wAutoSignedOut"));
+    try{if(navigator.vibrate)navigator.vibrate([200,100,200])}catch(e){}
+  }
   const statusEl=document.getElementById("workerSignStatus");
   const actionsEl=document.getElementById("workerSignActions");
   const now=getGuyanaTimeNow();
@@ -12548,6 +12604,7 @@ function renderSelfAttendanceDashboard(container,date){
         // the old 6-column grid overran narrow phone screens
 
         Object.entries(allData).forEach(([username,d])=>{
+          _autoCloseSignOut(date,username,d); // v169: fill forgotten sign-outs at 17:00
           const name=d.name||username;
           const grandTotal=getTotalShiftMins(d);
           const currentMins=d.signOut?calcMinsBetween(d.signIn,d.signOut):0;
@@ -12647,6 +12704,7 @@ function _attMarkWorker(date,name,patch){
 function confirmSelfAttendance(date,username){
   loadSelfAttendance(date,username).then(data=>{
     if(!data)return;
+    _autoCloseSignOut(date,username,data); // v169: never confirm an open sign-out into the register
     data.confirmed=true;
     data.confirmedBy=currentUser.username;
     data.confirmedAt=Date.now();
@@ -12725,6 +12783,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v169 — (1) 17:00 auto sign-out: open self sign-ins close automatically at 17:00 (worker phone nudges + closes when open past 5; admin dashboard and confirm fill forgotten sign-outs the same way; autoOut flag marks them; sign-ins at/after 17:00 untouched for night work; Paul edits real late finishes by hand). (2) Weekly HR + Finance PDFs now draw the register like the on-screen sheet: green cell + drawn tick present, red cell + dash absent, amber Saturday (jsPDF fonts have no ✓/— glyphs — they printed as specks). Mover rows lose the 📦 emoji in PDFs for the same reason.
 // Build: v168 — PDF FIX (root cause of "PDFs never download", reproduced live on desktop v167): .modal-overlay CSS renders at opacity:0 until a .show class is added (introduced with the animated confirm modal); showPDFPreview, the reassign-date modal and the edit-sign-in modal never added it, so they opened fully invisible while covering the screen and blocking clicks. All three now add .show on mount. Also register accuracy: a new day's register now starts everyone ABSENT (was: whole roster present at 07:00). Presence lands only two ways: an approved self sign-in (auto-captured with real times since v166, 📱 badge in the register) or the admin capturing the worker (tick / +Add Worker / +Add All Roster, default 07:00 editable, markedBy recorded). ✓ All Present bulk button unchanged. Also: 📄 Day PDF button on the attendance tab (one-day register PDF for the daily submission, with per-worker Source column: approved self sign-in vs captured-by, movers table, totals, signature lines); weekly PDF now trims to week-to-date (days after today no longer print as absent dashes, Days denominator matches included days) and split in two: Submit to HR (all workers, one grid) and Submit to Finance (sectioned by pay group with days x rate amounts, group subtotals, grand total; unassigned workers and ad-hoc movers listed so nobody drops off).
 // Build: v167 — weekly per-crew productivity vs wage expenditure published to /reports/weekly (ISO-week keyed, crew keys _fbEncKey-encoded, earned/cost/ratio/man-days) for the Monday office report; /reports node is public-read by rules, aggregates only.
 // Build: v166 — Work Plan & Output module (daily assignments with planned qty, team-lead output entry, admin/FE approval, section progress vs BOQ labour value, Excel log export, cloud snapshot to /reports); HR attendance now shows pending self sign-ins live (amber) with register-updated stamp; visible app version on login/settings/HR; PDF self-test button (Settings + HR) reports cache and library status.
