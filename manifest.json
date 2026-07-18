@@ -1,0 +1,14 @@
+{
+  "name": "ELGAWA Daily Checksheet",
+  "short_name": "ELGAWA",
+  "description": "Daily team checksheet system for ELGAWA Guyana Inc.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EFE4F5",
+  "theme_color": "#7E5BB5",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

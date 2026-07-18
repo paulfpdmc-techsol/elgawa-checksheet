@@ -738,6 +738,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
       </div>
       <div style="margin-top:10px;display:flex;gap:8px">
         <button class="btn btn-primary" onclick="generateWeeklyAttPDF()" id="attWeekPdfBtn">📄 Download Weekly PDF</button>
+        <button class="btn btn-primary" onclick="generateWeeklyFinancePDF()" id="attWeekFinBtn" style="background:#0f6e56">📄 Finance PDF</button>
       </div>
     </div>
     </div>
@@ -1502,6 +1503,8 @@ const T={
   satPending:{en:"Sat Pending",es:"Sab Pendiente",nl:"Za Lopend"},
   satNotes:{en:"Saturday Notes",es:"Notas del Sabado",nl:"Zaterdag Notities"},
   submitToFinance:{en:"Submit to Finance",es:"Enviar a Finanzas",nl:"Indienen bij Financien"},
+  submitToHR:{en:"Submit to HR (all workers)",es:"Enviar a RRHH (todos)",nl:"Indienen bij HR (iedereen)"},
+  submitToFinanceGroups:{en:"Submit to Finance (by group)",es:"Enviar a Finanzas (por grupo)",nl:"Indienen bij Financien (per groep)"},
   exportData:{en:"Export Data (CSV)",es:"Exportar Datos (CSV)",nl:"Gegevens Exporteren (CSV)"},
   readyToSubmit:{en:"Ready to Submit!",es:"¡Listo para Enviar!",nl:"Klaar om te Verzenden!"},
   fillSections:{en:"Fill each section",es:"Complete cada sección",nl:"Vul elke sectie in"},
@@ -2606,6 +2609,7 @@ function reassignSheetDate(i,currentDate){
     +'</div>';
   modal.appendChild(box);
   document.body.appendChild(modal);
+  requestAnimationFrame(()=>modal.classList.add("show")); // v168 FIX: overlay CSS is opacity:0 without .show
   // Wire buttons with JS (avoids inline onclick escaping issues on mobile)
   document.getElementById("reassignCancelBtn").addEventListener("click",function(){modal.remove()});
   document.getElementById("reassignMoveBtn").addEventListener("click",function(){doReassignDate(i,currentDate)});
@@ -8253,6 +8257,11 @@ function showPDFPreview(pdfDoc,filename){
   barDiv.querySelector("#_pdfCloseBtn").onclick=overlay._closeFn;
   overlay.addEventListener("click",function(e){if(e.target===overlay){overlay._closeFn()}});
   document.body.appendChild(overlay);
+  // v168 FIX: .modal-overlay CSS starts at opacity:0 and only .show makes it
+  // visible (added for the animated confirm modal). This overlay never added
+  // .show, so every PDF preview was built fully invisible while still
+  // covering the screen and eating clicks — "the PDF never downloads".
+  requestAnimationFrame(()=>overlay.classList.add("show"));
 }
 
 function switchSettingsTab(tab){
@@ -9083,12 +9092,16 @@ function renderAttendanceTab(){
   const titleEl=document.getElementById("attTitle");
   if(titleEl)titleEl.textContent=t("dailyAttendance");
 
-  // Helper: if no attendance data exists for a date, create with all workers PRESENT by default
+  // Helper: if no attendance data exists for a date, create with all workers
+  // ABSENT (v168). Presence now comes only from an approved self sign-in
+  // (auto-captured with real times) or from the admin marking the worker.
+  // The old all-present-at-07:00 default made the register claim attendance
+  // nobody had verified, and confirmed sign-ins drowned in it.
   function _defaultAttData(existing){
     if(existing&&existing.workers&&Object.keys(existing.workers).length>0)return existing;
     const data=existing||{workers:{},verified:false,verifiedBy:null};
     roster.forEach(name=>{
-      if(!data.workers[name])data.workers[name]={present:true,timeIn:"07:00",timeOut:"",shift:"day"};
+      if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:"",shift:"day"};
     });
     return data;
   }
@@ -9183,6 +9196,8 @@ function _renderAttendanceUI(date,roster,data,container,actions,summary){
     actHtml+='<div style="padding:8px 16px;font-size:12px;background:#cce5ff;color:#004085;border-radius:20px;font-weight:700">🔒 Verified — '+(data.verifiedBy||"admin")+'</div>';
     if(isAdmin)actHtml+='<button onclick="unlockAttendance()" style="border:none;background:#e67e22;color:white;border-radius:20px;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer">🔓 Unlock</button>';
   }
+  // v168: daily attendance PDF for the day's submission (works locked or not)
+  if(isAdmin)actHtml+='<button onclick="generateDailyAttPDF()" style="border:none;background:#0f6e56;color:white;border-radius:20px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer">📄 Day PDF</button>';
   actions.innerHTML=actHtml;
 
   // Worker list — clean table-like layout
@@ -9197,7 +9212,7 @@ function _renderAttendanceUI(date,roster,data,container,actions,summary){
     const rowClass='att-row'+(w.present?'':' att-row-absent');
     html+='<div class="'+rowClass+'"'+(isNight?' style="background:#eef2f7"':'')+'>';
     html+='<input type="checkbox" class="att-check" data-worker="'+escHtml(name)+'" '+checked+' '+disabled+' onchange="updateAttWorker(this)">';
-    html+='<span class="att-name">'+escHtml(name)+(isManual?' <span style="font-size:9px;color:var(--teal);font-weight:600">+</span>':'')+'</span>';
+    html+='<span class="att-name">'+escHtml(name)+(isManual?' <span style="font-size:9px;color:var(--teal);font-weight:600">+</span>':'')+(w.selfSignIn?' <span title="Approved self sign-in" style="font-size:9px">📱</span>':'')+'</span>';
     if(!locked)html+='<button class="att-shift-btn" onclick="toggleShift(\''+name.replace(/'/g,"\\'")+'\')" style="background:'+(isNight?'#2c3e50':'#f0f0f0')+';color:'+(isNight?'white':'#888')+'">'+(isNight?'🌙':'☀️')+'</button>';
     else html+='<span style="font-size:11px">'+(isNight?'🌙':'☀️')+'</span>';
     html+='<input type="time" class="att-time" data-worker="'+escHtml(name)+'" data-field="timeIn" value="'+(w.timeIn||"")+'" '+disabled+' onchange="updateAttTime(this)" placeholder="In">';
@@ -9231,19 +9246,17 @@ function attAddWorker(){
     const sel=document.getElementById("_attAddSel");const inp=document.getElementById("_attAddCustom");
     const name=(sel&&sel.value)?sel.value:(inp?inp.value.trim():"");
     if(!name)return;
-    const now=getGuyanaDateTime();const timeNow=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-    data.workers[name]={present:true,timeIn:timeNow,timeOut:"",shift:"day",_manualAdd:true};
+    data.workers[name]={present:true,timeIn:"07:00",timeOut:"",shift:"day",_manualAdd:true,markedBy:(currentUser&&currentUser.username)||""};
     saveAttendanceLocal(_attDate,data);showToast("Added "+name);renderAttendanceTab();
   });
 }
 // Admin: add ALL roster workers to attendance at once
 function attAddAllWorkers(){
   const data=_getCurrentAttData();const roster=getWorkerRoster();
-  const now=getGuyanaDateTime();const timeNow=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
   let added=0;
   roster.forEach(name=>{
     if(!data.workers[name]||data.workers[name]._removed){
-      data.workers[name]={present:true,timeIn:timeNow,timeOut:"",shift:"day"};added++;
+      data.workers[name]={present:true,timeIn:"07:00",timeOut:"",shift:"day",markedBy:(currentUser&&currentUser.username)||""};added++;
     }
   });
   saveAttendanceLocal(_attDate,data);
@@ -9291,11 +9304,14 @@ function updateAttWorker(cb){
   const name=cb.dataset.worker;
   if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:"",shift:"day"};
   data.workers[name].present=cb.checked;
-  // Auto-set time in if checking present, clear times if marking absent
+  // v168: a manual tick is the admin capturing a worker who was on site but
+  // didn't self sign in. Default to the 07:00 site start (editable), not the
+  // time of ticking — ticking at 5pm doesn't mean the man arrived at 5pm.
+  // Tag who captured it so the register keeps its audit trail.
   if(cb.checked&&!data.workers[name].timeIn){
-    const now=new Date();
-    data.workers[name].timeIn=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+    data.workers[name].timeIn="07:00";
   }
+  if(cb.checked){data.workers[name].markedBy=(currentUser&&currentUser.username)||""}
   if(!cb.checked){data.workers[name].timeIn="";data.workers[name].timeOut=""}
   // Save locally and re-render from in-memory data (never re-fetches cloud)
   _attData=data;_attDate=_attDate||document.getElementById("attDate").value;
@@ -9447,7 +9463,9 @@ function renderWeeklyRegister(refDate){
   card.style.display="block";
   window._weekAttData=null;
   if(titleEl)titleEl.textContent=t("weeklyRegister");
-  if(pdfBtn)pdfBtn.textContent="📄 "+t("submitToFinance");
+  if(pdfBtn)pdfBtn.textContent="📄 "+t("submitToHR");
+  const finBtn=document.getElementById("attWeekFinBtn");
+  if(finBtn)finBtn.textContent="📄 "+t("submitToFinanceGroups");
   if(grid)grid.innerHTML='<div style="text-align:center;padding:20px;color:var(--grey)">Loading weekly data...</div>';
   if(satLabel)satLabel.textContent=t("satNotes");
   if(satInput)satInput.placeholder=t("satPending")+"...";
@@ -9557,6 +9575,65 @@ function renderWeeklyRegister(refDate){
   });
 }
 
+// v168: one-day attendance register PDF, built from the data on screen.
+// This is the sheet Paul submits each day; the weekly register PDF stays
+// the end-of-week / week-to-date submission.
+function generateDailyAttPDF(){
+  const dateEl=document.getElementById("attDate");
+  const date=(dateEl&&dateEl.value)||getGuyanaDate();
+  if(!_attData||_attDate!==date){showToast("⏳ Loading attendance data... please wait and try again");renderAttendanceTab();return}
+  if(!_jspdfReady()||!_autotableReady()){requirePdf(generateDailyAttPDF);return}
+  try{
+  const data=_attData;
+  const days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const dd=new Date(date+"T12:00:00");
+  const{jsPDF}=window.jspdf;
+  const pdf=new jsPDF("p","mm","a4");
+  const W=pdf.internal.pageSize.getWidth();const M=14;let y=20;
+  pdf.setFontSize(16);pdf.setTextColor(15,110,86);
+  pdf.text("ELGAWA Guyana Inc.",M,y);y+=6;
+  pdf.setFontSize(11);pdf.setTextColor(40);
+  pdf.text("Daily Attendance Register — "+days[dd.getDay()]+" "+date,M,y);y+=5;
+  pdf.setFontSize(9);pdf.setTextColor(100);
+  pdf.text("Generated: "+new Date().toLocaleString()+"  by "+((currentUser&&currentUser.name)||""),M,y);y+=7;
+
+  const roster=getWorkerRoster();
+  const allNames=[...roster];
+  if(data.workers)Object.keys(data.workers).forEach(n=>{if(!allNames.includes(n)&&data.workers[n]._manualAdd&&!data.workers[n]._removed)allNames.push(n)});
+  const body=[];let present=0,night=0,absent=0,idx=0;
+  allNames.forEach(name=>{
+    const w=(data.workers&&data.workers[name])||{present:false,timeIn:"",timeOut:"",shift:"day"};
+    if(w._removed)return;
+    idx++;
+    let src="";
+    if(w.selfSignIn)src="Self sign-in (approved)";
+    else if(w.present&&w.markedBy)src="Captured by "+w.markedBy;
+    if(w.present){present++;if(w.shift==="night")night++}else absent++;
+    body.push([String(idx),name,w.shift==="night"?"Night":"Day",w.present?(w.timeIn||""):"",w.present?(w.timeOut||""):"",w.present?"Present":"Absent",src]);
+  });
+  pdf.autoTable({head:[["#","Worker","Shift","In","Out","Status","Source"]],body:body,startY:y,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid"});
+  y=pdf.lastAutoTable.finalY+7;
+
+  const movers=(data.movers||[]).filter(m=>m.name&&m.name.trim());
+  if(movers.length){
+    pdf.setFontSize(10);pdf.setTextColor(40);pdf.text("Movers",M,y);
+    pdf.autoTable({head:[["#","Name","In","Out","Status"]],body:movers.map((m,i)=>[String(i+1),m.name,m.timeIn||"",m.timeOut||"",m.present===false?"Absent":"Present"]),startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid"});
+    y=pdf.lastAutoTable.finalY+7;
+  }
+
+  pdf.setFontSize(10);pdf.setTextColor(40);
+  pdf.text("Present: "+present+"    Night shift: "+night+"    Absent: "+absent,M,y);y+=6;
+  if(data.verified){pdf.text("Verified in app by: "+(data.verifiedBy||"admin"),M,y);y+=6}
+  y+=10;
+  if(y>270){pdf.addPage();y=30}
+  pdf.setDrawColor(200);pdf.line(M,y-2,W-M,y-2);
+  pdf.setFontSize(9);pdf.setTextColor(80);
+  pdf.text("Prepared by: _______________________",M,y+4);
+  pdf.text("Approved by: _______________________",M+95,y+4);
+  showPDFPreview(pdf,"Daily_Attendance_"+date+".pdf");
+  }catch(e){console.error("PDF error:",e);showToast("❌ PDF generation failed: "+e.message)}
+}
+
 function generateWeeklyAttPDF(){
   const d=window._weekAttData;if(!d){showToast("⏳ Loading attendance data... please wait and try again");renderWeeklyRegister(document.getElementById("attDate").value||getGuyanaDate());return}
   if(!_jspdfReady()||!_autotableReady()){requirePdf(generateWeeklyAttPDF);return}
@@ -9568,40 +9645,52 @@ function generateWeeklyAttPDF(){
   pdf.setFontSize(16);pdf.setTextColor(15,110,86);
   pdf.text("ELGAWA Guyana Inc.",M,y);y+=6;
   pdf.setFontSize(10);pdf.setTextColor(100);
-  pdf.text("Weekly Attendance & Pay Register — Week of "+d.mon,M,y);y+=4;
+  // v168: only include days up to today. A mid-week download used to print
+  // future days as absent dashes, which read wrong on a submitted register.
+  const today=getGuyanaDate();
+  const dayNames=["Mon","Tue","Wed","Thu","Fri"];
+  const idxs=[];d.workDates.forEach((dt,i)=>{if(dt<=today)idxs.push(i)});
+  const withSat=d.satDate<=today;
+  const denom=idxs.length+(withSat?1:0);
+  const upTo=withSat?d.satDate:(idxs.length?d.workDates[idxs.length-1]:d.mon);
+  pdf.text("Weekly Attendance Register — HR (all workers) — Week of "+d.mon+(denom<6&&denom>0?" (to "+upTo+")":""),M,y);y+=4;
   pdf.text("Generated: "+new Date().toLocaleDateString(),M,y);y+=8;
 
-  const head=[["Worker","Mon\n"+d.workDates[0].slice(5),"Tue\n"+d.workDates[1].slice(5),"Wed\n"+d.workDates[2].slice(5),"Thu\n"+d.workDates[3].slice(5),"Fri\n"+d.workDates[4].slice(5),"Sat\n"+d.satDate.slice(5),"Days"]];
+  const head=[["Worker",...idxs.map(i=>dayNames[i]+"\n"+d.workDates[i].slice(5)),...(withSat?["Sat\n"+d.satDate.slice(5)]:[]),"Days"]];
   const body=[];
 
   d.roster.forEach(name=>{
     const row=[name];let worked=0;
-    d.workDates.forEach((dt,i)=>{
+    idxs.forEach(i=>{
       const w=d.weekData[i].data.workers&&d.weekData[i].data.workers[name];
       const p=w&&w.present;
       if(p)worked++;
       row.push(p?"✓":"—");
     });
-    const satW=d.weekData[5].data.workers&&d.weekData[5].data.workers[name];
-    const satP=satW&&satW.present;if(satP)worked++;
-    row.push(satP?"✓":"—");
-    row.push(worked+"/6");
+    if(withSat){
+      const satW=d.weekData[5].data.workers&&d.weekData[5].data.workers[name];
+      const satP=satW&&satW.present;if(satP)worked++;
+      row.push(satP?"✓":"—");
+    }
+    row.push(worked+"/"+denom);
     body.push(row);
   });
 
   d.allMovers.forEach(name=>{
     const row=["📦 "+name];let worked=0;
-    d.workDates.forEach((dt,i)=>{
+    idxs.forEach(i=>{
       const movers=d.weekData[i].data.movers||[];
       const found=movers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);
       if(found)worked++;
       row.push(found?"✓":"");
     });
-    const satMovers=d.weekData[5].data.movers||[];
-    const satFound=satMovers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);
-    if(satFound)worked++;
-    row.push(satFound?"✓":"");
-    row.push(worked+"/6");
+    if(withSat){
+      const satMovers=d.weekData[5].data.movers||[];
+      const satFound=satMovers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);
+      if(satFound)worked++;
+      row.push(satFound?"✓":"");
+    }
+    row.push(worked+"/"+denom);
     body.push(row);
   });
 
@@ -9613,9 +9702,111 @@ function generateWeeklyAttPDF(){
   pdf.setFontSize(9);pdf.setTextColor(80);
   pdf.text("Verified by: _______________________",M,fY);
   pdf.text("Approved by: _______________________",M+100,fY);
-  pdf.text("Finance: _______________________",M+200,fY);
+  pdf.text("HR: _______________________",M+200,fY);
 
-  showPDFPreview(pdf,"Weekly_Pay_Register_"+d.mon+".pdf");
+  showPDFPreview(pdf,"Weekly_Attendance_HR_"+d.mon+".pdf");
+  showToast("✅ PDF downloaded");
+  }catch(e){console.error("PDF error:",e);showToast("❌ PDF generation failed: "+e.message)}
+}
+
+// v168: Finance weekly PDF — same week-to-date register, sectioned by pay
+// group (installation / ducting / suriname / guyana), with days, rate and
+// amount per worker plus group subtotals. HR gets everyone in one list;
+// Finance pays by group, so Finance gets the group breakdown.
+function generateWeeklyFinancePDF(){
+  const d=window._weekAttData;if(!d){showToast("⏳ Loading attendance data... please wait and try again");renderWeeklyRegister(document.getElementById("attDate").value||getGuyanaDate());return}
+  if(!_jspdfReady()||!_autotableReady()){requirePdf(generateWeeklyFinancePDF);return}
+  try{
+  const{jsPDF}=window.jspdf;
+  const pdf=new jsPDF("l","mm","a4");
+  const W=pdf.internal.pageSize.getWidth();const M=14;let y=20;
+
+  const today=getGuyanaDate();
+  const dayNames=["Mon","Tue","Wed","Thu","Fri"];
+  const idxs=[];d.workDates.forEach((dt,i)=>{if(dt<=today)idxs.push(i)});
+  const withSat=d.satDate<=today;
+  const denom=idxs.length+(withSat?1:0);
+  const upTo=withSat?d.satDate:(idxs.length?d.workDates[idxs.length-1]:d.mon);
+
+  pdf.setFontSize(16);pdf.setTextColor(15,110,86);
+  pdf.text("ELGAWA Guyana Inc.",M,y);y+=6;
+  pdf.setFontSize(10);pdf.setTextColor(100);
+  pdf.text("Weekly Pay Register — Finance (by group) — Week of "+d.mon+(denom<6&&denom>0?" (to "+upTo+")":""),M,y);y+=4;
+  pdf.text("Generated: "+new Date().toLocaleDateString(),M,y);y+=8;
+
+  const presentOn=(i,name)=>{const w=d.weekData[i].data.workers&&d.weekData[i].data.workers[name];return !!(w&&w.present)};
+  const head=[["Worker",...idxs.map(i=>dayNames[i]+"\n"+d.workDates[i].slice(5)),...(withSat?["Sat\n"+d.satDate.slice(5)]:[]),"Days","Rate (G$)","Amount (G$)"]];
+  const groupOrder=["installation","ducting","suriname","guyana"];
+  let grandDays=0,grandAmt=0;
+  const inPayRoster=new Set();
+
+  groupOrder.forEach(gk=>{
+    const workers=getPayGroupWorkers(gk);
+    workers.forEach(w=>inPayRoster.add(w.name));
+    if(!workers.length)return;
+    const body=[];let gDays=0,gAmt=0;
+    workers.forEach(w=>{
+      const row=[w.name];let worked=0;
+      idxs.forEach(i=>{const p=presentOn(i,w.name);if(p)worked++;row.push(p?"✓":"—")});
+      if(withSat){const p=presentOn(5,w.name);if(p)worked++;row.push(p?"✓":"—")}
+      const amt=worked*(w.rate||0);
+      gDays+=worked;gAmt+=amt;
+      row.push(String(worked),(w.rate||0).toLocaleString(),amt.toLocaleString());
+      body.push(row);
+    });
+    grandDays+=gDays;grandAmt+=gAmt;
+    body.push([{content:"Subtotal — "+PAY_GROUPS[gk].label,colSpan:1+denom,styles:{fontStyle:"bold",fillColor:[240,244,248]}},{content:String(gDays),styles:{fontStyle:"bold",fillColor:[240,244,248]}},{content:"",styles:{fillColor:[240,244,248]}},{content:gAmt.toLocaleString(),styles:{fontStyle:"bold",fillColor:[240,244,248]}}]);
+    if(y>165){pdf.addPage();y=20}
+    pdf.setFontSize(11);pdf.setTextColor(15,110,86);
+    pdf.text(PAY_GROUPS[gk].label,M,y);
+    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid"});
+    y=pdf.lastAutoTable.finalY+9;
+  });
+
+  // Anyone on the attendance roster but not on any pay group — shown so no
+  // one silently drops off the pay register.
+  const unassigned=d.roster.filter(n=>!inPayRoster.has(n));
+  if(unassigned.length){
+    const body=unassigned.map(name=>{
+      const row=[name];let worked=0;
+      idxs.forEach(i=>{const p=presentOn(i,name);if(p)worked++;row.push(p?"✓":"—")});
+      if(withSat){const p=presentOn(5,name);if(p)worked++;row.push(p?"✓":"—")}
+      row.push(String(worked),"","");
+      return row;
+    });
+    if(y>165){pdf.addPage();y=20}
+    pdf.setFontSize(11);pdf.setTextColor(180,80,0);
+    pdf.text("Not on any pay group — assign in Payments > Roster",M,y);
+    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[180,80,0],textColor:255,fontStyle:"bold"},theme:"grid"});
+    y=pdf.lastAutoTable.finalY+9;
+  }
+
+  // Movers (ad-hoc names on the day sheets) — days only, pay per arrangement
+  if(d.allMovers.length){
+    const body=d.allMovers.map(name=>{
+      const row=[name];let worked=0;
+      idxs.forEach(i=>{const movers=d.weekData[i].data.movers||[];const found=movers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);if(found)worked++;row.push(found?"✓":"—")});
+      if(withSat){const movers=d.weekData[5].data.movers||[];const found=movers.find(m=>m.name&&m.name.trim()===name&&m.present!==false);if(found)worked++;row.push(found?"✓":"—")}
+      row.push(String(worked),"per arr.","");
+      return row;
+    });
+    if(y>165){pdf.addPage();y=20}
+    pdf.setFontSize(11);pdf.setTextColor(15,110,86);
+    pdf.text("Movers (ad-hoc)",M,y);
+    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid"});
+    y=pdf.lastAutoTable.finalY+9;
+  }
+
+  if(y>175){pdf.addPage();y=20}
+  pdf.setFontSize(11);pdf.setTextColor(40);
+  pdf.text("TOTAL — grouped workers: "+grandDays+" man-days,  G$ "+grandAmt.toLocaleString(),M,y);y+=12;
+  pdf.setDrawColor(200);pdf.line(M,y-2,W-M,y-2);
+  pdf.setFontSize(9);pdf.setTextColor(80);
+  pdf.text("Verified by: _______________________",M,y+4);
+  pdf.text("Approved by: _______________________",M+100,y+4);
+  pdf.text("Finance: _______________________",M+200,y+4);
+
+  showPDFPreview(pdf,"Weekly_Pay_Register_Finance_"+d.mon+".pdf");
   showToast("✅ PDF downloaded");
   }catch(e){console.error("PDF error:",e);showToast("❌ PDF generation failed: "+e.message)}
 }
@@ -12495,6 +12686,7 @@ function editSelfAttendance(date,username,signIn,signOut){
     +'</div>';
   modal.appendChild(box);
   document.body.appendChild(modal);
+  requestAnimationFrame(()=>modal.classList.add("show")); // v168 FIX: overlay CSS is opacity:0 without .show
   document.getElementById("editSelfCancelBtn").addEventListener("click",function(){modal.remove()});
   document.getElementById("editSelfSaveBtn").addEventListener("click",function(){saveSelfAttEdit(date,username)});
   modal.addEventListener("click",function(ev){if(ev.target===modal)modal.remove()});
@@ -12533,6 +12725,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v168 — PDF FIX (root cause of "PDFs never download", reproduced live on desktop v167): .modal-overlay CSS renders at opacity:0 until a .show class is added (introduced with the animated confirm modal); showPDFPreview, the reassign-date modal and the edit-sign-in modal never added it, so they opened fully invisible while covering the screen and blocking clicks. All three now add .show on mount. Also register accuracy: a new day's register now starts everyone ABSENT (was: whole roster present at 07:00). Presence lands only two ways: an approved self sign-in (auto-captured with real times since v166, 📱 badge in the register) or the admin capturing the worker (tick / +Add Worker / +Add All Roster, default 07:00 editable, markedBy recorded). ✓ All Present bulk button unchanged. Also: 📄 Day PDF button on the attendance tab (one-day register PDF for the daily submission, with per-worker Source column: approved self sign-in vs captured-by, movers table, totals, signature lines); weekly PDF now trims to week-to-date (days after today no longer print as absent dashes, Days denominator matches included days) and split in two: Submit to HR (all workers, one grid) and Submit to Finance (sectioned by pay group with days x rate amounts, group subtotals, grand total; unassigned workers and ad-hoc movers listed so nobody drops off).
 // Build: v167 — weekly per-crew productivity vs wage expenditure published to /reports/weekly (ISO-week keyed, crew keys _fbEncKey-encoded, earned/cost/ratio/man-days) for the Monday office report; /reports node is public-read by rules, aggregates only.
 // Build: v166 — Work Plan & Output module (daily assignments with planned qty, team-lead output entry, admin/FE approval, section progress vs BOQ labour value, Excel log export, cloud snapshot to /reports); HR attendance now shows pending self sign-ins live (amber) with register-updated stamp; visible app version on login/settings/HR; PDF self-test button (Settings + HR) reports cache and library status.
 // Build: v165 — Firebase rules are now LIVE (auth != null, published by Paul), so two dormant bugs became urgent and are fixed here: (1) auth-retry after token expiry now passes the request options through (a retried PUT stayed a PUT; before it silently became a GET and the write was lost); (2) payroll cloud saves now %hex-encode worker-name keys exactly like attendance has since v133 ("Jose N. Queipo" on the installation roster made every whole-day pay PUT fail HTTP 400 while still toasting success) — all 4 payroll write sites encode, both loaders decode, and every payroll save now checks the response and warns instead of lying.

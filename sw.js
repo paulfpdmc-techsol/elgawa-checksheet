@@ -1,4 +1,4 @@
-const CACHE_NAME = "elgawa-checksheet-v167";
+const CACHE_NAME = "elgawa-checksheet-v168";
 const ASSETS = ["./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 // PDF + rendering libraries — precached so PDF buttons work on weak signal/offline
 const CDN_ASSETS = [
@@ -22,18 +22,31 @@ self.addEventListener("install", e => {
   self.skipWaiting();
 });
 
-// Activate — clean old caches immediately
-self.addEventListener("activate", e => {
-  e.waitUntil(caches.keys().then(keys =>
+// Delete every cache except the current one. Runs on activate AND once per
+// service-worker startup (first fetch). Activate alone is not enough: a page
+// still controlled by an old worker can write to its old cache after the new
+// worker's activate has cleaned it, which is how a v165 cache survived next
+// to v167. Re-running the sweep each startup means leftovers never persist.
+function cleanOldCaches() {
+  return caches.keys().then(keys =>
     Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-  ));
-  self.clients.claim();
+  );
+}
+
+// Activate — clean old caches, then take over open pages
+self.addEventListener("activate", e => {
+  e.waitUntil(cleanOldCaches().then(() => self.clients.claim()));
 });
 
 // Fetch:
 //  - cdnjs libraries: cache-first (immutable versioned files; instant + offline-proof)
 //  - same-origin: network-first, fall back to cache (updates show immediately)
+let cleanedThisStartup = false;
 self.addEventListener("fetch", e => {
+  if (!cleanedThisStartup) {
+    cleanedThisStartup = true;
+    e.waitUntil(cleanOldCaches());
+  }
   const url = e.request.url;
   if (url.startsWith("https://cdnjs.cloudflare.com/")) {
     e.respondWith(
