@@ -8476,10 +8476,12 @@ function toggleUserActions(uname){
 }
 function removeUser(uname){
   if(uname==="admin"){showToast("Cannot remove admin account");return}
+  const _u=({...BASE_USERS,...getCustomUsers()})[uname]||{};
   showModal(t("confirm")||"Confirm",(t("removeUserConfirm")||"Remove user")+" "+uname+"?",()=>{
     const cu=getCustomUsers();delete cu[uname];saveCustomUsers(cu);
     const rem=getRemovedUsers();rem.push(uname);saveRemovedUsers(rem); // tombstone — stays removed on every device
     if(BASE_USERS[uname]){const dis=getDisabledUsers();if(!dis.includes(uname))dis.push(uname);saveDisabledUsers(dis)}
+    if(_u.name){const rw=getRemovedWorkers();if(!rw.includes(_u.name))rw.push(_u.name);saveRemovedWorkers(rw)} // v171: name off all rosters too
     USERS=getUsers();
     cloudSaveUsers();
     renderUserList();showToast(t("userRemoved"));
@@ -10077,7 +10079,9 @@ function getPayRoster(){
   return r;
 }
 function savePayRosterData(r){try{localStorage.setItem("elg_pay_roster",JSON.stringify(r))}catch(e){}const fb=getFirebaseUrl();if(fb)fetch(fb+"/payrollConfig/roster.json",{method:"PUT",body:JSON.stringify(r),headers:{"Content-Type":"application/json"}}).catch(()=>{})}
-function getPayGroupWorkers(group){const roster=getPayRoster();return Object.entries(roster).filter(([_,v])=>v.group===group).map(([name,v])=>({name,rate:v.rate})).sort((a,b)=>a.name.localeCompare(b.name))}
+// v171: only active roster names — removed/disabled people no longer show in
+// pay lists or the Finance PDF.
+function getPayGroupWorkers(group){const roster=getPayRoster();const active=new Set(getWorkerRoster().map(n=>n.toLowerCase()));return Object.entries(roster).filter(([name,v])=>v.group===group&&active.has(name.toLowerCase())).map(([name,v])=>({name,rate:v.rate})).sort((a,b)=>a.name.localeCompare(b.name))}
 
 // Payment sub-tabs
 let _payActiveTab="signin";
@@ -10843,7 +10847,10 @@ function renderHubPersonnel(){
   const customWorkers=getCustomWorkers();
 
   // Build user list (team leads, supervisors, engineers)
-  const userEntries=Object.entries({...BASE_USERS,...getCustomUsers()}).filter(([k])=>k!=="admin");
+  // v171: respect remove-tombstones. Removed users used to keep showing here
+  // forever — base users live in code, so only the tombstone says they're gone.
+  const removedTomb=new Set(getRemovedUsers());
+  const userEntries=Object.entries({...BASE_USERS,...getCustomUsers()}).filter(([k])=>k!=="admin"&&!removedTomb.has(k));
   const disSet=new Set(disabledUsers);
 
   let html=`<div class="hub-overview-card">
@@ -10853,18 +10860,23 @@ function renderHubPersonnel(){
   userEntries.sort((a,b)=>a[1].name.localeCompare(b[1].name));
   userEntries.forEach(([uname,u],i)=>{
     const isDisabled=disSet.has(uname);
-    const isCustom=!!customUsers[uname];
     const isBase=!!BASE_USERS[uname];
-    const statusBadge=isDisabled?`<span style="font-size:9px;background:#e74c3c;color:white;padding:1px 6px;border-radius:8px;margin-left:6px">Disabled</span>`:`<span style="font-size:9px;background:#27ae60;color:white;padding:1px 6px;border-radius:8px;margin-left:6px">Active</span>`;
-    const roleBadge=`<span style="font-size:9px;background:var(--teal);color:white;padding:1px 6px;border-radius:8px;margin-left:4px">${u.role||"—"}</span>`;
-    html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:4px;background:${isDisabled?"#ffeaea":"#f8fffe"};border-radius:10px;border:1px solid ${isDisabled?"#f5c6cb":"#e0e0e0"}">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:13px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name}${statusBadge}${roleBadge}</div>
-        <div style="font-size:10px;color:var(--grey)">@${uname}${isBase?" • Built-in":" • Custom"}${teamBadgeHtml(uname,u.name)}</div>
+    // v171: cleaner rows — status shown by the left border (green active, red
+    // disabled), one role chip, and the action buttons hidden until the row is
+    // tapped. Two always-on buttons per row made the list unreadable on phones.
+    const roleChip=`<span style="font-size:9px;background:${isDisabled?"#95a5a6":"var(--teal)"};color:white;padding:1px 7px;border-radius:8px;margin-left:6px">${u.role||"—"}</span>`;
+    const disChip=isDisabled?`<span style="font-size:9px;background:#e74c3c;color:white;padding:1px 7px;border-radius:8px;margin-left:4px">Disabled</span>`:"";
+    html+=`<div onclick="hubToggleUserRow('${uname}')" style="padding:8px 12px;margin-bottom:4px;background:${isDisabled?"#fdf3f3":"white"};border-radius:10px;border:1px solid #eceff1;border-left:4px solid ${isDisabled?"#e74c3c":"#27ae60"};cursor:pointer">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:13px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name}${roleChip}${disChip}</div>
+          <div style="font-size:10px;color:var(--grey);margin-top:1px">@${uname} &middot; ${isBase?"Built-in":"Custom"}${teamBadgeHtml(uname,u.name)}</div>
+        </div>
+        <span style="color:#b0bec5;font-size:15px;flex-shrink:0;margin-left:6px">&#8942;</span>
       </div>
-      <div style="display:flex;gap:4px;flex-shrink:0">
-        ${isDisabled?`<button onclick="hubEnableUser('${uname}')" style="font-size:10px;padding:4px 10px;background:#27ae60;color:white;border:none;border-radius:6px;cursor:pointer">Enable</button>`:`<button onclick="hubDisableUser('${uname}')" style="font-size:10px;padding:4px 10px;background:#e74c3c;color:white;border:none;border-radius:6px;cursor:pointer">Disable</button>`}
-        ${isCustom?`<button onclick="hubRemoveUser('${uname}')" style="font-size:10px;padding:4px 10px;background:#95a5a6;color:white;border:none;border-radius:6px;cursor:pointer">Remove</button>`:""}
+      <div id="hubUAct_${uname}" style="display:none;gap:6px;margin-top:8px" onclick="event.stopPropagation()">
+        ${isDisabled?`<button onclick="hubEnableUser('${uname}')" style="flex:1;font-size:11px;padding:7px 0;background:#27ae60;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700">Enable</button>`:`<button onclick="hubDisableUser('${uname}')" style="flex:1;font-size:11px;padding:7px 0;background:#f39c12;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700">Disable</button>`}
+        <button onclick="hubRemoveUser('${uname}')" style="flex:1;font-size:11px;padding:7px 0;background:#e74c3c;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700">Remove</button>
       </div>
     </div>`;
   });
@@ -10949,13 +10961,20 @@ function hubAddUser(){
   if(typeof cloudSaveUsers==="function")cloudSaveUsers();
   showToast(name+" added as "+role);
 }
+function hubToggleUserRow(uname){
+  const act=document.getElementById("hubUAct_"+uname);
+  if(!act)return;
+  document.querySelectorAll("[id^='hubUAct_']").forEach(p=>{if(p!==act)p.style.display="none"});
+  act.style.display=act.style.display==="none"?"flex":"none";
+}
 function hubDisableUser(uname){
-  showModal("Disable User","Disable "+uname+"? They won't be able to log in.",()=>{
+  showModal("Disable User","Disable "+uname+"? They won't be able to log in and drop off attendance lists, but their records are kept.",()=>{
     const dis=getDisabledUsers();
     if(!dis.includes(uname))dis.push(uname);
     saveDisabledUsers(dis);
     USERS=getUsers();
     renderHubPersonnel();
+    if(typeof cloudSaveUsers==="function")cloudSaveUsers(); // v171: was never synced
     showToast(uname+" disabled");
   },{danger:true,okText:"Disable"});
 }
@@ -10965,18 +10984,26 @@ function hubEnableUser(uname){
   saveDisabledUsers(dis);
   USERS=getUsers();
   renderHubPersonnel();
+  if(typeof cloudSaveUsers==="function")cloudSaveUsers(); // v171: was never synced
   showToast(uname+" enabled");
 }
 function hubRemoveUser(uname){
-  showModal("Remove User","Permanently remove "+uname+"? This only removes custom users.",()=>{
+  if(uname==="admin"){showToast("Cannot remove admin account");return}
+  const _u=({...BASE_USERS,...getCustomUsers()})[uname]||{};
+  showModal("Remove User","Permanently remove "+(_u.name||uname)+"? The login is deleted and the name comes off every roster. Past records are kept.",()=>{
     const cu=getCustomUsers();
     delete cu[uname];
     saveCustomUsers(cu);
-    const rem=getRemovedUsers();rem.push(uname);saveRemovedUsers(rem); // tombstone
+    const rem=getRemovedUsers();rem.push(uname);saveRemovedUsers(rem); // login tombstone
+    if(BASE_USERS[uname]){const dis=getDisabledUsers();if(!dis.includes(uname))dis.push(uname);saveDisabledUsers(dis)}
+    // v171: also tombstone the person's NAME so they leave the worker roster,
+    // attendance defaults, weekly grids and pay lists. This was the missing
+    // piece that made "removed" people reappear (e.g. Yosvani).
+    if(_u.name){const rw=getRemovedWorkers();if(!rw.includes(_u.name))rw.push(_u.name);saveRemovedWorkers(rw)}
     USERS=getUsers();
     renderHubPersonnel();
     if(typeof cloudSaveUsers==="function")cloudSaveUsers();
-    showToast(uname+" removed");
+    showToast((_u.name||uname)+" removed everywhere");
   },{danger:true,okText:"Remove"});
 }
 function hubAddWorker(){
@@ -11465,7 +11492,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v170";
+const APP_VERSION="v171";
 const WP_DAYRATE_GYD=7000,WP_FX=216;
 const WP_SECTIONS=[
  {ref:"AW-01",name:"P3 duct panels - order 1",unit:"m2",qty:9168,labour:154771.60},
@@ -12863,6 +12890,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v171 — Personnel fixes. (1) REMOVED USERS STAY REMOVED: the hub Personnel list now respects remove-tombstones (base users live in code, so removed ones kept rendering forever — the "Yosvani reappears" bug); Remove now works for base AND custom users and also tombstones the person's NAME into the removed-workers list, taking them off the worker roster, attendance defaults, weekly grids and pay lists (past records kept); Settings-side removeUser does the same; getPayGroupWorkers filters to active roster names so Finance PDF drops removed people; hub Disable/Enable now cloud-sync (never did before). (2) Cleaner list: status by left border color + single role chip, Disable/Enable/Remove hidden until the row is tapped.
 // Build: v170 — visual pass. Attendance PDFs (Day / weekly HR / weekly Finance) get a shared letterhead (app-icon logo fetched via _pdfLoadLogo with text fallback, company + project line, teal rule), page-number and generated-by footer on every page, zebra rows; Day PDF: colored Present/Absent text + summary chips; HR weekly: TOTAL PRESENT daily counts row (matching the on-screen grid) and amber Saturday header; Finance: same Saturday tint + grand total in a filled box. App: present rows in the daily register tinted pale green (absent were already pale red) to mirror the weekly grid.
 // Build: v169 — (1) 17:00 auto sign-out: open self sign-ins close automatically at 17:00 (worker phone nudges + closes when open past 5; admin dashboard and confirm fill forgotten sign-outs the same way; autoOut flag marks them; sign-ins at/after 17:00 untouched for night work; Paul edits real late finishes by hand). (2) Weekly HR + Finance PDFs now draw the register like the on-screen sheet: green cell + drawn tick present, red cell + dash absent, amber Saturday (jsPDF fonts have no ✓/— glyphs — they printed as specks). Mover rows lose the 📦 emoji in PDFs for the same reason.
 // Build: v168 — PDF FIX (root cause of "PDFs never download", reproduced live on desktop v167): .modal-overlay CSS renders at opacity:0 until a .show class is added (introduced with the animated confirm modal); showPDFPreview, the reassign-date modal and the edit-sign-in modal never added it, so they opened fully invisible while covering the screen and blocking clicks. All three now add .show on mount. Also register accuracy: a new day's register now starts everyone ABSENT (was: whole roster present at 07:00). Presence lands only two ways: an approved self sign-in (auto-captured with real times since v166, 📱 badge in the register) or the admin capturing the worker (tick / +Add Worker / +Add All Roster, default 07:00 editable, markedBy recorded). ✓ All Present bulk button unchanged. Also: 📄 Day PDF button on the attendance tab (one-day register PDF for the daily submission, with per-worker Source column: approved self sign-in vs captured-by, movers table, totals, signature lines); weekly PDF now trims to week-to-date (days after today no longer print as absent dashes, Days denominator matches included days) and split in two: Submit to HR (all workers, one grid) and Submit to Finance (sectioned by pay group with days x rate amounts, group subtotals, grand total; unassigned workers and ad-hoc movers listed so nobody drops off).
