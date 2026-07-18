@@ -368,6 +368,7 @@ input,select,textarea,button{font-family:inherit;transition:border-color .2s,box
 .att-row:last-child{border-bottom:none}
 .att-row:nth-child(even){background:#fafbfc}
 .att-row.att-row-absent{background:#fff5f5}
+.att-row.att-row-present{background:#f2faf5}
 .att-name{flex:1;font-size:12.5px;font-weight:600;min-width:100px;color:#1a1a2e}
 .att-check{width:22px;height:22px;accent-color:var(--teal);cursor:pointer;flex-shrink:0}
 .att-time{width:68px;padding:5px 4px;border:1px solid #e0e0e0;border-radius:8px;font-size:11.5px;text-align:center;background:#fafbfc;transition:border-color 0.2s}
@@ -9210,7 +9211,7 @@ function _renderAttendanceUI(date,roster,data,container,actions,summary){
     const disabled=locked?'disabled':'';
     const isNight=w.shift==="night";
     const isManual=w._manualAdd;
-    const rowClass='att-row'+(w.present?'':' att-row-absent');
+    const rowClass='att-row'+(w.present?' att-row-present':' att-row-absent');
     html+='<div class="'+rowClass+'"'+(isNight?' style="background:#eef2f7"':'')+'>';
     html+='<input type="checkbox" class="att-check" data-worker="'+escHtml(name)+'" '+checked+' '+disabled+' onchange="updateAttWorker(this)">';
     html+='<span class="att-name">'+escHtml(name)+(isManual?' <span style="font-size:9px;color:var(--teal);font-weight:600">+</span>':'')+(w.selfSignIn?' <span title="Approved self sign-in" style="font-size:9px">📱</span>':'')+'</span>';
@@ -9576,6 +9577,51 @@ function renderWeeklyRegister(refDate){
   });
 }
 
+// v170: shared letterhead + footer for the attendance PDFs. The logo is the
+// app icon, fetched once (service worker serves it from cache offline) and
+// kept as a data URL; if it can't load, the letterhead falls back to text.
+let _pdfLogoCache;
+function _pdfLoadLogo(){
+  if(_pdfLogoCache!==undefined)return Promise.resolve(_pdfLogoCache);
+  return fetch("./icon-192.png").then(function(r){return r.ok?r.blob():null}).then(function(b){
+    if(!b){_pdfLogoCache=null;return null}
+    return new Promise(function(res){
+      const fr=new FileReader();
+      fr.onload=function(){_pdfLogoCache=fr.result;res(_pdfLogoCache)};
+      fr.onerror=function(){_pdfLogoCache=null;res(null)};
+      fr.readAsDataURL(b);
+    });
+  }).catch(function(){_pdfLogoCache=null;return null});
+}
+function _pdfHeader(pdf,logo,title,subtitle,M){
+  const W=pdf.internal.pageSize.getWidth();
+  let y=16;
+  if(logo){try{pdf.addImage(logo,"PNG",M,y-8,13,13)}catch(e){}}
+  const tx=logo?M+17:M;
+  pdf.setFont("helvetica","bold");pdf.setFontSize(15);pdf.setTextColor(15,110,86);
+  pdf.text("ELGAWA Guyana Inc.",tx,y);
+  pdf.setFont("helvetica","normal");pdf.setFontSize(8.5);pdf.setTextColor(120);
+  pdf.text("Pasha Global HVAC Project - Blue Bridge Inc.",tx,y+4.5);
+  pdf.setFont("helvetica","bold");pdf.setFontSize(11);pdf.setTextColor(40);
+  pdf.text(title,M,y+13);
+  pdf.setFont("helvetica","normal");
+  if(subtitle){pdf.setFontSize(9);pdf.setTextColor(120);pdf.text(subtitle,M,y+18)}
+  pdf.setDrawColor(15,110,86);pdf.setLineWidth(0.7);
+  pdf.line(M,y+21,W-M,y+21);
+  return y+27;
+}
+function _pdfFooter(pdf){
+  const pages=pdf.internal.getNumberOfPages();
+  const W=pdf.internal.pageSize.getWidth();
+  const H=pdf.internal.pageSize.getHeight();
+  for(let i=1;i<=pages;i++){
+    pdf.setPage(i);
+    pdf.setFont("helvetica","normal");pdf.setFontSize(7.5);pdf.setTextColor(150);
+    pdf.text("Generated "+new Date().toLocaleString()+" by "+((currentUser&&currentUser.name)||"")+"  |  ELGAWA Checksheet "+APP_VERSION,14,H-7);
+    pdf.text("Page "+i+" of "+pages,W-14,H-7,{align:"right"});
+  }
+}
+
 // v169: jsPDF's built-in fonts have no real ✓ / — glyphs (they printed as
 // specks), so the weekly register marks are DRAWN: green cell + tick for
 // present, red cell + dash for absent, amber for Saturday — same look as the
@@ -9606,19 +9652,15 @@ function generateDailyAttPDF(){
   const date=(dateEl&&dateEl.value)||getGuyanaDate();
   if(!_attData||_attDate!==date){showToast("⏳ Loading attendance data... please wait and try again");renderAttendanceTab();return}
   if(!_jspdfReady()||!_autotableReady()){requirePdf(generateDailyAttPDF);return}
+  _pdfLoadLogo().then(function(logo){
   try{
   const data=_attData;
   const days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   const dd=new Date(date+"T12:00:00");
   const{jsPDF}=window.jspdf;
   const pdf=new jsPDF("p","mm","a4");
-  const W=pdf.internal.pageSize.getWidth();const M=14;let y=20;
-  pdf.setFontSize(16);pdf.setTextColor(15,110,86);
-  pdf.text("ELGAWA Guyana Inc.",M,y);y+=6;
-  pdf.setFontSize(11);pdf.setTextColor(40);
-  pdf.text("Daily Attendance Register — "+days[dd.getDay()]+" "+date,M,y);y+=5;
-  pdf.setFontSize(9);pdf.setTextColor(100);
-  pdf.text("Generated: "+new Date().toLocaleString()+"  by "+((currentUser&&currentUser.name)||""),M,y);y+=7;
+  const W=pdf.internal.pageSize.getWidth();const M=14;
+  let y=_pdfHeader(pdf,logo,"Daily Attendance Register",days[dd.getDay()]+" "+date,M);
 
   const roster=getWorkerRoster();
   const allNames=[...roster];
@@ -9632,9 +9674,9 @@ function generateDailyAttPDF(){
     if(w.selfSignIn)src="Self sign-in (approved)";
     else if(w.present&&w.markedBy)src="Captured by "+w.markedBy;
     if(w.present){present++;if(w.shift==="night")night++}else absent++;
-    body.push([String(idx),name,w.shift==="night"?"Night":"Day",w.present?(w.timeIn||""):"",w.present?(w.timeOut||""):"",w.present?"Present":"Absent",src]);
+    body.push([String(idx),name,w.shift==="night"?"Night":"Day",w.present?(w.timeIn||""):"",w.present?(w.timeOut||""):"",w.present?{content:"Present",styles:{textColor:[21,120,60],fontStyle:"bold"}}:{content:"Absent",styles:{textColor:[180,60,60]}},src]);
   });
-  pdf.autoTable({head:[["#","Worker","Shift","In","Out","Status","Source"]],body:body,startY:y,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid"});
+  pdf.autoTable({head:[["#","Worker","Shift","In","Out","Status","Source"]],body:body,startY:y,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},alternateRowStyles:{fillColor:[248,250,252]},theme:"grid"});
   y=pdf.lastAutoTable.finalY+7;
 
   const movers=(data.movers||[]).filter(m=>m.name&&m.name.trim());
@@ -9644,8 +9686,19 @@ function generateDailyAttPDF(){
     y=pdf.lastAutoTable.finalY+7;
   }
 
+  pdf.setFontSize(9);
+  const chips=[["Present: "+present,[16,150,110]],["Night: "+night,[44,62,80]],["Absent: "+absent,[214,69,55]]];
+  let cx=M;
+  chips.forEach(function(ch){
+    const wCh=pdf.getTextWidth(ch[0])+10;
+    pdf.setFillColor(ch[1][0],ch[1][1],ch[1][2]);
+    pdf.roundedRect(cx,y-4.5,wCh,7,1.5,1.5,"F");
+    pdf.setTextColor(255);
+    pdf.text(ch[0],cx+5,y);
+    cx+=wCh+4;
+  });
+  y+=9;
   pdf.setFontSize(10);pdf.setTextColor(40);
-  pdf.text("Present: "+present+"    Night shift: "+night+"    Absent: "+absent,M,y);y+=6;
   if(data.verified){pdf.text("Verified in app by: "+(data.verifiedBy||"admin"),M,y);y+=6}
   y+=10;
   if(y>270){pdf.addPage();y=30}
@@ -9653,21 +9706,20 @@ function generateDailyAttPDF(){
   pdf.setFontSize(9);pdf.setTextColor(80);
   pdf.text("Prepared by: _______________________",M,y+4);
   pdf.text("Approved by: _______________________",M+95,y+4);
+  _pdfFooter(pdf);
   showPDFPreview(pdf,"Daily_Attendance_"+date+".pdf");
   }catch(e){console.error("PDF error:",e);showToast("❌ PDF generation failed: "+e.message)}
+  });
 }
 
 function generateWeeklyAttPDF(){
   const d=window._weekAttData;if(!d){showToast("⏳ Loading attendance data... please wait and try again");renderWeeklyRegister(document.getElementById("attDate").value||getGuyanaDate());return}
   if(!_jspdfReady()||!_autotableReady()){requirePdf(generateWeeklyAttPDF);return}
+  _pdfLoadLogo().then(function(logo){
   try{
   const{jsPDF}=window.jspdf;
   const pdf=new jsPDF("l","mm","a4");
-  const W=pdf.internal.pageSize.getWidth();const M=14;let y=20;
-
-  pdf.setFontSize(16);pdf.setTextColor(15,110,86);
-  pdf.text("ELGAWA Guyana Inc.",M,y);y+=6;
-  pdf.setFontSize(10);pdf.setTextColor(100);
+  const W=pdf.internal.pageSize.getWidth();const M=14;
   // v168: only include days up to today. A mid-week download used to print
   // future days as absent dashes, which read wrong on a submitted register.
   const today=getGuyanaDate();
@@ -9676,8 +9728,9 @@ function generateWeeklyAttPDF(){
   const withSat=d.satDate<=today;
   const denom=idxs.length+(withSat?1:0);
   const upTo=withSat?d.satDate:(idxs.length?d.workDates[idxs.length-1]:d.mon);
-  pdf.text("Weekly Attendance Register — HR (all workers) — Week of "+d.mon+(denom<6&&denom>0?" (to "+upTo+")":""),M,y);y+=4;
-  pdf.text("Generated: "+new Date().toLocaleDateString(),M,y);y+=8;
+  let y=_pdfHeader(pdf,logo,"Weekly Attendance Register — HR (all workers)","Week of "+d.mon+(denom<6&&denom>0?" (to "+upTo+")":""),M);
+  const satColIdx=withSat?1+idxs.length:-1;
+  const _satHead=function(c){if(c.section==="head"&&c.column.index===satColIdx){c.cell.styles.fillColor=[230,126,34]}};
 
   const head=[["Worker",...idxs.map(i=>dayNames[i]+"\n"+d.workDates[i].slice(5)),...(withSat?["Sat\n"+d.satDate.slice(5)]:[]),"Days"]];
   const body=[];const marks=[];
@@ -9717,7 +9770,24 @@ function generateWeeklyAttPDF(){
     body.push(row);marks.push(mrow);
   });
 
-  pdf.autoTable({head:head,body:body,startY:y,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid",didDrawCell:function(c){_pdfDrawMark(pdf,c,marks)}});
+  // v170: daily Total Present row, same as the on-screen grid
+  const _dayCount=function(i){
+    let c=0;
+    const wk=d.weekData[i].data.workers||{};
+    d.roster.forEach(n=>{if(wk[n]&&wk[n].present)c++});
+    const mv=d.weekData[i].data.movers||[];
+    d.allMovers.forEach(n=>{if(mv.find(m=>m.name&&m.name.trim()===n&&m.present!==false))c++});
+    return c;
+  };
+  const totStyle={fontStyle:"bold",halign:"center",fillColor:[234,240,246]};
+  const totRow=[{content:"TOTAL PRESENT",styles:{fontStyle:"bold",fillColor:[234,240,246]}}];
+  let grandTot=0;
+  idxs.forEach(i=>{const c=_dayCount(i);grandTot+=c;totRow.push({content:String(c),styles:totStyle})});
+  if(withSat){const c=_dayCount(5);grandTot+=c;totRow.push({content:String(c),styles:totStyle})}
+  totRow.push({content:String(grandTot),styles:totStyle});
+  body.push(totRow);marks.push([]);
+
+  pdf.autoTable({head:head,body:body,startY:y,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},alternateRowStyles:{fillColor:[248,250,252]},theme:"grid",didParseCell:_satHead,didDrawCell:function(c){_pdfDrawMark(pdf,c,marks)}});
   y=pdf.lastAutoTable.finalY+10;
 
   const fY=y+10;
@@ -9727,9 +9797,11 @@ function generateWeeklyAttPDF(){
   pdf.text("Approved by: _______________________",M+100,fY);
   pdf.text("HR: _______________________",M+200,fY);
 
+  _pdfFooter(pdf);
   showPDFPreview(pdf,"Weekly_Attendance_HR_"+d.mon+".pdf");
   showToast("✅ PDF downloaded");
   }catch(e){console.error("PDF error:",e);showToast("❌ PDF generation failed: "+e.message)}
+  });
 }
 
 // v168: Finance weekly PDF — same week-to-date register, sectioned by pay
@@ -9739,10 +9811,11 @@ function generateWeeklyAttPDF(){
 function generateWeeklyFinancePDF(){
   const d=window._weekAttData;if(!d){showToast("⏳ Loading attendance data... please wait and try again");renderWeeklyRegister(document.getElementById("attDate").value||getGuyanaDate());return}
   if(!_jspdfReady()||!_autotableReady()){requirePdf(generateWeeklyFinancePDF);return}
+  _pdfLoadLogo().then(function(logo){
   try{
   const{jsPDF}=window.jspdf;
   const pdf=new jsPDF("l","mm","a4");
-  const W=pdf.internal.pageSize.getWidth();const M=14;let y=20;
+  const W=pdf.internal.pageSize.getWidth();const M=14;
 
   const today=getGuyanaDate();
   const dayNames=["Mon","Tue","Wed","Thu","Fri"];
@@ -9751,11 +9824,9 @@ function generateWeeklyFinancePDF(){
   const denom=idxs.length+(withSat?1:0);
   const upTo=withSat?d.satDate:(idxs.length?d.workDates[idxs.length-1]:d.mon);
 
-  pdf.setFontSize(16);pdf.setTextColor(15,110,86);
-  pdf.text("ELGAWA Guyana Inc.",M,y);y+=6;
-  pdf.setFontSize(10);pdf.setTextColor(100);
-  pdf.text("Weekly Pay Register — Finance (by group) — Week of "+d.mon+(denom<6&&denom>0?" (to "+upTo+")":""),M,y);y+=4;
-  pdf.text("Generated: "+new Date().toLocaleDateString(),M,y);y+=8;
+  let y=_pdfHeader(pdf,logo,"Weekly Pay Register — Finance (by group)","Week of "+d.mon+(denom<6&&denom>0?" (to "+upTo+")":""),M);
+  const satColIdx=withSat?1+idxs.length:-1;
+  const _satHead=function(c){if(c.section==="head"&&c.column.index===satColIdx){c.cell.styles.fillColor=[230,126,34]}};
 
   const presentOn=(i,name)=>{const w=d.weekData[i].data.workers&&d.weekData[i].data.workers[name];return !!(w&&w.present)};
   const head=[["Worker",...idxs.map(i=>dayNames[i]+"\n"+d.workDates[i].slice(5)),...(withSat?["Sat\n"+d.satDate.slice(5)]:[]),"Days","Rate (G$)","Amount (G$)"]];
@@ -9783,7 +9854,7 @@ function generateWeeklyFinancePDF(){
     if(y>165){pdf.addPage();y=20}
     pdf.setFontSize(11);pdf.setTextColor(15,110,86);
     pdf.text(PAY_GROUPS[gk].label,M,y);
-    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid",didDrawCell:function(c){_pdfDrawMark(pdf,c,marks)}});
+    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},alternateRowStyles:{fillColor:[248,250,252]},theme:"grid",didParseCell:_satHead,didDrawCell:function(c){_pdfDrawMark(pdf,c,marks)}});
     y=pdf.lastAutoTable.finalY+9;
   });
 
@@ -9803,7 +9874,7 @@ function generateWeeklyFinancePDF(){
     if(y>165){pdf.addPage();y=20}
     pdf.setFontSize(11);pdf.setTextColor(180,80,0);
     pdf.text("Not on any pay group — assign in Payments > Roster",M,y);
-    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[180,80,0],textColor:255,fontStyle:"bold"},theme:"grid",didDrawCell:function(c){_pdfDrawMark(pdf,c,marks)}});
+    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[180,80,0],textColor:255,fontStyle:"bold"},alternateRowStyles:{fillColor:[248,250,252]},theme:"grid",didParseCell:_satHead,didDrawCell:function(c){_pdfDrawMark(pdf,c,marks)}});
     y=pdf.lastAutoTable.finalY+9;
   }
 
@@ -9821,22 +9892,31 @@ function generateWeeklyFinancePDF(){
     if(y>165){pdf.addPage();y=20}
     pdf.setFontSize(11);pdf.setTextColor(15,110,86);
     pdf.text("Movers (ad-hoc)",M,y);
-    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},theme:"grid",didDrawCell:function(c){_pdfDrawMark(pdf,c,marks)}});
+    pdf.autoTable({head:head,body:body,startY:y+2,margin:{left:M,right:M},styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[15,110,86],textColor:255,fontStyle:"bold"},alternateRowStyles:{fillColor:[248,250,252]},theme:"grid",didParseCell:_satHead,didDrawCell:function(c){_pdfDrawMark(pdf,c,marks)}});
     y=pdf.lastAutoTable.finalY+9;
   }
 
   if(y>175){pdf.addPage();y=20}
-  pdf.setFontSize(11);pdf.setTextColor(40);
-  pdf.text("TOTAL — grouped workers: "+grandDays+" man-days,  G$ "+grandAmt.toLocaleString(),M,y);y+=12;
+  pdf.setFont("helvetica","bold");pdf.setFontSize(10);
+  const totTxt="TOTAL — grouped workers: "+grandDays+" man-days   |   G$ "+grandAmt.toLocaleString();
+  const totW=pdf.getTextWidth(totTxt)+10;
+  pdf.setFillColor(15,110,86);
+  pdf.roundedRect(M,y-5.5,totW,9,1.5,1.5,"F");
+  pdf.setTextColor(255);
+  pdf.text(totTxt,M+5,y+0.5);
+  pdf.setFont("helvetica","normal");
+  y+=12;
   pdf.setDrawColor(200);pdf.line(M,y-2,W-M,y-2);
   pdf.setFontSize(9);pdf.setTextColor(80);
   pdf.text("Verified by: _______________________",M,y+4);
   pdf.text("Approved by: _______________________",M+100,y+4);
   pdf.text("Finance: _______________________",M+200,y+4);
 
+  _pdfFooter(pdf);
   showPDFPreview(pdf,"Weekly_Pay_Register_Finance_"+d.mon+".pdf");
   showToast("✅ PDF downloaded");
   }catch(e){console.error("PDF error:",e);showToast("❌ PDF generation failed: "+e.message)}
+  });
 }
 
 // Auto-calculate OT triggers totals recalc
@@ -11385,7 +11465,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v169";
+const APP_VERSION="v170";
 const WP_DAYRATE_GYD=7000,WP_FX=216;
 const WP_SECTIONS=[
  {ref:"AW-01",name:"P3 duct panels - order 1",unit:"m2",qty:9168,labour:154771.60},
@@ -12783,6 +12863,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v170 — visual pass. Attendance PDFs (Day / weekly HR / weekly Finance) get a shared letterhead (app-icon logo fetched via _pdfLoadLogo with text fallback, company + project line, teal rule), page-number and generated-by footer on every page, zebra rows; Day PDF: colored Present/Absent text + summary chips; HR weekly: TOTAL PRESENT daily counts row (matching the on-screen grid) and amber Saturday header; Finance: same Saturday tint + grand total in a filled box. App: present rows in the daily register tinted pale green (absent were already pale red) to mirror the weekly grid.
 // Build: v169 — (1) 17:00 auto sign-out: open self sign-ins close automatically at 17:00 (worker phone nudges + closes when open past 5; admin dashboard and confirm fill forgotten sign-outs the same way; autoOut flag marks them; sign-ins at/after 17:00 untouched for night work; Paul edits real late finishes by hand). (2) Weekly HR + Finance PDFs now draw the register like the on-screen sheet: green cell + drawn tick present, red cell + dash absent, amber Saturday (jsPDF fonts have no ✓/— glyphs — they printed as specks). Mover rows lose the 📦 emoji in PDFs for the same reason.
 // Build: v168 — PDF FIX (root cause of "PDFs never download", reproduced live on desktop v167): .modal-overlay CSS renders at opacity:0 until a .show class is added (introduced with the animated confirm modal); showPDFPreview, the reassign-date modal and the edit-sign-in modal never added it, so they opened fully invisible while covering the screen and blocking clicks. All three now add .show on mount. Also register accuracy: a new day's register now starts everyone ABSENT (was: whole roster present at 07:00). Presence lands only two ways: an approved self sign-in (auto-captured with real times since v166, 📱 badge in the register) or the admin capturing the worker (tick / +Add Worker / +Add All Roster, default 07:00 editable, markedBy recorded). ✓ All Present bulk button unchanged. Also: 📄 Day PDF button on the attendance tab (one-day register PDF for the daily submission, with per-worker Source column: approved self sign-in vs captured-by, movers table, totals, signature lines); weekly PDF now trims to week-to-date (days after today no longer print as absent dashes, Days denominator matches included days) and split in two: Submit to HR (all workers, one grid) and Submit to Finance (sectioned by pay group with days x rate amounts, group subtotals, grand total; unassigned workers and ad-hoc movers listed so nobody drops off).
 // Build: v167 — weekly per-crew productivity vs wage expenditure published to /reports/weekly (ISO-week keyed, crew keys _fbEncKey-encoded, earned/cost/ratio/man-days) for the Monday office report; /reports node is public-read by rules, aggregates only.
