@@ -617,6 +617,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
   <div class="login-box">
     <h1>ELGAWA GUYANA INC.</h1>
     <div class="sub">Pasha Global Hotel - Daily Checksheet</div>
+    <div style="font-size:10px;color:#9aa5b1;margin-top:2px;font-weight:600">App version v167</div>
     <div class="lang-row">
       <button class="lang-btn active" onclick="setLang('en')">English</button>
       <button class="lang-btn" onclick="setLang('es')">Espanol</button>
@@ -651,6 +652,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
     <button onclick="openMyAttendance()" id="myAttendanceBtn" style="width:100%;margin-bottom:10px;padding:12px;border:none;border-radius:12px;background:var(--teal);color:white;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(11,93,71,.25)">🕐 My Sign In / Sign Out</button>
     <button onclick="openMyProfile()" id="myProfileDashBtn" style="width:100%;margin-bottom:10px;padding:11px;border:1.5px solid var(--navy);border-radius:12px;background:white;color:var(--navy);font-size:14px;font-weight:700;cursor:pointer">👤 My Profile</button>
     <button onclick="openWorkerProfiles()" id="workforceProfilesBtn" style="display:none;width:100%;margin-bottom:10px;padding:11px;border:none;border-radius:12px;background:var(--navy);color:white;font-size:14px;font-weight:700;cursor:pointer">👥 Workforce Profiles</button>
+    <button onclick="openWorkPlan()" id="workPlanBtn" style="display:none;width:100%;margin-bottom:10px;padding:11px;border:none;border-radius:12px;background:#7E5BB5;color:white;font-size:14px;font-weight:700;cursor:pointer">📐 Work Plan &amp; Output</button>
     <div class="settings-row" id="settingsRow">
     <button class="pill-btn" onclick="exportCSV()" id="exportBtn" style="display:none">📊 Export CSV</button></div>
     <div class="view-toggle-row" id="viewToggleRow">
@@ -861,6 +863,10 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
   <div id="myProfileBody"></div>
 </div>
 <!-- Workforce Profiles — HR/admin roster of everyone with photos, grouped by team -->
+<div id="workPlanView" class="hidden" style="max-width:680px;margin:0 auto;padding:16px;padding-bottom:40px">
+  <div class="back-row"><button class="back-btn" onclick="closeWorkPlan()">← Back</button></div>
+  <div id="workPlanBody"></div>
+</div>
 <div id="workerProfilesView" class="hidden" style="max-width:680px;margin:0 auto;padding:16px;padding-bottom:40px">
   <div style="margin-bottom:10px"><button class="btn-s" onclick="closeWorkerProfiles()" style="font-size:13px;padding:8px 16px;border:1.5px solid var(--border);background:white;color:var(--navy);border-radius:8px;cursor:pointer;font-weight:600">◀ Back</button></div>
   <div id="workerProfilesBody"></div>
@@ -894,7 +900,10 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
       <div class="notif-toggle"><div class="toggle" id="notifToggle" onclick="toggleNotif()"></div><span id="notifLabel"></span></div>
       <div class="time-field" id="notifTimeWrap" style="display:none"><label id="reminderTimeLabel"></label><input type="time" id="notifTime" value="16:30" onchange="saveNotifTime()"></div>
     </div>
-    <div class="s-card"><h3 id="aboutTitle"></h3><p id="aboutInfo"></p></div>
+    <div class="s-card"><h3 id="aboutTitle"></h3><p id="aboutInfo"></p>
+      <p style="font-size:11px;color:var(--grey);margin:6px 0">App version <b>v167</b></p>
+      <button class="btn btn-primary full" onclick="testPdfTools()" style="margin-top:4px">🧪 Test PDF Tools</button>
+    </div>
     <div class="s-card">
       <h3 id="changePwTitle">Change Password</h3>
       <p style="font-size:11px;color:var(--grey);margin-bottom:8px" id="changePwDesc">Update your login password</p>
@@ -2432,6 +2441,10 @@ function showDash(){
   // Workforce Profiles roster button — admin only (holds addresses/IDs)
   const wpBtn=document.getElementById("workforceProfilesBtn");
   if(wpBtn)wpBtn.style.display=(currentUser&&currentUser.username==="admin")?"block":"none";
+
+  // Work Plan & Output button — planners and recorders (v166)
+  const wplBtn=document.getElementById("workPlanBtn");
+  if(wplBtn)wplBtn.style.display=_wpCanRecord()?"block":"none";
 
   // ═══ WORKER ROLE DETECTION ═══
   const wsv=document.getElementById("workerSignInView");
@@ -9070,12 +9083,16 @@ function renderAttendanceTab(){
   const titleEl=document.getElementById("attTitle");
   if(titleEl)titleEl.textContent=t("dailyAttendance");
 
-  // Helper: if no attendance data exists for a date, create with all workers PRESENT by default
+  // Helper: if no attendance data exists for a date, create with all workers
+  // ABSENT (v168). Presence now comes only from an approved self sign-in
+  // (auto-captured with real times) or from the admin marking the worker.
+  // The old all-present-at-07:00 default made the register claim attendance
+  // nobody had verified, and confirmed sign-ins drowned in it.
   function _defaultAttData(existing){
     if(existing&&existing.workers&&Object.keys(existing.workers).length>0)return existing;
     const data=existing||{workers:{},verified:false,verifiedBy:null};
     roster.forEach(name=>{
-      if(!data.workers[name])data.workers[name]={present:true,timeIn:"07:00",timeOut:"",shift:"day"};
+      if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:"",shift:"day"};
     });
     return data;
   }
@@ -9184,7 +9201,7 @@ function _renderAttendanceUI(date,roster,data,container,actions,summary){
     const rowClass='att-row'+(w.present?'':' att-row-absent');
     html+='<div class="'+rowClass+'"'+(isNight?' style="background:#eef2f7"':'')+'>';
     html+='<input type="checkbox" class="att-check" data-worker="'+escHtml(name)+'" '+checked+' '+disabled+' onchange="updateAttWorker(this)">';
-    html+='<span class="att-name">'+escHtml(name)+(isManual?' <span style="font-size:9px;color:var(--teal);font-weight:600">+</span>':'')+'</span>';
+    html+='<span class="att-name">'+escHtml(name)+(isManual?' <span style="font-size:9px;color:var(--teal);font-weight:600">+</span>':'')+(w.selfSignIn?' <span title="Approved self sign-in" style="font-size:9px">📱</span>':'')+'</span>';
     if(!locked)html+='<button class="att-shift-btn" onclick="toggleShift(\''+name.replace(/'/g,"\\'")+'\')" style="background:'+(isNight?'#2c3e50':'#f0f0f0')+';color:'+(isNight?'white':'#888')+'">'+(isNight?'🌙':'☀️')+'</button>';
     else html+='<span style="font-size:11px">'+(isNight?'🌙':'☀️')+'</span>';
     html+='<input type="time" class="att-time" data-worker="'+escHtml(name)+'" data-field="timeIn" value="'+(w.timeIn||"")+'" '+disabled+' onchange="updateAttTime(this)" placeholder="In">';
@@ -9218,19 +9235,17 @@ function attAddWorker(){
     const sel=document.getElementById("_attAddSel");const inp=document.getElementById("_attAddCustom");
     const name=(sel&&sel.value)?sel.value:(inp?inp.value.trim():"");
     if(!name)return;
-    const now=getGuyanaDateTime();const timeNow=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-    data.workers[name]={present:true,timeIn:timeNow,timeOut:"",shift:"day",_manualAdd:true};
+    data.workers[name]={present:true,timeIn:"07:00",timeOut:"",shift:"day",_manualAdd:true,markedBy:(currentUser&&currentUser.username)||""};
     saveAttendanceLocal(_attDate,data);showToast("Added "+name);renderAttendanceTab();
   });
 }
 // Admin: add ALL roster workers to attendance at once
 function attAddAllWorkers(){
   const data=_getCurrentAttData();const roster=getWorkerRoster();
-  const now=getGuyanaDateTime();const timeNow=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
   let added=0;
   roster.forEach(name=>{
     if(!data.workers[name]||data.workers[name]._removed){
-      data.workers[name]={present:true,timeIn:timeNow,timeOut:"",shift:"day"};added++;
+      data.workers[name]={present:true,timeIn:"07:00",timeOut:"",shift:"day",markedBy:(currentUser&&currentUser.username)||""};added++;
     }
   });
   saveAttendanceLocal(_attDate,data);
@@ -9278,11 +9293,14 @@ function updateAttWorker(cb){
   const name=cb.dataset.worker;
   if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:"",shift:"day"};
   data.workers[name].present=cb.checked;
-  // Auto-set time in if checking present, clear times if marking absent
+  // v168: a manual tick is the admin capturing a worker who was on site but
+  // didn't self sign in. Default to the 07:00 site start (editable), not the
+  // time of ticking — ticking at 5pm doesn't mean the man arrived at 5pm.
+  // Tag who captured it so the register keeps its audit trail.
   if(cb.checked&&!data.workers[name].timeIn){
-    const now=new Date();
-    data.workers[name].timeIn=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+    data.workers[name].timeIn="07:00";
   }
+  if(cb.checked){data.workers[name].markedBy=(currentUser&&currentUser.username)||""}
   if(!cb.checked){data.workers[name].timeIn="";data.workers[name].timeOut=""}
   // Save locally and re-render from in-memory data (never re-fetches cloud)
   _attData=data;_attDate=_attDate||document.getElementById("attDate").value;
@@ -11148,6 +11166,351 @@ function loadAllSelfAttendance(date){
   });
 }
 
+// ═══ WORK PLAN & OUTPUT TRACKING (v166) ═══
+// Daily assignments carry a planned quantity. Team leads record achieved
+// quantity, admin/Field Engineer approves (mirrors the attendance flow).
+// Approved output is valued at the BOQ labour rate per section — same data
+// model as the Additional Works Labour Control workbook.
+const APP_VERSION="v167";
+const WP_DAYRATE_GYD=7000,WP_FX=216;
+const WP_SECTIONS=[
+ {ref:"AW-01",name:"P3 duct panels - order 1",unit:"m2",qty:9168,labour:154771.60},
+ {ref:"AW-02",name:"P3 duct panels - additional",unit:"m2",qty:4512,labour:69398.40},
+ {ref:"AW-03",name:"GS ducting (fabricate + install)",unit:"m2",qty:7110,labour:188059.50},
+ {ref:"AW-04",name:"Copper 2-1/8\" (53.98mm)",unit:"m",qty:580,labour:2813.00},
+ {ref:"AW-05",name:"Copper 1-5/8\" (41.3mm)",unit:"m",qty:870,labour:11974.50},
+ {ref:"AW-06",name:"Copper 1-1/8\" (28.5mm)",unit:"m",qty:667,labour:12145.15},
+ {ref:"AW-07",name:"Copper 5/8\" (15.9mm)",unit:"m",qty:1450,labour:30627.50},
+ {ref:"AW-08",name:"VRF indoor units (2nd order)",unit:"pcs",qty:80,labour:2598.40},
+ {ref:"AW-09",name:"VRF outdoor units (2nd order)",unit:"pcs",qty:14,labour:2590.00},
+ {ref:"AW-10",name:"Digital mixing valve",unit:"sum",qty:1,labour:3000.00}
+];
+function _wpSec(ref){for(var i=0;i<WP_SECTIONS.length;i++)if(WP_SECTIONS[i].ref===ref)return WP_SECTIONS[i];return null;}
+function _wpLpu(ref){var s=_wpSec(ref);return s&&s.qty?s.labour/s.qty:0;}
+function _wpDayUsd(){return WP_DAYRATE_GYD/WP_FX;}
+function _wpCanPlan(){return currentUser&&(currentUser.username==="admin"||["Engineer","Project Lead"].includes(currentUser.role));}
+function _wpCanRecord(){return _wpCanPlan()||(currentUser&&["Team Lead","Lead Worker","Supervisor"].includes(currentUser.role));}
+let _wpDate=null,_wpTab="plan";
+function openWorkPlan(){
+  if(!_wpCanRecord())return;
+  ["dashView","hrView","workerProfilesView"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add("hidden")});
+  const bn=document.getElementById("bottomNav");if(bn)bn.classList.add("hidden");
+  const v=document.getElementById("workPlanView");if(v)v.classList.remove("hidden");
+  if(!_wpDate)_wpDate=getGuyanaDate();
+  if(!_wpCanPlan())_wpTab="output";
+  window.scrollTo(0,0);renderWorkPlan();
+}
+function closeWorkPlan(){
+  const v=document.getElementById("workPlanView");if(v)v.classList.add("hidden");
+  const bn=document.getElementById("bottomNav");if(bn)bn.classList.remove("hidden");
+  const dv=document.getElementById("dashView");if(dv)dv.classList.remove("hidden");
+}
+function _wpNav(d){const dt=new Date(_wpDate+"T12:00:00");dt.setDate(dt.getDate()+d);_wpDate=dt.toISOString().slice(0,10);renderWorkPlan();}
+function _wpSetDate(v){if(v)_wpDate=v;renderWorkPlan();}
+function _wpSwitchTab(tb){_wpTab=tb;renderWorkPlan();}
+function _wpLoadPlans(date){
+  const fb=getFirebaseUrl();if(!fb)return Promise.resolve({});
+  return fetch(fb+"/workplans/"+date+".json").then(fbJson).then(d=>d||{}).catch(()=>({}));
+}
+function _wpLoadProgDay(date){
+  const fb=getFirebaseUrl();if(!fb)return Promise.resolve({});
+  return fetch(fb+"/sectionprogress/"+date+".json").then(fbJson).then(d=>d||{}).catch(()=>({}));
+}
+function _wpLoadProgAll(){
+  const fb=getFirebaseUrl();if(!fb)return Promise.resolve({});
+  return fetch(fb+"/sectionprogress.json").then(fbJson).then(d=>d||{}).catch(()=>({}));
+}
+function _wpSecOpts(sel){
+  return WP_SECTIONS.map(s=>'<option value="'+s.ref+'"'+(sel===s.ref?" selected":"")+'>'+s.ref+" — "+escHtml(s.name)+" ("+s.unit+")</option>").join("");
+}
+function _wpTeamDatalist(){
+  const users=getUsers();const names=[];
+  Object.values(users).forEach(u=>{if(u.name&&["Team Lead","Lead Worker","Supervisor","Engineer"].includes(u.role))names.push(u.name)});
+  return '<datalist id="wpTeamList">'+names.sort().map(n=>'<option value="'+escHtml(n)+'">').join("")+"</datalist>";
+}
+function renderWorkPlan(){
+  const body=document.getElementById("workPlanBody");if(!body)return;
+  const date=_wpDate||getGuyanaDate();
+  const d=new Date(date+"T12:00:00");
+  const dayName=d.toLocaleDateString(LANG==="es"?"es":LANG==="nl"?"nl":"en-US",{weekday:"long",month:"short",day:"numeric"});
+  let html='<div style="text-align:center;margin-bottom:10px"><h2 style="color:var(--navy);margin:0">📐 Work Plan</h2>'
+    +'<p style="color:var(--grey);font-size:11px;margin:2px 0">Plan the quantity. Record the quantity. Approve the quantity.</p></div>';
+  html+='<div class="hr-date-nav"><button class="arw" onclick="_wpNav(-1)">◀</button>'
+    +'<div style="text-align:center;flex:1"><div style="font-size:11px;color:var(--grey);font-weight:600">'+dayName+'</div>'
+    +'<input type="date" value="'+date+'" onchange="_wpSetDate(this.value)" style="padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:8px;text-align:center;font-weight:600;color:var(--navy)"></div>'
+    +'<button class="arw" onclick="_wpNav(1)">▶</button></div>';
+  const tabs=[];
+  if(_wpCanPlan())tabs.push(["plan","📋 Plan"]);
+  tabs.push(["output","✍️ Output"]);
+  if(_wpCanPlan())tabs.push(["progress","📊 Progress"]);
+  html+='<div class="tab-row" style="margin:8px 0">'+tabs.map(tb=>'<button class="tab-btn'+(_wpTab===tb[0]?" active":"")+'" onclick="_wpSwitchTab(\''+tb[0]+'\')">'+tb[1]+"</button>").join("")+"</div>";
+  html+='<div id="wpTabBody"><div style="text-align:center;color:var(--grey);padding:16px">Loading…</div></div>';
+  body.innerHTML=html;
+  if(_wpTab==="plan")_wpRenderPlan(date);
+  else if(_wpTab==="output")_wpRenderOutput(date);
+  else _wpRenderProgress();
+}
+function _wpRenderPlan(date){
+  const el=document.getElementById("wpTabBody");if(!el)return;
+  _wpLoadPlans(date).then(plans=>{
+    const ids=Object.keys(plans).sort();
+    let html='<div class="hr-card">';
+    if(!ids.length)html+='<div style="text-align:center;color:var(--grey);padding:10px;font-size:12px">No assignments for this date yet.</div>';
+    ids.forEach(id=>{
+      const p=plans[id];if(!p)return;
+      const s=_wpSec(p.ref);
+      html+='<div class="hr-row" style="align-items:flex-start"><div style="flex:1;min-width:0">'
+        +'<div style="font-weight:700;font-size:13px;color:var(--navy)">'+escHtml(p.team||"?")+'</div>'
+        +'<div style="font-size:11px;color:var(--grey)">'+escHtml(p.ref)+" — "+escHtml(s?s.name:"?")+' · plan <b>'+(p.qty||0)+" "+(s?s.unit:"")+"</b>"+(p.deadline?" · by "+escHtml(p.deadline):"")+"</div></div>"
+        +'<button onclick="_wpDelPlan(\''+date+'\',\''+id+'\')" style="border:none;background:none;color:var(--danger);font-size:15px;cursor:pointer;padding:2px 6px">✕</button></div>';
+    });
+    html+="</div>";
+    html+='<div style="background:white;border-radius:10px;box-shadow:var(--shadow);padding:12px;margin-top:10px">'
+      +'<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px">➕ Assign work</div>'
+      +_wpTeamDatalist()
+      +'<input id="wpTeam" list="wpTeamList" placeholder="Crew / team lead" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:6px">'
+      +'<select id="wpRef" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:6px">'+_wpSecOpts()+"</select>"
+      +'<div style="display:flex;gap:6px"><input id="wpQty" type="number" inputmode="decimal" placeholder="Qty planned" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">'
+      +'<input id="wpDeadline" type="date" value="'+date+'" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px"></div>'
+      +'<button onclick="_wpAddPlan(\''+date+'\')" class="btn btn-primary" style="width:100%;margin-top:8px;padding:10px">Save assignment</button></div>';
+    el.innerHTML=html;
+  });
+}
+function _wpAddPlan(date){
+  const team=(document.getElementById("wpTeam")||{}).value||"";
+  const ref=(document.getElementById("wpRef")||{}).value||"";
+  const qty=parseFloat((document.getElementById("wpQty")||{}).value);
+  const deadline=(document.getElementById("wpDeadline")||{}).value||"";
+  if(!team.trim()||!ref||!(qty>0)){showToast("Enter crew, section and a quantity");return;}
+  const fb=getFirebaseUrl();if(!fb){showToast("No cloud connection configured");return;}
+  const id="wp"+Date.now();
+  fetch(fb+"/workplans/"+date+"/"+id+".json",{method:"PUT",body:JSON.stringify({team:team.trim(),ref:ref,qty:qty,deadline:deadline,by:currentUser?currentUser.username:"",at:Date.now()})})
+    .then(r=>{if(r.ok){showToast("✅ Assignment saved");_wpRenderPlan(date);}else showToast("⚠️ Save failed (HTTP "+r.status+")");})
+    .catch(()=>showToast("⚠️ Save failed — check connection"));
+}
+function _wpDelPlan(date,id){
+  const fb=getFirebaseUrl();if(!fb)return;
+  fetch(fb+"/workplans/"+date+"/"+id+".json",{method:"DELETE"})
+    .then(()=>_wpRenderPlan(date)).catch(()=>showToast("⚠️ Delete failed"));
+}
+function _wpRenderOutput(date){
+  const el=document.getElementById("wpTabBody");if(!el)return;
+  Promise.all([_wpLoadPlans(date),_wpLoadProgDay(date)]).then(([plans,prog])=>{
+    const entriesByPlan={};
+    Object.entries(prog).forEach(([id,e])=>{if(e&&e.planId)entriesByPlan[e.planId]=Object.assign({_id:id},e)});
+    const ids=Object.keys(plans).sort();
+    let html="";
+    if(!ids.length)html+='<div class="hr-card"><div style="text-align:center;color:var(--grey);padding:10px;font-size:12px">No assignments for this date. Record unplanned output below.</div></div>';
+    ids.forEach(id=>{
+      const p=plans[id];if(!p)return;
+      const s=_wpSec(p.ref);const done=entriesByPlan[id];
+      html+='<div style="background:white;border-radius:10px;box-shadow:var(--shadow);padding:12px;margin-bottom:8px">'
+        +'<div style="font-weight:700;font-size:13px;color:var(--navy)">'+escHtml(p.team||"?")+' <span style="font-weight:400;font-size:11px;color:var(--grey)">'+escHtml(p.ref)+" — "+escHtml(s?s.name:"?")+"</span></div>"
+        +'<div style="font-size:11px;color:var(--grey);margin:2px 0 6px">Planned: <b>'+(p.qty||0)+" "+(s?s.unit:"")+"</b>"+(p.deadline?" · by "+escHtml(p.deadline):"")+"</div>";
+      if(done){
+        html+='<div style="font-size:12px;padding:8px;border-radius:8px;background:'+(done.confirmed?"#eaf7ef":"#fff6e0")+'">'
+          +(done.confirmed?"✅ Approved: ":"⏳ Pending approval: ")+"<b>"+(done.qty||0)+" "+(s?s.unit:"")+"</b> · "+(done.men||0)+" men · by "+escHtml(done.by||"")+"</div>";
+      }else{
+        html+='<div style="display:flex;gap:6px"><input id="wpo_q_'+id+'" type="number" inputmode="decimal" placeholder="Qty achieved" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">'
+          +'<input id="wpo_m_'+id+'" type="number" inputmode="numeric" placeholder="Men" style="width:80px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">'
+          +'<button onclick="_wpSaveOutput(\''+date+'\',\''+id+'\')" class="btn btn-primary" style="padding:9px 14px">Save</button></div>';
+      }
+      html+="</div>";
+    });
+    html+='<div style="background:white;border-radius:10px;box-shadow:var(--shadow);padding:12px;margin-top:4px">'
+      +'<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px">✍️ Unplanned output</div>'
+      +_wpTeamDatalist()
+      +'<input id="wpoTeam" list="wpTeamList" placeholder="Crew / team lead" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:6px">'
+      +'<select id="wpoRef" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:6px">'+_wpSecOpts()+"</select>"
+      +'<div style="display:flex;gap:6px"><input id="wpoQty" type="number" inputmode="decimal" placeholder="Qty achieved" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">'
+      +'<input id="wpoMen" type="number" inputmode="numeric" placeholder="Men" style="width:80px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">'
+      +'<button onclick="_wpSaveOutput(\''+date+'\',null)" class="btn btn-primary" style="padding:9px 14px">Save</button></div></div>';
+    el.innerHTML=html;
+  });
+}
+function _wpSaveOutput(date,planId){
+  let team,ref,qty,men;
+  if(planId){
+    qty=parseFloat((document.getElementById("wpo_q_"+planId)||{}).value);
+    men=parseInt((document.getElementById("wpo_m_"+planId)||{}).value);
+    team=null;ref=null; // taken from the plan
+  }else{
+    team=((document.getElementById("wpoTeam")||{}).value||"").trim();
+    ref=(document.getElementById("wpoRef")||{}).value||"";
+    qty=parseFloat((document.getElementById("wpoQty")||{}).value);
+    men=parseInt((document.getElementById("wpoMen")||{}).value);
+    if(!team||!ref){showToast("Enter crew and section");return;}
+  }
+  if(!(qty>0)){showToast("Enter the quantity achieved");return;}
+  if(!(men>0)){showToast("Enter how many men worked");return;}
+  const fb=getFirebaseUrl();if(!fb){showToast("No cloud connection configured");return;}
+  const finish=(t2,r2)=>{
+    const auto=_wpCanPlan();
+    const id="sp"+Date.now();
+    const rec={planId:planId||null,team:t2,ref:r2,qty:qty,men:men,by:currentUser?currentUser.username:"",at:Date.now(),confirmed:auto};
+    if(auto){rec.confirmedBy=currentUser?currentUser.username:"";rec.confirmedAt=Date.now();}
+    fetch(fb+"/sectionprogress/"+date+"/"+id+".json",{method:"PUT",body:JSON.stringify(rec)})
+      .then(r=>{if(r.ok){showToast(auto?"✅ Output recorded and approved":"✅ Recorded — pending approval");_wpRenderOutput(date);if(auto)_wpPublishSnapshot();}else showToast("⚠️ Save failed (HTTP "+r.status+")");})
+      .catch(()=>showToast("⚠️ Save failed — check connection"));
+  };
+  if(planId){
+    _wpLoadPlans(date).then(plans=>{
+      const p=plans[planId];if(!p){showToast("Plan row not found — reload");return;}
+      finish(p.team,p.ref);
+    });
+  }else finish(team,ref);
+}
+function _wpApprove(date,id){
+  const fb=getFirebaseUrl();if(!fb)return;
+  fetch(fb+"/sectionprogress/"+date+"/"+id+".json").then(fbJson).then(e=>{
+    if(!e){showToast("Entry not found");return;}
+    e.confirmed=true;e.confirmedBy=currentUser?currentUser.username:"";e.confirmedAt=Date.now();
+    fetch(fb+"/sectionprogress/"+date+"/"+id+".json",{method:"PUT",body:JSON.stringify(e)})
+      .then(r=>{if(r.ok){showToast("✅ Approved");_wpRenderProgress();_wpPublishSnapshot();}else showToast("⚠️ Approve failed (HTTP "+r.status+")");})
+      .catch(()=>showToast("⚠️ Approve failed"));
+  });
+}
+function _wpReject(date,id){
+  const fb=getFirebaseUrl();if(!fb)return;
+  fetch(fb+"/sectionprogress/"+date+"/"+id+".json",{method:"DELETE"})
+    .then(()=>{showToast("Entry removed");_wpRenderProgress();}).catch(()=>showToast("⚠️ Remove failed"));
+}
+function _wpRenderProgress(){
+  const el=document.getElementById("wpTabBody");if(!el)return;
+  el.innerHTML='<div style="text-align:center;color:var(--grey);padding:16px">Loading all records…</div>';
+  _wpLoadProgAll().then(all=>{
+    const pend=[];const tot={};
+    WP_SECTIONS.forEach(s=>{tot[s.ref]={qty:0,men:0}});
+    Object.entries(all||{}).forEach(([date,day])=>{
+      Object.entries(day||{}).forEach(([id,e])=>{
+        if(!e)return;
+        if(!e.confirmed)pend.push({date:date,id:id,e:e});
+        else if(tot[e.ref]){tot[e.ref].qty+=(e.qty||0);tot[e.ref].men+=(e.men||0);}
+      });
+    });
+    let html="";
+    if(pend.length){
+      html+='<div style="background:white;border-radius:10px;box-shadow:var(--shadow);padding:12px;margin-bottom:10px">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px">⏳ Pending approval ('+pend.length+")</div>";
+      pend.sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{
+        const s=_wpSec(p.e.ref);
+        html+='<div class="hr-row" style="align-items:center"><div style="flex:1;min-width:0;font-size:12px">'
+          +"<b>"+escHtml(p.e.team||"?")+"</b> · "+escHtml(p.e.ref)+" · "+(p.e.qty||0)+" "+(s?s.unit:"")+" · "+(p.e.men||0)+" men · "+escHtml(p.date)+"</div>"
+          +'<button onclick="_wpApprove(\''+p.date+'\',\''+p.id+'\')" style="border:none;border-radius:8px;background:var(--success);color:white;font-size:12px;font-weight:700;padding:6px 10px;cursor:pointer;margin-right:4px">✓</button>'
+          +'<button onclick="_wpReject(\''+p.date+'\',\''+p.id+'\')" style="border:none;border-radius:8px;background:var(--danger);color:white;font-size:12px;font-weight:700;padding:6px 10px;cursor:pointer">✕</button></div>';
+      });
+      html+="</div>";
+    }
+    const du=_wpDayUsd();let tEarn=0,tCost=0;
+    html+='<div class="hr-card"><div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px">📊 Approved progress by section</div>';
+    WP_SECTIONS.forEach(s=>{
+      const g=tot[s.ref];const pct=s.qty?Math.min(100,g.qty/s.qty*100):0;
+      const earned=g.qty*_wpLpu(s.ref);const cost=g.men*du;
+      tEarn+=earned;tCost+=cost;
+      const ratio=cost>0?earned/cost:null;
+      html+='<div style="padding:7px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px"><span style="font-weight:700;color:var(--navy)">'+s.ref+" "+escHtml(s.name)+'</span><span>'+g.qty.toFixed(0)+" / "+s.qty+" "+s.unit+"</span></div>"
+        +'<div style="background:var(--blue-bg);border-radius:6px;height:8px;margin:4px 0"><div style="width:'+pct.toFixed(1)+'%;background:var(--teal);height:8px;border-radius:6px"></div></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--grey)"><span>'+pct.toFixed(1)+"% · earned $"+earned.toFixed(0)+"</span><span>"+(ratio!==null?("earned/cost "+ratio.toFixed(2)):"no man-days logged")+"</span></div></div>";
+    });
+    const tRatio=tCost>0?(tEarn/tCost).toFixed(2):"-";
+    html+='<div style="display:flex;justify-content:space-between;padding-top:8px;font-size:12px;font-weight:700;color:var(--navy)"><span>TOTAL earned $'+tEarn.toFixed(0)+"</span><span>wage cost $"+tCost.toFixed(0)+" · ratio "+tRatio+"</span></div></div>";
+    html+='<div style="text-align:center;margin-top:10px"><button onclick="_wpExportLog()" class="btn btn-primary" style="padding:10px 18px;background:#22a04a">⬇️ Log to Excel</button></div>';
+    el.innerHTML=html;
+  });
+}
+function _wpExportLog(){
+  showToast("Building Excel…");
+  _wpLoadProgAll().then(all=>{
+    const rows=[["Date","Crew / Team","Section Ref","Men","Man-days","Qty Planned","Qty Achieved","Status"]];
+    Object.keys(all||{}).sort().forEach(date=>{
+      Object.values(all[date]||{}).forEach(e=>{
+        if(!e)return;
+        rows.push([date,e.team||"",e.ref||"",e.men||0,e.men||0,"",e.qty||0,e.confirmed?"Approved":"Pending"]);
+      });
+    });
+    if(rows.length===1){showToast("No output records yet");return;}
+    requireXlsx(function(){
+      try{
+        const ws=XLSX.utils.aoa_to_sheet(rows);
+        ws["!cols"]=[{wch:11},{wch:20},{wch:10},{wch:6},{wch:9},{wch:11},{wch:12},{wch:10}];
+        const wbx=XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wbx,ws,"Work Plan Log");
+        XLSX.writeFile(wbx,"ELGAWA_WorkPlan_Log_"+getGuyanaDate()+".xlsx");
+        showToast("✅ Excel ready — rows paste into the Labour Control workbook");
+      }catch(e){showToast("⚠️ Excel failed: "+e.message);}
+    });
+  });
+}
+// Publish snapshots for office reporting: cumulative sections + weekly
+// per-crew productivity vs wage expenditure (v167). Crew keys are encoded
+// with _fbEncKey (Firebase forbids . # $ / [ ] in keys — the v133 lesson).
+function _wpPublishSnapshot(){
+  const fb=getFirebaseUrl();if(!fb)return;
+  _wpLoadProgAll().then(all=>{
+    const tot={};WP_SECTIONS.forEach(s=>{tot[s.ref]={qty:0,men:0}});
+    const du=_wpDayUsd();const weeks={};
+    Object.entries(all||{}).forEach(([date,day])=>{Object.values(day||{}).forEach(e=>{
+      if(!(e&&e.confirmed))return;
+      if(tot[e.ref]){tot[e.ref].qty+=(e.qty||0);tot[e.ref].men+=(e.men||0);}
+      let wk=null;try{wk=getISOWeek(date)}catch(x){}
+      if(wk){
+        const w=(weeks[wk]=weeks[wk]||{});
+        const key=(typeof _fbEncKey==="function")?_fbEncKey(e.team||"unassigned"):(e.team||"unassigned");
+        const c=(w[key]=w[key]||{mandays:0,earned:0,cost:0});
+        c.mandays+=(e.men||0);c.earned+=(e.qty||0)*_wpLpu(e.ref);c.cost+=(e.men||0)*du;
+      }
+    })});
+    const sections={};let tE=0,tC=0;
+    WP_SECTIONS.forEach(s=>{
+      const g=tot[s.ref];const earned=+(g.qty*_wpLpu(s.ref)).toFixed(2);const cost=+(g.men*du).toFixed(2);
+      tE+=earned;tC+=cost;
+      sections[s.ref]={name:s.name,unit:s.unit,totalQty:s.qty,qty:+g.qty.toFixed(2),mandays:g.men,earned:earned,cost:cost};
+    });
+    fetch(fb+"/reports/snapshot.json",{method:"PUT",body:JSON.stringify({at:Date.now(),appVersion:APP_VERSION,dayRateGyd:WP_DAYRATE_GYD,fx:WP_FX,sections:sections,totals:{earned:+tE.toFixed(2),cost:+tC.toFixed(2)}})}).catch(()=>{});
+    const wkOut={};
+    Object.entries(weeks).forEach(([wk,crews])=>{
+      const o={};
+      Object.entries(crews).forEach(([n,c])=>{
+        o[n]={mandays:c.mandays,earned:+c.earned.toFixed(2),cost:+c.cost.toFixed(2),ratio:c.cost>0?+(c.earned/c.cost).toFixed(2):null};
+      });
+      wkOut[wk]=o;
+    });
+    fetch(fb+"/reports/weekly.json",{method:"PUT",body:JSON.stringify(wkOut)}).catch(()=>{});
+  });
+}
+// ═══ PDF SELF-TEST (v166) — run from Settings or HR view when a PDF button "does nothing" ═══
+function testPdfTools(){
+  showToast("Running PDF check…");
+  const res=["App "+APP_VERSION];
+  let finished=false;
+  const done=()=>{if(finished)return;finished=true;showModal("PDF Tools Check",res.map(escHtml).join("<br>"),null,{okText:"OK"});};
+  const libs=[
+    "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"];
+  caches.keys().then(ks=>{
+    res.push("Cache: "+(ks.join(", ")||"NONE — app not installed by service worker"));
+    const k=ks.find(x=>x.indexOf("elgawa")>-1);
+    if(!k){res.push("No app cache found");return;}
+    return caches.open(k).then(c=>Promise.all(libs.map(u=>c.match(u).then(h=>{res.push((h?"cached: ":"NOT CACHED: ")+u.split("/libs/")[1]);}))));
+  }).catch(e=>{res.push("Cache check failed: "+e)}).then(()=>{
+    const t0=Date.now();
+    setTimeout(()=>{if(!window.jspdf){res.push("FAIL: PDF library did not load in 15s (weak signal + not cached). Tap the refresh button while on good internet, then retest.");done();}},15000);
+    requirePdf(function(){
+      res.push("PDF library loaded ("+(Date.now()-t0)+"ms)");
+      try{
+        const jsPDFC=window.jspdf.jsPDF;const p=new jsPDFC();
+        p.text("ELGAWA PDF test - "+APP_VERSION+" - "+getGuyanaDate(),15,20);
+        res.push("Test document built OK — preview should open now");
+        done();
+        showPDFPreview(p,"ELGAWA_PDF_Test.pdf");
+      }catch(e){res.push("FAIL building document: "+(e&&e.message?e.message:e));done();}
+    });
+  });
+}
+
 // ═══ HR VIEW — read-only Team Members + Attendance ═══
 let _hrTab="members";let _hrAttDate=null;
 function _hrExcludedNames(){
@@ -11245,44 +11608,60 @@ function renderHrAttendance(){
   // then merge — so HR sees the full register no matter where it was captured.
   const attP=fb?cloudLoadAttendance(date).then(c=>c||loadAttendance(date)).catch(()=>loadAttendance(date)):Promise.resolve(loadAttendance(date));
   let payP;try{payP=Promise.resolve(loadPayDayData(getISOWeek(date),date)).catch(()=>null)}catch(e){payP=Promise.resolve(null)}
-  Promise.all([attP,payP])
-    .then(([att,pay])=>_renderHrAttBody(date,att||{workers:{}},pay||{}))
-    .catch(()=>_renderHrAttBody(date,{workers:{}},{}));
+  const selfP=loadAllSelfAttendance(date).catch(()=>({}));
+  Promise.all([attP,payP,selfP])
+    .then(([att,pay,selfAll])=>_renderHrAttBody(date,att||{workers:{}},pay||{},selfAll||{}))
+    .catch(()=>_renderHrAttBody(date,{workers:{}},{},{}));
 }
-function _renderHrAttBody(date,data,payData){
+function _renderHrAttBody(date,data,payData,selfAll){
   const body=document.getElementById("hrAttBody");if(!body)return;
   const workers=data.workers||{};
-  payData=payData||{};
+  payData=payData||{};selfAll=selfAll||{};
   const excluded=_hrExcludedNames();
+  // v166: map self sign-ins (username-keyed) to display names so HR sees
+  // sign-ins live, before admin confirms them into the official register.
+  const users=getUsers();const selfByName={};
+  Object.entries(selfAll).forEach(([u,rec])=>{
+    if(!rec)return;
+    const nm=(users[u]&&users[u].name)?users[u].name:u;
+    if(!excluded.has(nm.toLowerCase()))selfByName[nm.toLowerCase()]={in:rec.signIn||"",out:rec.signOut||"",confirmed:!!rec.confirmed,name:nm};
+  });
   const names=getWorkerRoster().filter(n=>!excluded.has(n.toLowerCase()));
   Object.keys(workers).forEach(n=>{if(!names.includes(n)&&!workers[n]._removed&&!excluded.has(n.toLowerCase()))names.push(n)});
-  let present=0,absent=0;
+  Object.values(selfByName).forEach(s=>{if(!names.some(n=>n.toLowerCase()===s.name.toLowerCase()))names.push(s.name)});
+  let present=0,absent=0,pendingC=0;
   const rows=names.filter(n=>!(workers[n]&&workers[n]._removed)).map(n=>{
     const w=workers[n]||{present:false,timeIn:"",timeOut:""};
     // Present if marked in the attendance register OR given shifts in payment entry.
     const payShifts=payData[n];
     const viaPay=(!w.present&&typeof payShifts==="number"&&payShifts>0);
     const isPresent=!!w.present||viaPay;
-    if(isPresent)present++;else absent++;
-    return{name:n,present:isPresent,timeIn:w.timeIn||"",timeOut:w.timeOut||"",shift:w.shift||"day",viaPay:viaPay};
+    const selfRec=selfByName[n.toLowerCase()];
+    const isPending=!isPresent&&!!selfRec;
+    if(isPresent)present++;else if(isPending)pendingC++;else absent++;
+    return{name:n,present:isPresent,pending:isPending,timeIn:w.timeIn||(selfRec?selfRec.in:""),timeOut:w.timeOut||(selfRec?selfRec.out:""),shift:w.shift||"day",viaPay:viaPay};
   });
-  rows.sort((a,b)=>(a.present===b.present?0:(a.present?-1:1))||a.name.localeCompare(b.name));
-  let html='<div class="hr-card"><div style="display:flex;gap:8px;margin-bottom:10px">'
-    +'<div style="flex:1;text-align:center;background:#eaf7ef;border-radius:10px;padding:10px"><div style="font-size:22px;font-weight:800;color:var(--success)">'+present+'</div><div style="font-size:10px;color:var(--grey);font-weight:700">'+t("hrPresent")+'</div></div>'
-    +'<div style="flex:1;text-align:center;background:#fdeeee;border-radius:10px;padding:10px"><div style="font-size:22px;font-weight:800;color:var(--danger)">'+absent+'</div><div style="font-size:10px;color:var(--grey);font-weight:700">'+t("hrAbsent")+'</div></div>'
-    +'<div style="flex:1;text-align:center;background:var(--blue-bg);border-radius:10px;padding:10px"><div style="font-size:22px;font-weight:800;color:var(--navy)">'+rows.length+'</div><div style="font-size:10px;color:var(--grey);font-weight:700">'+t("hrTotal")+'</div></div></div>';
+  rows.sort((a,b)=>((a.present?0:a.pending?1:2)-(b.present?0:b.pending?1:2))||a.name.localeCompare(b.name));
+  const updStamp=data.updatedAt?new Date(data.updatedAt).toLocaleString():"not yet for this date";
+  let html='<div class="hr-card"><div style="display:flex;gap:6px;margin-bottom:6px">'
+    +'<div style="flex:1;text-align:center;background:#eaf7ef;border-radius:10px;padding:8px"><div style="font-size:20px;font-weight:800;color:var(--success)">'+present+'</div><div style="font-size:9px;color:var(--grey);font-weight:700">'+t("hrPresent")+'</div></div>'
+    +'<div style="flex:1;text-align:center;background:#fff6e0;border-radius:10px;padding:8px"><div style="font-size:20px;font-weight:800;color:#b07d1e">'+pendingC+'</div><div style="font-size:9px;color:var(--grey);font-weight:700">Pending</div></div>'
+    +'<div style="flex:1;text-align:center;background:#fdeeee;border-radius:10px;padding:8px"><div style="font-size:20px;font-weight:800;color:var(--danger)">'+absent+'</div><div style="font-size:9px;color:var(--grey);font-weight:700">'+t("hrAbsent")+'</div></div>'
+    +'<div style="flex:1;text-align:center;background:var(--blue-bg);border-radius:10px;padding:8px"><div style="font-size:20px;font-weight:800;color:var(--navy)">'+rows.length+'</div><div style="font-size:9px;color:var(--grey);font-weight:700">'+t("hrTotal")+'</div></div></div>'
+    +'<div style="font-size:9px;color:var(--grey);text-align:center;margin-bottom:8px">Register updated: '+escHtml(updStamp)+' · Pending = signed in, awaiting admin approval · App v167</div>';
   if(!rows.length)html+='<div class="empty" style="text-align:center;color:var(--grey);padding:16px">'+t("hrNoAtt")+'</div>';
   rows.forEach((r,i)=>{
-    const pill=r.present?'<span class="hr-att-pill" style="background:#d4edda;color:#155724">'+t("hrPresent")+(r.shift==="night"?' 🌙':'')+'</span>':'<span class="hr-att-pill" style="background:#f8d7da;color:#721c24">'+t("hrAbsent")+'</span>';
-    const times=r.present?(r.viaPay?'<span style="font-size:10px;color:var(--grey);white-space:nowrap;margin-right:4px;font-style:italic">via pay</span>':'<span style="font-size:11px;color:var(--grey);white-space:nowrap;margin-right:4px">'+(r.timeIn||'--')+' → '+(r.timeOut||'--')+'</span>'):'';
+    const pill=r.present?'<span class="hr-att-pill" style="background:#d4edda;color:#155724">'+t("hrPresent")+(r.shift==="night"?' 🌙':'')+'</span>':r.pending?'<span class="hr-att-pill" style="background:#fff0c9;color:#8a6100">⏳ Pending</span>':'<span class="hr-att-pill" style="background:#f8d7da;color:#721c24">'+t("hrAbsent")+'</span>';
+    const times=(r.present||r.pending)?(r.viaPay?'<span style="font-size:10px;color:var(--grey);white-space:nowrap;margin-right:4px;font-style:italic">via pay</span>':'<span style="font-size:11px;color:var(--grey);white-space:nowrap;margin-right:4px">'+(r.timeIn||'--')+' → '+(r.timeOut||'--')+'</span>'):'';
     html+='<div class="hr-row"><span style="font-size:10px;color:var(--grey);width:20px;flex-shrink:0">'+(i+1)+'</span><span class="hr-mem-name">'+escHtml(r.name)+'</span>'+times+pill+'</div>';
   });
   html+='</div><div style="text-align:center;margin-top:6px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'
     +'<button class="btn btn-primary" onclick="downloadHrAttendancePDF()" style="padding:11px 20px">📄 '+t("downloadAttendancePdf")+'</button>'
     +'<button class="btn btn-primary" onclick="downloadHrAttendanceExcel()" style="padding:11px 20px;background:#22a04a">📊 Excel</button>'
-    +'<button class="btn btn-primary" onclick="downloadHrWeeklyRegisterPDF()" style="padding:11px 20px;background:var(--navy)">📅 Weekly Register</button></div>';
+    +'<button class="btn btn-primary" onclick="downloadHrWeeklyRegisterPDF()" style="padding:11px 20px;background:var(--navy)">📅 Weekly Register</button>'
+    +'<button class="btn btn-primary" onclick="testPdfTools()" style="padding:11px 20px;background:#7E5BB5">🧪 Test PDF</button></div>';
   body.innerHTML=html;
-  window._hrAttSnapshot={date:date,rows:rows,present:present,absent:absent};
+  window._hrAttSnapshot={date:date,rows:rows,present:present,absent:absent,pending:pendingC};
 }
 // Weekly attendance register PDF for HR — names x 7 days (Mon-Sun) of the
 // selected week, built only from the APPROVED register (+ pay-derived presence).
@@ -12159,6 +12538,9 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v168 — register accuracy: a new day's register now starts everyone ABSENT (was: whole roster present at 07:00). Presence lands only two ways: an approved self sign-in (auto-captured with real times since v166, 📱 badge in the register) or the admin capturing the worker (tick / +Add Worker / +Add All Roster, default 07:00 editable, markedBy recorded). ✓ All Present bulk button unchanged.
+// Build: v167 — weekly per-crew productivity vs wage expenditure published to /reports/weekly (ISO-week keyed, crew keys _fbEncKey-encoded, earned/cost/ratio/man-days) for the Monday office report; /reports node is public-read by rules, aggregates only.
+// Build: v166 — Work Plan & Output module (daily assignments with planned qty, team-lead output entry, admin/FE approval, section progress vs BOQ labour value, Excel log export, cloud snapshot to /reports); HR attendance now shows pending self sign-ins live (amber) with register-updated stamp; visible app version on login/settings/HR; PDF self-test button (Settings + HR) reports cache and library status.
 // Build: v165 — Firebase rules are now LIVE (auth != null, published by Paul), so two dormant bugs became urgent and are fixed here: (1) auth-retry after token expiry now passes the request options through (a retried PUT stayed a PUT; before it silently became a GET and the write was lost); (2) payroll cloud saves now %hex-encode worker-name keys exactly like attendance has since v133 ("Jose N. Queipo" on the installation roster made every whole-day pay PUT fail HTTP 400 while still toasting success) — all 4 payroll write sites encode, both loaders decode, and every payroll save now checks the response and warns instead of lying.
 // Build: v164 — PDF preview no longer freezes phones (pages render sequentially in batches of 4 with a Show-more button + 15s watchdog fallback; was: every page at once in parallel, which hung photo-heavy daily/weekly/monthly reports and the workforce profiles PDF). Attendance clock fixes: admin edits to self sign-in times now ALWAYS sync into the register for confirmed records (old code checked only the local register copy), and register time edits flow back into the worker's self sign-in record, so the two screens can't disagree.
 // Build: v127 — bolder visual theme (pill bottom-nav, accent headers, gradient stats), self sign-in table restacked to fit narrow screens, team category badges (ELGAWA Guyana Team / Suriname ELGAWA)
