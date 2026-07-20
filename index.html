@@ -618,7 +618,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
   <div class="login-box">
     <h1>ELGAWA GUYANA INC.</h1>
     <div class="sub">Pasha Global Hotel - Daily Checksheet</div>
-    <div id="loginVersionTag" style="font-size:10px;color:#9aa5b1;margin-top:2px;font-weight:600">App version v172</div>
+    <div id="loginVersionTag" style="font-size:10px;color:#9aa5b1;margin-top:2px;font-weight:600">App version v173</div>
     <div class="lang-row">
       <button class="lang-btn active" onclick="setLang('en')">English</button>
       <button class="lang-btn" onclick="setLang('es')">Espanol</button>
@@ -903,7 +903,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
       <div class="time-field" id="notifTimeWrap" style="display:none"><label id="reminderTimeLabel"></label><input type="time" id="notifTime" value="16:30" onchange="saveNotifTime()"></div>
     </div>
     <div class="s-card"><h3 id="aboutTitle"></h3><p id="aboutInfo"></p>
-      <p id="settingsVersionTag" style="font-size:11px;color:var(--grey);margin:6px 0">App version v172</p>
+      <p id="settingsVersionTag" style="font-size:11px;color:var(--grey);margin:6px 0">App version v173</p>
       <button class="btn btn-primary full" onclick="testPdfTools()" style="margin-top:4px">🧪 Test PDF Tools</button>
     </div>
     <div class="s-card">
@@ -9012,7 +9012,7 @@ function renderMovers(data){
 // ================================================================
 function getAttendanceKey(date){return "elg_att_"+date}
 function loadAttendance(date){
-  try{return JSON.parse(localStorage.getItem(getAttendanceKey(date))||"null")}catch(e){return null}
+  try{return _scrubRemovedAtt(JSON.parse(localStorage.getItem(getAttendanceKey(date))||"null"))}catch(e){return null}
 }
 function saveAttendanceLocal(date,data){
   data.updatedAt=Date.now();
@@ -9068,10 +9068,40 @@ function _attAutoCloudSave(){
     if(_attDate&&_attData)cloudSaveAttendance(_attDate,_attData);
   },2000);
 }
+// v173: names that must never show in the register. Same exclusion the roster
+// uses — removed base workers, disabled logins, HR accounts — so a person you
+// removed can't linger as a stray row in a day's attendance record.
+function _attRemovedSet(){
+  var removedBase=[];try{removedBase=JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]")}catch(e){}
+  const set=new Set(removedBase.map(n=>String(n).trim().toLowerCase()));
+  try{
+    const allU={...BASE_USERS,...getCustomUsers()};
+    getDisabledUsers().forEach(u=>{if(allU[u]&&allU[u].name)set.add(allU[u].name.trim().toLowerCase())});
+    Object.values(allU).forEach(u=>{if(u&&u.role==="HR"&&u.name)set.add(u.name.trim().toLowerCase())});
+  }catch(e){}
+  return set;
+}
+// Drop a removed person's ABSENT rows from a loaded attendance record so they
+// stop cluttering current days, but NEVER touch a day they were marked present
+// — those are real worked days and must survive for pay. Combined with the
+// write-guard in _attMarkWorker (which blocks NEW marks of a removed name),
+// this stops removed people reappearing going forward without erasing the
+// history of what they actually worked before removal.
+function _scrubRemovedAtt(data){
+  if(!data||!data.workers)return data;
+  const set=_attRemovedSet();
+  Object.keys(data.workers).forEach(n=>{
+    if(set.has(String(n).trim().toLowerCase())){
+      const w=data.workers[n];
+      if(!w||w.present!==true)delete data.workers[n]; // keep worked days, drop absent clutter
+    }
+  });
+  return data;
+}
 function cloudLoadAttendance(date){
   const fb=getFirebaseUrl();if(!fb)return Promise.resolve(null);
   return fetch(fb+"/attendance/"+date+".json")
-    .then(fbJson).then(d=>d?_decWorkers(d):null).catch(()=>null);
+    .then(fbJson).then(d=>d?_scrubRemovedAtt(_decWorkers(d)):null).catch(()=>null);
 }
 
 function attDateNav(dir){
@@ -11492,7 +11522,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v172";
+const APP_VERSION="v173";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -12795,6 +12825,9 @@ function renderSelfAttendanceDashboard(container,date){
 // that keeps the register true: hub confirms, self sign-in confirms, edits.
 function _attMarkWorker(date,name,patch){
   name=_canonWorker(name); // fold alias sign-in names (e.g. galan) into the roster name
+  // v173: never write a removed/disabled person back into the register (blocks a
+  // lingering login or stale confirm from resurrecting someone you removed).
+  try{if(_attRemovedSet().has(String(name).trim().toLowerCase()))return;}catch(e){}
   const apply=(data)=>{
     if(!data)data={workers:{},verified:false};
     if(!data.workers)data.workers={};
@@ -12919,6 +12952,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v173 — Removed workers stay out of the register (without losing anyone's pay). The remove/disable tombstone was applied to the roster and lists but NOT to the raw attendance register, so removed people lingered as stray rows on current days. Now _attRemovedSet() (same exclusion the roster uses: removed base workers + disabled logins + HR accounts) drives two guards: (1) _attMarkWorker refuses to write a removed name, so a lingering login/confirm can't add them to new days; (2) _scrubRemovedAtt at the load boundary (cloudLoadAttendance + loadAttendance) drops a removed person's ABSENT rows only — a day they were actually marked PRESENT is kept, because that is real worked time that must still be paid. So removal sticks going forward while the history of what someone worked before removal is preserved. Raw cloud data untouched; absent rows clear from a day on its next save.
 // Build: v172 — Duplicate-identity fix. WORKER_ALIASES map + _canonWorker() folds an alias sign-in name into one roster name at the register write choke-point (_attMarkWorker): a self sign-in under "galan" now lands as "Alejandro Galan", and any stray alias row already on a day is merged (earliest in / latest out / present OR) and removed, so a person can never appear twice in the register or the productivity totals. Add future aliases in WORKER_ALIASES. Also: login + Settings version tags now read from APP_VERSION on load (were stuck at v167 while the app was v171 — fixed the drift so the version diagnostic is trustworthy). Historical Galan double-rows (15 days) were merged in the database separately; backup at /backups/galanMerge_20260720.
 // Build: v171 — Personnel fixes. (1) REMOVED USERS STAY REMOVED: the hub Personnel list now respects remove-tombstones (base users live in code, so removed ones kept rendering forever — the "Yosvani reappears" bug); Remove now works for base AND custom users and also tombstones the person's NAME into the removed-workers list, taking them off the worker roster, attendance defaults, weekly grids and pay lists (past records kept); Settings-side removeUser does the same; getPayGroupWorkers filters to active roster names so Finance PDF drops removed people; hub Disable/Enable now cloud-sync (never did before). (2) Cleaner list: status by left border color + single role chip, Disable/Enable/Remove hidden until the row is tapped.
 // Build: v170 — visual pass. Attendance PDFs (Day / weekly HR / weekly Finance) get a shared letterhead (app-icon logo fetched via _pdfLoadLogo with text fallback, company + project line, teal rule), page-number and generated-by footer on every page, zebra rows; Day PDF: colored Present/Absent text + summary chips; HR weekly: TOTAL PRESENT daily counts row (matching the on-screen grid) and amber Saturday header; Finance: same Saturday tint + grand total in a filled box. App: present rows in the daily register tinted pale green (absent were already pale red) to mirror the weekly grid.
