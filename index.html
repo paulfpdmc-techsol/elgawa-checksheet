@@ -618,7 +618,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
   <div class="login-box">
     <h1>ELGAWA GUYANA INC.</h1>
     <div class="sub">Pasha Global Hotel - Daily Checksheet</div>
-    <div style="font-size:10px;color:#9aa5b1;margin-top:2px;font-weight:600">App version v167</div>
+    <div id="loginVersionTag" style="font-size:10px;color:#9aa5b1;margin-top:2px;font-weight:600">App version v172</div>
     <div class="lang-row">
       <button class="lang-btn active" onclick="setLang('en')">English</button>
       <button class="lang-btn" onclick="setLang('es')">Espanol</button>
@@ -903,7 +903,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
       <div class="time-field" id="notifTimeWrap" style="display:none"><label id="reminderTimeLabel"></label><input type="time" id="notifTime" value="16:30" onchange="saveNotifTime()"></div>
     </div>
     <div class="s-card"><h3 id="aboutTitle"></h3><p id="aboutInfo"></p>
-      <p style="font-size:11px;color:var(--grey);margin:6px 0">App version <b>v167</b></p>
+      <p id="settingsVersionTag" style="font-size:11px;color:var(--grey);margin:6px 0">App version v172</p>
       <button class="btn btn-primary full" onclick="testPdfTools()" style="margin-top:4px">🧪 Test PDF Tools</button>
     </div>
     <div class="s-card">
@@ -11492,7 +11492,20 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v171";
+const APP_VERSION="v172";
+// Show the real version everywhere from one source, so the login/settings tags
+// can never drift out of date again (they read APP_VERSION on load).
+try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
+// Worker identity aliases — fold a duplicate sign-in name into one canonical
+// roster name so a person can never appear twice in the register or the
+// productivity totals. Add entries as "loginorsigninname":"Full Roster Name"
+// (the key is matched case-insensitively, trimmed).
+const WORKER_ALIASES={"galan":"Alejandro Galan"};
+function _canonWorker(name){
+  if(!name)return name;
+  const a=WORKER_ALIASES[String(name).trim().toLowerCase()];
+  return a||name;
+}
 const WP_DAYRATE_GYD=7000,WP_FX=216;
 const WP_SECTIONS=[
  {ref:"AW-01",name:"P3 duct panels - order 1",unit:"m2",qty:9168,labour:154771.60},
@@ -11969,7 +11982,7 @@ function _renderHrAttBody(date,data,payData,selfAll){
     +'<div style="flex:1;text-align:center;background:#fff6e0;border-radius:10px;padding:8px"><div style="font-size:20px;font-weight:800;color:#b07d1e">'+pendingC+'</div><div style="font-size:9px;color:var(--grey);font-weight:700">Pending</div></div>'
     +'<div style="flex:1;text-align:center;background:#fdeeee;border-radius:10px;padding:8px"><div style="font-size:20px;font-weight:800;color:var(--danger)">'+absent+'</div><div style="font-size:9px;color:var(--grey);font-weight:700">'+t("hrAbsent")+'</div></div>'
     +'<div style="flex:1;text-align:center;background:var(--blue-bg);border-radius:10px;padding:8px"><div style="font-size:20px;font-weight:800;color:var(--navy)">'+rows.length+'</div><div style="font-size:9px;color:var(--grey);font-weight:700">'+t("hrTotal")+'</div></div></div>'
-    +'<div style="font-size:9px;color:var(--grey);text-align:center;margin-bottom:8px">Register updated: '+escHtml(updStamp)+' · Pending = signed in, awaiting admin approval · App v167</div>';
+    +'<div style="font-size:9px;color:var(--grey);text-align:center;margin-bottom:8px">Register updated: '+escHtml(updStamp)+' · Pending = signed in, awaiting admin approval · App '+APP_VERSION+'</div>';
   if(!rows.length)html+='<div class="empty" style="text-align:center;color:var(--grey);padding:16px">'+t("hrNoAtt")+'</div>';
   rows.forEach((r,i)=>{
     const pill=r.present?'<span class="hr-att-pill" style="background:#d4edda;color:#155724">'+t("hrPresent")+(r.shift==="night"?' 🌙':'')+'</span>':r.pending?'<span class="hr-att-pill" style="background:#fff0c9;color:#8a6100">⏳ Pending</span>':'<span class="hr-att-pill" style="background:#f8d7da;color:#721c24">'+t("hrAbsent")+'</span>';
@@ -12781,9 +12794,25 @@ function renderSelfAttendanceDashboard(container,date){
 // the freshest copy so it never stomps other edits. This is the single path
 // that keeps the register true: hub confirms, self sign-in confirms, edits.
 function _attMarkWorker(date,name,patch){
+  name=_canonWorker(name); // fold alias sign-in names (e.g. galan) into the roster name
   const apply=(data)=>{
     if(!data)data={workers:{},verified:false};
     if(!data.workers)data.workers={};
+    // If an alias row somehow already exists for this day, fold it in and drop it.
+    Object.keys(data.workers).forEach(k=>{
+      if(k!==name&&_canonWorker(k)===name){
+        const g=data.workers[k];
+        if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:"",shift:"day"};
+        const tgt=data.workers[name];
+        tgt.present=!!(tgt.present||g.present);
+        if(g.timeIn&&(!tgt.timeIn||g.timeIn<tgt.timeIn))tgt.timeIn=g.timeIn;
+        if(g.timeOut&&(!tgt.timeOut||g.timeOut>tgt.timeOut))tgt.timeOut=g.timeOut;
+        tgt.shift=tgt.shift||g.shift||"day";
+        if(g.selfSignIn)tgt.selfSignIn=true;
+        if(g.confirmedByAdmin)tgt.confirmedByAdmin=true;
+        delete data.workers[k];
+      }
+    });
     if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:"",shift:"day"};
     Object.assign(data.workers[name],patch);
     return data;
@@ -12890,6 +12919,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v172 — Duplicate-identity fix. WORKER_ALIASES map + _canonWorker() folds an alias sign-in name into one roster name at the register write choke-point (_attMarkWorker): a self sign-in under "galan" now lands as "Alejandro Galan", and any stray alias row already on a day is merged (earliest in / latest out / present OR) and removed, so a person can never appear twice in the register or the productivity totals. Add future aliases in WORKER_ALIASES. Also: login + Settings version tags now read from APP_VERSION on load (were stuck at v167 while the app was v171 — fixed the drift so the version diagnostic is trustworthy). Historical Galan double-rows (15 days) were merged in the database separately; backup at /backups/galanMerge_20260720.
 // Build: v171 — Personnel fixes. (1) REMOVED USERS STAY REMOVED: the hub Personnel list now respects remove-tombstones (base users live in code, so removed ones kept rendering forever — the "Yosvani reappears" bug); Remove now works for base AND custom users and also tombstones the person's NAME into the removed-workers list, taking them off the worker roster, attendance defaults, weekly grids and pay lists (past records kept); Settings-side removeUser does the same; getPayGroupWorkers filters to active roster names so Finance PDF drops removed people; hub Disable/Enable now cloud-sync (never did before). (2) Cleaner list: status by left border color + single role chip, Disable/Enable/Remove hidden until the row is tapped.
 // Build: v170 — visual pass. Attendance PDFs (Day / weekly HR / weekly Finance) get a shared letterhead (app-icon logo fetched via _pdfLoadLogo with text fallback, company + project line, teal rule), page-number and generated-by footer on every page, zebra rows; Day PDF: colored Present/Absent text + summary chips; HR weekly: TOTAL PRESENT daily counts row (matching the on-screen grid) and amber Saturday header; Finance: same Saturday tint + grand total in a filled box. App: present rows in the daily register tinted pale green (absent were already pale red) to mirror the weekly grid.
 // Build: v169 — (1) 17:00 auto sign-out: open self sign-ins close automatically at 17:00 (worker phone nudges + closes when open past 5; admin dashboard and confirm fill forgotten sign-outs the same way; autoOut flag marks them; sign-ins at/after 17:00 untouched for night work; Paul edits real late finishes by hand). (2) Weekly HR + Finance PDFs now draw the register like the on-screen sheet: green cell + drawn tick present, red cell + dash absent, amber Saturday (jsPDF fonts have no ✓/— glyphs — they printed as specks). Mover rows lose the 📦 emoji in PDFs for the same reason.
