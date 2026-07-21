@@ -886,8 +886,8 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
     <p style="color:var(--grey);font-size:13px;margin:4px 0" id="hrUserLabel"></p>
   </div>
   <div style="display:flex;gap:6px;margin-bottom:14px">
-    <button class="hr-tab active" id="hrTabMembersBtn" onclick="switchHrTab('members')">👥 <span id="hrTabMembersLbl">Team Members</span></button>
-    <button class="hr-tab" id="hrTabAttBtn" onclick="switchHrTab('attendance')">📋 <span id="hrTabAttLbl">Attendance</span></button>
+    <button class="hr-tab active" id="hrTabAttBtn" onclick="switchHrTab('attendance')">📋 <span id="hrTabAttLbl">Attendance</span></button>
+    <button class="hr-tab" id="hrTabMembersBtn" onclick="switchHrTab('members')">👥 <span id="hrTabMembersLbl">Team Members</span></button>
     <button class="hr-tab" id="hrTabProfBtn" onclick="openWorkerProfiles()">👤 <span>Profiles</span></button>
     <button class="hr-tab" id="hrTabSafetyBtn" onclick="switchHrTab('safety')" style="display:none">🦺 <span>Safety</span></button>
   </div>
@@ -11670,7 +11670,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v183";
+const APP_VERSION="v184";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -12051,7 +12051,8 @@ function renderHrView(){
   // v175: Safety tab for the HSEQ role only
   const sfb=document.getElementById("hrTabSafetyBtn");
   if(sfb)sfb.style.display=(currentUser&&currentUser.role==="HSEQ")?"":"none";
-  switchHrTab(_hrTab||"members");
+  // v184: HR/HSEQ land on Attendance (their main job) instead of Team Members.
+  switchHrTab(_hrTab||"attendance");
 }
 function switchHrTab(tab){
   if(tab==="safety"&&!(currentUser&&currentUser.role==="HSEQ"))tab="members";
@@ -12586,11 +12587,12 @@ function _renderHrAttBody(date,data,payData,selfAll){
     const times=(r.present||r.pending)?(r.viaPay?'<span style="font-size:10px;color:var(--grey);white-space:nowrap;margin-right:4px;font-style:italic">via pay</span>':'<span style="font-size:11px;color:var(--grey);white-space:nowrap;margin-right:4px">'+(r.timeIn||'--')+' → '+(r.timeOut||'--')+'</span>'):'';
     html+='<div class="hr-row"><span style="font-size:10px;color:var(--grey);width:20px;flex-shrink:0">'+(i+1)+'</span><span class="hr-mem-name">'+escHtml(r.name)+'</span>'+times+pill+'</div>';
   });
-  html+='</div><div style="text-align:center;margin-top:6px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'
-    +'<button class="btn btn-primary" onclick="downloadHrAttendancePDF()" style="padding:11px 20px">📄 '+t("downloadAttendancePdf")+'</button>'
-    +'<button class="btn btn-primary" onclick="downloadHrAttendanceExcel()" style="padding:11px 20px;background:#22a04a">📊 Excel</button>'
-    +'<button class="btn btn-primary" onclick="downloadHrWeeklyRegisterPDF()" style="padding:11px 20px;background:var(--navy)">📅 Weekly Register</button>'
-    +'<button class="btn btn-primary" onclick="testPdfTools()" style="padding:11px 20px;background:#7E5BB5">🧪 Test PDF</button></div>';
+  html+='</div><div style="margin-top:10px"><div style="font-size:10px;color:var(--grey);text-align:center;margin-bottom:6px;font-weight:700">DOWNLOAD</div>'
+    +'<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'
+    +'<button class="btn btn-primary" onclick="downloadHrAttendancePDF()" style="padding:12px 22px">📄 '+t("downloadAttendancePdf")+'</button>'
+    +'<button class="btn btn-primary" onclick="downloadHrAttendanceExcel()" style="padding:12px 22px;background:#22a04a">📊 Excel</button>'
+    +'<button class="btn btn-primary" onclick="downloadHrWeeklyRegisterPDF()" style="padding:12px 22px;background:var(--navy)">📅 Weekly Register</button>'
+    +'</div><div style="text-align:center;margin-top:8px"><button onclick="testPdfTools()" style="font-size:10px;color:var(--grey);background:none;border:none;text-decoration:underline;cursor:pointer">Download not working? Tap to test</button></div></div>';
   body.innerHTML=html;
   window._hrAttSnapshot={date:date,rows:rows,present:present,absent:absent,pending:pendingC};
 }
@@ -13519,6 +13521,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v184 — HR/HSEQ view lands on ATTENDANCE (was Team Members), so HR opens straight onto the register + downloads and never has to hunt for it (fixes "can't see attendance"). Attendance tab moved first in the HR tab row. Download row given a clear "DOWNLOAD" label + bigger PDF/Excel/Weekly buttons; the dev-only Test PDF button demoted to a small "Download not working? Tap to test" text link so it doesn't clutter her screen. Note: if HR is still on an old cached build she must reinstall to get this (same home-screen-icon caching as the rebrand).
 // Build: v183 — Final CrewFlow icon: crew triangle with a white hard-hatted lead at the centre, light-blue airflow arcs orbiting, snowflakes in the gaps, on the app-purple gradient (HVAC + teamwork). Rendered from SVG via ImageMagick + composited on a smooth PIL gradient to avoid banding; icon-192/512.png replaced. Everything else per v182 (name CrewFlow, ELGAWA letterhead preserved via logo-letterhead.png). sw cache v183 so phones re-fetch the new icon.
 // Build: v182 — Rebrand to "CrewFlow" (app was never company-approved; Paul runs it as Project Lead). CHANGED: manifest name+short_name "CrewFlow" + description + maskable icons; apple-mobile-web-app-title "CrewFlow"; <title> "CrewFlow"; icon-192/512.png replaced with a new mark (3-blade fan = HVAC + three-blades-as-one = teamwork, white on the existing app-purple gradient, so no theme change). UNCHANGED ON PURPOSE: PDF letterhead stays "ELGAWA Guyana Inc. / Pasha Global HVAC Project" — the old ELGAWA icon was copied to logo-letterhead.png and _pdfLoadLogo now reads THAT, so reports keep their ELGAWA look while the home-screen app is CrewFlow. sw cache v182 (fresh cache re-fetches manifest+icons; cleanOldCaches drops old). CAVEAT told to Paul: a plain refresh updates the app insides + PDFs, but an already-installed home-screen ICON/LABEL only reliably changes on REINSTALL (remove icon, re-add from the site URL); iOS never repaints in place, Android is slow/unreliable; fresh installs get CrewFlow immediately. No feature/logic change.
 // Build: v181 — Chat alerts (Paul: missed messages hurt workflow). Reuses the daily-reminder engine (_fireReminder: chime via WebAudio + vibrate + a system Notification when permission granted). _chatCheckUnread now parses the newest message key (ts_username, shallow read — no body fetch) to detect a NEW message from SOMEONE ELSE per channel; fires ONE alert for the newest, high-water-marked in elg_chat_last_alert so it never repeats, and never alerts for the conversation you're currently viewing (_chatViewing). Unread poll tightened 60s -> 30s. openChat requests Notification permission once (silent if decided). Per-user mute toggle on the chat list (🔔/🔕, elg_chat_alerts, default on) via chatToggleAlerts. HONEST CEILING unchanged and stated in-app: alerts only while the app is running — a web app can't wake a fully-closed phone; real closed-phone push = Firebase Cloud Messaging, a separate project parked with the work-plan automation.
