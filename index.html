@@ -615,12 +615,12 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
 </style>
 </head>
 <body>
-<div id="splash" class="splash"><h1>ELGAWA</h1><p>Daily Checksheet v6.0</p><div class="loader"></div></div>
+<div id="splash" class="splash"><h1>CrewFlow</h1><p>Site Team Checksheet</p><div class="loader"></div></div>
 <div id="installBanner" class="install-banner"><span id="installText"></span><div><button onclick="installApp()" id="installBtn"></button><button class="dismiss" onclick="dismissInstall()">x</button></div></div>
 <div id="loginScreen" class="login-wrap">
   <div class="login-box">
-    <h1>ELGAWA GUYANA INC.</h1>
-    <div class="sub">Pasha Global Hotel - Daily Checksheet</div>
+    <h1>CrewFlow</h1>
+    <div class="sub">Pasha Global Hotel - Site Team Checksheet</div>
     <div id="loginVersionTag" style="font-size:10px;color:#9aa5b1;margin-top:2px;font-weight:600">App version v173</div>
     <div class="lang-row">
       <button class="lang-btn active" onclick="setLang('en')">English</button>
@@ -639,7 +639,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
     <div class="login-hint" id="loginHint"></div>
   </div>
 </div>
-<div id="navbar" class="nav hidden"><div class="brand" onclick="switchTab('forms')" style="cursor:pointer" title="Home">ELGAWA</div><div class="right"><button class="lang-toggle" onclick="cycleLang()" id="langToggleBtn" title="Switch language">🌐 EN</button><span class="uname" id="navUser"></span><button class="btn-s" onclick="doLogout()" id="logoutBtn"></button></div></div>
+<div id="navbar" class="nav hidden"><div class="brand" onclick="switchTab('forms')" style="cursor:pointer" title="Home">CrewFlow</div><div class="right"><button class="lang-toggle" onclick="cycleLang()" id="langToggleBtn" title="Switch language">🌐 EN</button><span class="uname" id="navUser"></span><button class="btn-s" onclick="doLogout()" id="logoutBtn"></button></div></div>
 <div class="offline-banner" id="offlineBanner">📡 You are offline — reports will sync when connected</div>
 <div id="dashView" class="dash hidden">
   <div class="dash-hdr" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -2067,7 +2067,7 @@ const T={
   requiredFields:{en:"Please complete these required fields:",es:"Por favor complete estos campos obligatorios:",nl:"Vul deze verplichte velden in:"},
   firebaseHint:{en:"Firebase Realtime Database URL from your Firebase Console",es:"URL de Base de Datos Firebase desde su Consola Firebase",nl:"Firebase Realtime Database URL van uw Firebase Console"},
   couldNotConnect:{en:"Could not connect — check URL",es:"No se pudo conectar — verifique la URL",nl:"Kan niet verbinden — controleer URL"},
-  appVersion:{en:"ELGAWA Daily Checksheet App v6.0",es:"App de Registro Diario ELGAWA v5.2",nl:"ELGAWA Dagelijkse Checklist App v6.0"},
+  appVersion:{en:"CrewFlow - Site Team Checksheet",es:"CrewFlow - Registro del Equipo",nl:"CrewFlow - Site Team Checklist"},
   appCopyright:{en:"ELGAWA Guyana Inc. 2026",es:"ELGAWA Guyana Inc. 2026",nl:"ELGAWA Guyana Inc. 2026"},
   loginHeader:{en:"ELGAWA GUYANA INC.",es:"ELGAWA GUYANA INC.",nl:"ELGAWA GUYANA INC."},
   loginSubtitle:{en:"Pasha Global Hotel - Daily Checksheet",es:"Pasha Global Hotel - Registro Diario",nl:"Pasha Global Hotel - Dagelijkse Checklist"},
@@ -11670,7 +11670,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v184";
+const APP_VERSION="v185";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -13521,6 +13521,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v185 — Finish the CrewFlow rebrand on the app's FACE (Paul: "it still loads as elgawa checksheet"). The loading SPLASH ("ELGAWA / Daily Checksheet v6.0"), the LOGIN title ("ELGAWA GUYANA INC."), the top-bar BRAND ("ELGAWA") and the Settings>About line were all hardcoded ELGAWA text, separate from the icon/manifest — now all read "CrewFlow" / "Site Team Checksheet". PDF letterhead + report/WhatsApp export headers deliberately KEPT as ELGAWA (that's the letterhead Paul wants). No logic change.
 // Build: v184 — HR/HSEQ view lands on ATTENDANCE (was Team Members), so HR opens straight onto the register + downloads and never has to hunt for it (fixes "can't see attendance"). Attendance tab moved first in the HR tab row. Download row given a clear "DOWNLOAD" label + bigger PDF/Excel/Weekly buttons; the dev-only Test PDF button demoted to a small "Download not working? Tap to test" text link so it doesn't clutter her screen. Note: if HR is still on an old cached build she must reinstall to get this (same home-screen-icon caching as the rebrand).
 // Build: v183 — Final CrewFlow icon: crew triangle with a white hard-hatted lead at the centre, light-blue airflow arcs orbiting, snowflakes in the gaps, on the app-purple gradient (HVAC + teamwork). Rendered from SVG via ImageMagick + composited on a smooth PIL gradient to avoid banding; icon-192/512.png replaced. Everything else per v182 (name CrewFlow, ELGAWA letterhead preserved via logo-letterhead.png). sw cache v183 so phones re-fetch the new icon.
 // Build: v182 — Rebrand to "CrewFlow" (app was never company-approved; Paul runs it as Project Lead). CHANGED: manifest name+short_name "CrewFlow" + description + maskable icons; apple-mobile-web-app-title "CrewFlow"; <title> "CrewFlow"; icon-192/512.png replaced with a new mark (3-blade fan = HVAC + three-blades-as-one = teamwork, white on the existing app-purple gradient, so no theme change). UNCHANGED ON PURPOSE: PDF letterhead stays "ELGAWA Guyana Inc. / Pasha Global HVAC Project" — the old ELGAWA icon was copied to logo-letterhead.png and _pdfLoadLogo now reads THAT, so reports keep their ELGAWA look while the home-screen app is CrewFlow. sw cache v182 (fresh cache re-fetches manifest+icons; cleanOldCaches drops old). CAVEAT told to Paul: a plain refresh updates the app insides + PDFs, but an already-installed home-screen ICON/LABEL only reliably changes on REINSTALL (remove icon, re-add from the site URL); iOS never repaints in place, Android is slow/unreliable; fresh installs get CrewFlow immediately. No feature/logic change.
