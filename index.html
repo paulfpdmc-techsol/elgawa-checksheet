@@ -6,10 +6,10 @@
 <meta name="theme-color" content="#7E5BB5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ELGAWA">
+<meta name="apple-mobile-web-app-title" content="CrewFlow">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
-<title>ELGAWA Daily Checksheet</title>
+<title>CrewFlow</title>
 <!-- PDF/Excel libraries load with `defer` so the app screen appears immediately
      instead of waiting for ~1.5MB of CDN scripts on weak mobile signal. They
      finish loading in the background; requirePdf() also self-heals on demand.
@@ -609,6 +609,9 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
 .team-badge{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.3px;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle;text-transform:uppercase}
 .team-badge.guyana{background:#DFF4EB;color:#0B5D47;border:1px solid #b7e0cf}
 .team-badge.suriname{background:#FFF1E0;color:#9a5b00;border:1px solid #f0d9b5}
+.team-badge.hseq{background:#FFF3BF;color:#7a5b00;border:1px solid #f2e08a}
+.team-badge.hr{background:#EDE7FB;color:#5B3FA6;border:1px solid #d6c8f0}
+.team-badge.office{background:#E7EEF6;color:#24476b;border:1px solid #c8d8ea}
 </style>
 </head>
 <body>
@@ -893,19 +896,60 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
   <div id="hrSafetyView" style="display:none"></div>
 </div>
 
-<!-- v176: in-app chat — floating button + full-screen overlay -->
-<button id="chatFab" onclick="openChat()" style="display:none;position:fixed;right:14px;bottom:76px;z-index:8500;width:52px;height:52px;border-radius:50%;border:none;background:var(--hdr-grad);color:white;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.28);align-items:center;justify-content:center;cursor:pointer">💬<span id="chatFabDot" style="display:none;position:absolute;top:2px;right:2px;width:12px;height:12px;border-radius:50%;background:#e74c3c;border:2px solid white"></span></button>
-<div id="chatView" style="display:none;position:fixed;inset:0;z-index:9000;background:#f4f6f5;flex-direction:column">
-  <div style="background:var(--hdr-grad);color:white;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0">
-    <button onclick="chatBack()" style="background:none;border:none;color:white;font-size:18px;cursor:pointer;padding:2px 6px">◀</button>
-    <div style="flex:1;min-width:0"><div id="chatTitle" style="font-weight:800;font-size:15px">Chat</div><div id="chatSub" style="font-size:10px;opacity:.85"></div></div>
+<!-- v176: in-app chat — floating button + full-screen overlay. v180: refined UI -->
+<style id="chatCss">
+#chatView{background:#ecece8}
+.chat-hd{background:var(--hdr-grad);color:#fff;padding:11px 12px;display:flex;align-items:center;gap:11px;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.18);z-index:2}
+.chat-hd .cbk{background:rgba(255,255,255,.16);border:none;color:#fff;font-size:16px;cursor:pointer;width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.chat-av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;flex-shrink:0;text-transform:uppercase}
+.chat-scroll{flex:1;overflow-y:auto;padding:12px 12px 16px}
+.chat-search-wrap{padding:10px 12px 2px;flex-shrink:0}
+.chat-search{width:100%;padding:10px 14px;border:none;border-radius:22px;font-size:13.5px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.06);box-sizing:border-box}
+.chat-sec{font-size:10px;font-weight:800;color:#8a9691;letter-spacing:.5px;margin:14px 4px 6px}
+.chat-conv{display:flex;align-items:center;gap:12px;padding:10px 12px;background:#fff;border-radius:14px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.05);transition:background .15s}
+.chat-conv:active{background:#eef3f1}
+.chat-conv .cc-nm{font-weight:700;font-size:14px;color:#1f2d2a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-conv .cc-sub{font-size:11px;color:#93a09b;margin-top:1px}
+.chat-conv .cc-dot{width:10px;height:10px;border-radius:50%;background:#e74c3c;flex-shrink:0}
+.chat-day{text-align:center;margin:14px 0 10px}
+.chat-day span{background:rgba(0,0,0,.07);color:#5a6b66;font-size:10px;font-weight:700;padding:3px 12px;border-radius:12px}
+.chat-row{display:flex;margin-bottom:3px;align-items:flex-end;gap:7px}
+.chat-row.me{justify-content:flex-end}
+.chat-row.grp{margin-top:9px}
+.chat-b{max-width:78%;padding:7px 11px 6px;border-radius:15px;box-shadow:0 1px 1.5px rgba(0,0,0,.1);font-size:13.5px;line-height:1.36;word-break:break-word;position:relative}
+.chat-b.me{background:var(--navy);color:#fff;border-bottom-right-radius:5px}
+.chat-b.them{background:#fff;color:#12211d;border-bottom-left-radius:5px}
+.chat-b .cnm{font-size:10px;font-weight:800;margin-bottom:2px}
+.chat-b img{max-width:100%;border-radius:9px;margin:2px 0;display:block;cursor:pointer}
+.chat-b .ctm{font-size:9px;opacity:.62;text-align:right;margin-top:2px;white-space:nowrap}
+.chat-b.me .ctm{color:#dfe8ff}
+.chat-empty{text-align:center;color:#93a09b;font-size:12px;margin-top:40px;line-height:1.6}
+.chat-in{display:flex;gap:8px;padding:8px 10px;background:#fff;border-top:1px solid #e0e6e3;align-items:flex-end;flex-shrink:0}
+.chat-cam{background:none;border:none;font-size:23px;cursor:pointer;padding:4px 2px 6px;flex-shrink:0;line-height:1}
+.chat-ta{flex:1;max-height:110px;padding:10px 14px;border:1px solid #dde4e1;border-radius:20px;font-size:14px;resize:none;line-height:1.3;font-family:inherit;box-sizing:border-box;outline:none}
+.chat-ta:focus{border-color:var(--teal)}
+.chat-snd{width:44px;height:44px;border-radius:50%;background:var(--hdr-grad);color:#fff;border:none;font-size:18px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s}
+.chat-snd:disabled{opacity:.4}
+.chat-pv{display:none;padding:8px 12px;background:#fff;border-top:1px solid #eee;align-items:center;gap:10px;flex-shrink:0}
+.chat-pv img{width:46px;height:46px;object-fit:cover;border-radius:8px}
+.chat-pv button{margin-left:auto;background:#e74c3c;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer}
+</style>
+<button id="chatFab" onclick="openChat()" style="display:none;position:fixed;right:14px;bottom:76px;z-index:8500;width:54px;height:54px;border-radius:50%;border:none;background:var(--hdr-grad);color:white;font-size:23px;box-shadow:0 5px 16px rgba(0,0,0,.3);align-items:center;justify-content:center;cursor:pointer">💬<span id="chatFabDot" style="display:none;position:absolute;top:-2px;right:-2px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#e74c3c;border:2px solid white;color:#fff;font-size:11px;font-weight:800;line-height:16px;box-sizing:border-box"></span></button>
+<div id="chatView" style="display:none;position:fixed;inset:0;z-index:9000;flex-direction:column">
+  <div class="chat-hd">
+    <button class="cbk" onclick="chatBack()">&#8592;</button>
+    <div id="chatHdAv" class="chat-av" style="width:38px;height:38px;font-size:14px;background:rgba(255,255,255,.22)">💬</div>
+    <div style="flex:1;min-width:0"><div id="chatTitle" style="font-weight:800;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Chat</div><div id="chatSub" style="font-size:10.5px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div></div>
   </div>
-  <div id="chatList" style="flex:1;overflow-y:auto;padding:10px 12px"></div>
-  <div id="chatMsgs" style="display:none;flex:1;overflow-y:auto;padding:10px 12px"></div>
-  <div id="chatInputRow" style="display:none;gap:6px;padding:8px;background:white;border-top:1px solid var(--border);align-items:flex-end;flex-shrink:0">
-    <label style="font-size:20px;cursor:pointer;padding:6px">📷<input id="chatPhotoIn" type="file" accept="image/*" style="display:none" onchange="chatAttachPhoto(this)"></label>
-    <textarea id="chatText" rows="1" placeholder="Message" style="flex:1;padding:9px;border:1px solid #ddd;border-radius:12px;font-size:13px;resize:none"></textarea>
-    <button onclick="chatSend()" style="padding:9px 14px;background:var(--hdr-grad);color:white;border:none;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer">➤</button>
+  <div class="chat-search-wrap" id="chatSearchWrap"><input id="chatSearch" class="chat-search" placeholder="Search people…" oninput="chatFilterList(this.value)"></div>
+  <div id="chatList" class="chat-scroll"></div>
+  <div id="chatMsgs" class="chat-scroll" style="display:none"></div>
+  <div id="chatPreview" class="chat-pv"><img id="chatPvImg" src=""><span style="font-size:11px;color:#5a6b66">Photo ready to send</span><button onclick="chatClearPhoto()">Remove</button></div>
+  <div id="chatInputRow" class="chat-in" style="display:none">
+    <button class="chat-cam" onclick="document.getElementById('chatPhotoIn').click()">📷</button>
+    <input id="chatPhotoIn" type="file" accept="image/*" style="display:none" onchange="chatAttachPhoto(this)">
+    <textarea id="chatText" class="chat-ta" rows="1" placeholder="Message" oninput="chatGrow(this)"></textarea>
+    <button id="chatSendBtn" class="chat-snd" onclick="chatSend()" disabled>&#10148;</button>
   </div>
 </div>
 <div id="settingsView" class="settings-panel hidden">
@@ -1092,7 +1136,15 @@ const BASE_USERS={
 // derived from the payment roster's suriname group, so it stays in sync
 // when workers are reassigned there.
 const GUYANA_TEAM_USERS=["admin","akeem","shanic","hosea","osvaldo","orlando","dima","addel"];
+// v179: role-based badges so every login carries a category. HR and HSEQ are
+// office/compliance functions (not field crews), so they get their own chip
+// instead of showing blank next to the crew members.
 function getUserCategory(username,fullName){
+  try{
+    const u=(BASE_USERS[username]||getCustomUsers()[username]||{});
+    if(u.role==="HSEQ")return{key:"hseq",label:"HSEQ"};
+    if(u.role==="HR")return{key:"hr",label:"HR"};
+  }catch(e){}
   if(GUYANA_TEAM_USERS.includes(username))return{key:"guyana",label:"ELGAWA Guyana Team"};
   try{
     const nm=fullName||((BASE_USERS[username]||getCustomUsers()[username]||{}).name)||"";
@@ -2461,7 +2513,7 @@ function showDash(){
   // v176: chat button for every logged-in user; unread dot polls once a minute
   const chatFab=document.getElementById("chatFab");
   if(chatFab)chatFab.style.display=currentUser?"flex":"none";
-  if(currentUser&&typeof _chatDotPoll!=="undefined"&&!_chatDotPoll){_chatDotPoll=setInterval(_chatCheckUnread,60000);setTimeout(_chatCheckUnread,3000)}
+  if(currentUser&&typeof _chatDotPoll!=="undefined"&&!_chatDotPoll){_chatDotPoll=setInterval(_chatCheckUnread,30000);setTimeout(_chatCheckUnread,3000)}
   // Import section — admin/engineers only, collapsed behind small toggle
   const canImport=currentUser.role==="Project Lead"||currentUser.role==="Engineer";
   const importToggle=document.getElementById("importToggleWrap");
@@ -9650,7 +9702,7 @@ function renderWeeklyRegister(refDate){
 let _pdfLogoCache;
 function _pdfLoadLogo(){
   if(_pdfLogoCache!==undefined)return Promise.resolve(_pdfLogoCache);
-  return fetch("./icon-192.png").then(function(r){return r.ok?r.blob():null}).then(function(b){
+  return fetch("./logo-letterhead.png").then(function(r){return r.ok?r.blob():null}).then(function(b){
     if(!b){_pdfLogoCache=null;return null}
     return new Promise(function(res){
       const fr=new FileReader();
@@ -10976,10 +11028,12 @@ function renderHubPersonnel(){
         <input id="hubNewUserPass" placeholder="Password" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:12px">
         <select id="hubNewUserRole" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:12px">
           <option value="Worker">Worker</option>
+          <option value="Lead Worker">Lead Worker</option>
           <option value="Team Lead">Team Lead</option>
           <option value="Supervisor">Supervisor</option>
           <option value="Engineer">Engineer</option>
-          <option value="HSEQ">HSEQ (Attendance + Team, read-only)</option>
+          <option value="HR">HR (Team + Attendance only)</option>
+          <option value="HSEQ">HSEQ (Attendance + Team + Safety)</option>
         </select>
       </div>
       <button onclick="hubAddUser()" style="width:100%;padding:8px;background:linear-gradient(135deg,var(--teal),#0d9488);color:white;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">Add User</button>
@@ -11616,7 +11670,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v178";
+const APP_VERSION="v183";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -11986,7 +12040,7 @@ function _hrRoleRank(role){
   return 5;
 }
 function _hrRoleLabel(role){
-  const map={"Worker":t("roleWorker"),"Lead Worker":t("roleLeadWorker"),"Team Lead":t("roleTeamLead"),"Supervisor":t("roleSupervisor"),"Engineer":t("roleEngineer"),"Project Lead":"Project Lead"};
+  const map={"Worker":t("roleWorker"),"Lead Worker":t("roleLeadWorker"),"Team Lead":t("roleTeamLead"),"Supervisor":t("roleSupervisor"),"Engineer":t("roleEngineer"),"Project Lead":"Project Lead","HR":"HR","HSEQ":"HSEQ"};
   return map[role]||role;
 }
 function renderHrView(){
@@ -12211,46 +12265,99 @@ function generateHseqDayPDF(){
   }catch(e){showToast("❌ PDF failed: "+e.message)}
   });
 }
-// ═══════════ IN-APP CHAT (v176) — site group + direct messages, text and photos ═══════════
-let _chatConvo=null,_chatPoll=null,_chatPhoto=null,_chatDotPoll=null;
+// ═══════════ IN-APP CHAT (v176, refined UI v180) — site group + DMs, text and photos ═══════════
+let _chatConvo=null,_chatPoll=null,_chatPhoto=null,_chatDotPoll=null,_chatListCache=[];
+const _CHAT_AV_COLORS=["#0B5D47","#1F4E79","#7C3AED","#0d9488","#c2410c","#9a3412","#4d7c0f","#b45309","#155e75","#9d174d"];
 function _chatKey(a,b){return [a,b].sort().join("__")}
+function _chatInitials(n){n=String(n||"?").trim();const p=n.split(/\s+/);return((p[0]||"")[0]||"")+((p.length>1?p[p.length-1]:"")[0]||"")||n[0]||"?"}
+function _chatColor(n){let h=0;n=String(n||"");for(let i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))>>>0;return _CHAT_AV_COLORS[h%_CHAT_AV_COLORS.length]}
+function _chatAv(name,size,fs){return '<div class="chat-av" style="width:'+size+'px;height:'+size+'px;font-size:'+fs+'px;background:'+_chatColor(name)+'">'+_hseqEsc(_chatInitials(name))+'</div>'}
 function _chatSeen(){try{return JSON.parse(localStorage.getItem("elg_chat_seen")||"{}")}catch(e){return{}}}
 function _chatMarkSeen(id,ts){const s=_chatSeen();s[id]=ts;try{localStorage.setItem("elg_chat_seen",JSON.stringify(s))}catch(e){}}
 function _chatPathFor(c){return c==="site"?"/chat/site":"/chat/dm/"+_chatKey(currentUser.username,c)}
+function _chatDayLabel(ts){
+  const d=new Date(ts),n=new Date();
+  const dd=x=>x.getFullYear()+"-"+x.getMonth()+"-"+x.getDate();
+  const y=new Date(n);y.setDate(n.getDate()-1);
+  if(dd(d)===dd(n))return "Today";
+  if(dd(d)===dd(y))return "Yesterday";
+  return d.toLocaleDateString("en-US",{weekday:"short",day:"numeric",month:"short"});
+}
+let _chatEnterWired=false;
 function openChat(){
   if(!currentUser)return;
   document.getElementById("chatView").style.display="flex";
-  const dot=document.getElementById("chatFabDot");if(dot)dot.style.display="none";
+  if(!_chatEnterWired){
+    const ta=document.getElementById("chatText");
+    if(ta)ta.addEventListener("keydown",function(e){
+      // Enter sends on a physical keyboard; Shift+Enter makes a new line. On phones
+      // the on-screen Enter inserts a newline as normal (no keydown Enter without shift).
+      if(e.key==="Enter"&&!e.shiftKey&&!/Mobi|Android/i.test(navigator.userAgent)){e.preventDefault();chatSend()}
+    });
+    _chatEnterWired=true;
+  }
+  // v181: ask for notification permission once so alerts can show when the app is
+  // backgrounded (not closed). Silent if already decided.
+  try{if("Notification"in window&&Notification.permission==="default")Notification.requestPermission()}catch(e){}
   chatShowList();
+  _chatCheckUnread();
 }
 function chatBack(){
-  if(_chatConvo){if(_chatPoll){clearInterval(_chatPoll);_chatPoll=null}_chatConvo=null;chatShowList();}
+  if(_chatConvo){if(_chatPoll){clearInterval(_chatPoll);_chatPoll=null}_chatConvo=null;chatShowList();_chatCheckUnread();}
   else{document.getElementById("chatView").style.display="none";if(_chatPoll){clearInterval(_chatPoll);_chatPoll=null}}
 }
 function chatShowList(){
   _chatConvo=null;if(_chatPoll){clearInterval(_chatPoll);_chatPoll=null}
-  document.getElementById("chatTitle").textContent="Chat";
+  document.getElementById("chatTitle").textContent="Chats";
   document.getElementById("chatSub").textContent=currentUser.name;
+  const hav=document.getElementById("chatHdAv");if(hav){hav.textContent="💬";hav.style.background="rgba(255,255,255,.22)"}
   document.getElementById("chatMsgs").style.display="none";
   document.getElementById("chatInputRow").style.display="none";
+  document.getElementById("chatPreview").style.display="none";
+  document.getElementById("chatSearchWrap").style.display="block";
   const list=document.getElementById("chatList");list.style.display="block";
   const users=getUsers();
-  let h='<div class="hr-card" onclick="chatOpenConvo(\'site\')" style="cursor:pointer"><b style="font-size:14px">🏗️ Site — everyone</b><div style="font-size:10px;color:var(--grey)">Group chat for the whole project</div></div>';
-  h+='<p style="font-size:10px;color:var(--grey);margin:10px 0 4px;font-weight:700">DIRECT MESSAGES</p><div class="hr-card">';
-  Object.entries(users).filter(([un])=>un!==currentUser.username).sort((a,b)=>String(a[1].name).localeCompare(String(b[1].name))).forEach(([un,u])=>{
-    h+='<div class="hr-row" onclick="chatOpenConvo(\''+un+'\')" style="cursor:pointer"><div style="flex:1;font-size:13px;font-weight:600">'+_hseqEsc(u.name)+'</div><span style="font-size:10px;color:var(--grey)">'+_hseqEsc(u.role||"")+'</span></div>';
+  _chatListCache=Object.entries(users).filter(([un])=>un!==currentUser.username)
+    .map(([un,u])=>({un:un,name:u.name||un,role:u.role||""}))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  chatRenderList("");
+}
+function chatRenderList(q){
+  const list=document.getElementById("chatList");if(!list)return;
+  const seen=_chatSeen();q=(q||"").toLowerCase();
+  const siteUnread=false; // dot on the group handled by header count; keep list clean
+  let h='<div class="chat-conv" onclick="chatOpenConvo(\'site\')">'
+    +'<div class="chat-av" style="width:46px;height:46px;font-size:20px;background:var(--hdr-grad)">🏗️</div>'
+    +'<div style="flex:1;min-width:0"><div class="cc-nm">Site — everyone</div><div class="cc-sub">Whole project group chat</div></div></div>';
+  const people=_chatListCache.filter(p=>!q||p.name.toLowerCase().includes(q)||p.role.toLowerCase().includes(q));
+  h+='<div class="chat-sec">DIRECT MESSAGES</div>';
+  if(!people.length)h+='<p style="font-size:12px;color:#93a09b;text-align:center;margin:16px">No one matches "'+_hseqEsc(q)+'".</p>';
+  people.forEach(p=>{
+    h+='<div class="chat-conv" onclick="chatOpenConvo(\''+p.un+'\')">'+_chatAv(p.name,46,18)
+      +'<div style="flex:1;min-width:0"><div class="cc-nm">'+_hseqEsc(p.name)+'</div><div class="cc-sub">'+_hseqEsc(p.role||"Team")+'</div></div></div>';
   });
-  h+='</div><p style="font-size:9.5px;color:var(--grey);margin-top:8px">Messages arrive while the app is open (checked every few seconds in a chat, every minute elsewhere). No signal, no delivery — this backs up the radio and WhatsApp, it does not replace them for emergencies.</p>';
+  const alOn=_chatAlertsOn();
+  h+='<div class="chat-conv" onclick="chatToggleAlerts()" style="margin-top:12px;background:'+(alOn?"#eafaf2":"#f3f3f0")+'">'
+    +'<div class="chat-av" style="width:40px;height:40px;font-size:18px;background:'+(alOn?"#0d9488":"#b0b8b4")+'">'+(alOn?"🔔":"🔕")+'</div>'
+    +'<div style="flex:1;min-width:0"><div class="cc-nm">Chat alerts '+(alOn?"on":"off")+'</div><div class="cc-sub">'+(alOn?"Chime + buzz on new messages":"Tap to turn on sound and buzz")+'</div></div></div>';
+  h+='<p style="font-size:9.5px;color:#93a09b;margin:12px 4px 0;line-height:1.5">Alerts sound only while the app is open. This backs up the radio and WhatsApp — for emergencies use those.</p>';
   list.innerHTML=h;
 }
+function chatFilterList(q){chatRenderList(q)}
 function chatOpenConvo(c){
-  _chatConvo=c;_chatPhoto=null;
+  _chatConvo=c;chatClearPhoto();
   const users=getUsers();
-  document.getElementById("chatTitle").textContent=c==="site"?"🏗️ Site — everyone":((users[c]&&users[c].name)||c);
-  document.getElementById("chatSub").textContent=c==="site"?"Everyone on the project sees this":"Private conversation";
+  const nm=c==="site"?"Site — everyone":((users[c]&&users[c].name)||c);
+  document.getElementById("chatTitle").textContent=nm;
+  document.getElementById("chatSub").textContent=c==="site"?"Everyone on the project":"Private conversation";
+  const hav=document.getElementById("chatHdAv");
+  if(hav){if(c==="site"){hav.textContent="🏗️";hav.style.background="rgba(255,255,255,.22)"}else{hav.textContent=_chatInitials(nm);hav.style.background=_chatColor(nm)}}
+  document.getElementById("chatSearchWrap").style.display="none";
   document.getElementById("chatList").style.display="none";
   document.getElementById("chatMsgs").style.display="block";
   document.getElementById("chatInputRow").style.display="flex";
+  const ta=document.getElementById("chatText");if(ta){ta.value="";chatGrow(ta)}
+  document.getElementById("chatMsgs").innerHTML='<p class="chat-empty">Loading…</p>';
   chatLoad(true);
   _chatPoll=setInterval(()=>chatLoad(false),8000);
 }
@@ -12261,24 +12368,45 @@ function chatLoad(scroll){
     if(convo!==_chatConvo)return;
     const box=document.getElementById("chatMsgs");
     const msgs=Object.entries(data||{}).sort((a,b)=>a[0].localeCompare(b[0]));
-    let h="",lastTs=0;
+    let h="",lastTs=0,lastDay="",lastSender="";
     msgs.forEach(([id,m])=>{
       if(!m)return;const mine=m.u===(currentUser&&currentUser.username);lastTs=Math.max(lastTs,m.ts||0);
-      h+='<div style="display:flex;'+(mine?'justify-content:flex-end;':'')+'margin-bottom:6px"><div style="max-width:78%;padding:7px 10px;border-radius:12px;background:'+(mine?'var(--navy)':'white')+';color:'+(mine?'white':'#222')+';box-shadow:var(--shadow)">'
-        +((!mine&&convo==="site")?'<div style="font-size:9px;font-weight:800;color:var(--navy)">'+_hseqEsc(m.n)+'</div>':'')
-        +(m.p?'<img src="'+m.p+'" style="max-width:100%;border-radius:8px;margin:3px 0" onclick="window.open(this.src)">':'')
-        +(m.t?'<div style="font-size:12.5px;white-space:pre-wrap;word-break:break-word">'+_hseqEsc(m.t)+'</div>':'')
-        +'<div style="font-size:8.5px;opacity:.6;text-align:right">'+new Date(m.ts||0).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})+'</div></div></div>';
+      const day=_chatDayLabel(m.ts||0);
+      if(day!==lastDay){h+='<div class="chat-day"><span>'+day+'</span></div>';lastDay=day;lastSender=""}
+      const grp=(m.u!==lastSender);lastSender=m.u;
+      const showName=(!mine&&convo==="site"&&grp);
+      h+='<div class="chat-row '+(mine?"me":"them")+(grp?" grp":"")+'">'
+        +'<div class="chat-b '+(mine?"me":"them")+'">'
+        +(showName?'<div class="cnm" style="color:'+_chatColor(m.n)+'">'+_hseqEsc(m.n)+'</div>':'')
+        +(m.p?'<img src="'+m.p+'" onclick="window.open(this.src)">':'')
+        +(m.t?'<div style="white-space:pre-wrap">'+_hseqEsc(m.t)+'</div>':'')
+        +'<div class="ctm">'+new Date(m.ts||0).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})+'</div>'
+        +'</div></div>';
     });
-    box.innerHTML=h||'<p style="text-align:center;color:var(--grey);font-size:11px;margin-top:20px">No messages yet.</p>';
+    box.innerHTML=h||'<p class="chat-empty">No messages yet.<br>Say hello 👋</p>';
     if(scroll||box.scrollTop>box.scrollHeight-box.clientHeight-220)box.scrollTop=box.scrollHeight;
     if(lastTs)_chatMarkSeen(convo==="site"?"site":_chatKey(currentUser.username,convo),lastTs);
   }).catch(()=>{});
 }
+function chatGrow(ta){
+  ta.style.height="auto";ta.style.height=Math.min(ta.scrollHeight,110)+"px";
+  const btn=document.getElementById("chatSendBtn");
+  if(btn)btn.disabled=!(ta.value.trim()||_chatPhoto);
+}
 function chatAttachPhoto(inp){
   const f=inp.files&&inp.files[0];if(!f)return;
-  _compressProfilePhoto(f,url=>{_chatPhoto=url;showToast("📷 Photo attached — press send")});
+  _compressProfilePhoto(f,url=>{
+    _chatPhoto=url;
+    const pv=document.getElementById("chatPreview"),im=document.getElementById("chatPvImg");
+    if(im)im.src=url;if(pv)pv.style.display="flex";
+    chatGrow(document.getElementById("chatText"));
+  });
   inp.value="";
+}
+function chatClearPhoto(){
+  _chatPhoto=null;
+  const pv=document.getElementById("chatPreview");if(pv)pv.style.display="none";
+  chatGrow(document.getElementById("chatText"));
 }
 function chatSend(){
   const ta=document.getElementById("chatText");const txt=ta.value.trim();
@@ -12286,24 +12414,67 @@ function chatSend(){
   const fb=getFirebaseUrl();if(!fb){showToast("❌ No cloud connection");return}
   const ts=Date.now();const id=ts+"_"+currentUser.username;
   const msg={u:currentUser.username,n:currentUser.name,t:txt,ts:ts};if(_chatPhoto)msg.p=_chatPhoto;
+  const btn=document.getElementById("chatSendBtn");if(btn)btn.disabled=true;
   fetch(fb+_chatPathFor(_chatConvo)+"/"+id+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(msg)})
-    .then(r=>{if(r.ok){ta.value="";_chatPhoto=null;chatLoad(true)}else showToast("❌ Send failed ("+r.status+")")})
-    .catch(()=>showToast("❌ Send failed — check signal"));
+    .then(r=>{if(r.ok){ta.value="";chatGrow(ta);chatClearPhoto();chatLoad(true)}else{showToast("❌ Send failed ("+r.status+")");chatGrow(ta)}})
+    .catch(()=>{showToast("❌ Send failed — check signal");chatGrow(ta)});
+}
+// v181: chat alerts — chime + vibrate + (if permitted) a system notification when
+// a NEW message from someone else lands, reusing the daily-reminder engine. Only
+// fires while the app is running (a web app cannot wake a fully-closed phone); an
+// unread badge + per-user mute toggle round it out.
+function _chatAlertsOn(){try{return localStorage.getItem("elg_chat_alerts")!=="off"}catch(e){return true}}
+function _chatSetAlerts(on){try{localStorage.setItem("elg_chat_alerts",on?"on":"off")}catch(e){}}
+function _chatLastAlert(){try{return parseInt(localStorage.getItem("elg_chat_last_alert")||"0")||0}catch(e){return 0}}
+function _chatSetLastAlert(ts){try{localStorage.setItem("elg_chat_last_alert",String(ts))}catch(e){}}
+function _chatAlert(title,body){
+  if(!_chatAlertsOn())return;
+  if(typeof _fireReminder==="function")_fireReminder(title,body,"chat-msg");
+  else{try{if(navigator.vibrate)navigator.vibrate([200,100,200])}catch(e){}try{showToast("🔔 "+body)}catch(e){}}
+}
+function chatToggleAlerts(){
+  const on=!_chatAlertsOn();_chatSetAlerts(on);
+  if(on&&"Notification"in window&&Notification.permission==="default"){try{Notification.requestPermission()}catch(e){}}
+  chatRenderList(document.getElementById("chatSearch")?document.getElementById("chatSearch").value:"");
+  showToast(on?"🔔 Chat alerts on":"🔕 Chat alerts off");
+}
+function _chatViewing(convo){
+  const cv=document.getElementById("chatView");
+  return cv&&cv.style.display!=="none"&&_chatConvo===convo;
 }
 function _chatCheckUnread(){
   if(!currentUser)return;const fb=getFirebaseUrl();if(!fb)return;
-  const seen=_chatSeen();let unread=false;
-  const lastKeyTs=ks=>{const ids=Object.keys(ks||{}).sort();return ids.length?parseInt(ids[ids.length-1])||0:0};
+  const seen=_chatSeen();const me=currentUser.username;let count=0;
+  const lastKey=ks=>{const ids=Object.keys(ks||{}).sort();return ids.length?ids[ids.length-1]:null};
+  const tsOf=k=>k?parseInt(k)||0:0;
+  const senderOf=k=>{if(!k)return"";const p=k.split("_");return p.slice(1).join("_")};
+  const cand=[]; // {ts,label,convo}
   fetch(fb+"/chat/site.json?shallow=true").then(r=>r.ok?r.json():null).then(ks=>{
-    if(lastKeyTs(ks)>(seen["site"]||0))unread=true;
+    const lk=lastKey(ks),ts=tsOf(lk);
+    if(ts>(seen["site"]||0))count++;
+    if(ts>(seen["site"]||0)&&ts>_chatLastAlert()&&senderOf(lk)!==me&&!_chatViewing("site"))cand.push({ts:ts,label:"Site chat",convo:"site"});
     return fetch(fb+"/chat/dm.json?shallow=true").then(r=>r.ok?r.json():null);
   }).then(pairs=>{
-    const mine=Object.keys(pairs||{}).filter(k=>k.split("__").includes(currentUser.username)).slice(0,15);
-    return Promise.all(mine.map(k=>fetch(fb+"/chat/dm/"+k+".json?shallow=true").then(r=>r.ok?r.json():null).then(ks=>({k:k,ts:lastKeyTs(ks)}))));
+    const mine=Object.keys(pairs||{}).filter(k=>k.split("__").includes(me)).slice(0,20);
+    return Promise.all(mine.map(k=>fetch(fb+"/chat/dm/"+k+".json?shallow=true").then(r=>r.ok?r.json():null).then(ks=>({k:k,lk:lastKey(ks)}))));
   }).then(res=>{
-    (res||[]).forEach(x=>{if(x.ts>(seen[x.k]||0))unread=true});
+    const users=getUsers();
+    (res||[]).forEach(x=>{
+      const ts=tsOf(x.lk),sender=senderOf(x.lk);
+      if(ts>(seen[x.k]||0))count++;
+      const other=x.k.split("__").filter(u=>u!==me)[0]||"";
+      if(ts>(seen[x.k]||0)&&ts>_chatLastAlert()&&sender!==me&&!_chatViewing(other)){
+        cand.push({ts:ts,label:(users[sender]&&users[sender].name)||sender,convo:other});
+      }
+    });
     const dot=document.getElementById("chatFabDot");
-    if(dot)dot.style.display=unread?"block":"none";
+    if(dot){if(count>0){dot.style.display="block";dot.textContent=count>9?"9+":String(count)}else dot.style.display="none"}
+    if(cand.length){
+      cand.sort((a,b)=>b.ts-a.ts);
+      const top=cand[0];
+      _chatSetLastAlert(top.ts);
+      _chatAlert("💬 "+top.label,top.convo==="site"?"New message in Site chat":"New message from "+top.label);
+    }
   }).catch(()=>{});
 }
 
@@ -13348,6 +13519,11 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v183 — Final CrewFlow icon: crew triangle with a white hard-hatted lead at the centre, light-blue airflow arcs orbiting, snowflakes in the gaps, on the app-purple gradient (HVAC + teamwork). Rendered from SVG via ImageMagick + composited on a smooth PIL gradient to avoid banding; icon-192/512.png replaced. Everything else per v182 (name CrewFlow, ELGAWA letterhead preserved via logo-letterhead.png). sw cache v183 so phones re-fetch the new icon.
+// Build: v182 — Rebrand to "CrewFlow" (app was never company-approved; Paul runs it as Project Lead). CHANGED: manifest name+short_name "CrewFlow" + description + maskable icons; apple-mobile-web-app-title "CrewFlow"; <title> "CrewFlow"; icon-192/512.png replaced with a new mark (3-blade fan = HVAC + three-blades-as-one = teamwork, white on the existing app-purple gradient, so no theme change). UNCHANGED ON PURPOSE: PDF letterhead stays "ELGAWA Guyana Inc. / Pasha Global HVAC Project" — the old ELGAWA icon was copied to logo-letterhead.png and _pdfLoadLogo now reads THAT, so reports keep their ELGAWA look while the home-screen app is CrewFlow. sw cache v182 (fresh cache re-fetches manifest+icons; cleanOldCaches drops old). CAVEAT told to Paul: a plain refresh updates the app insides + PDFs, but an already-installed home-screen ICON/LABEL only reliably changes on REINSTALL (remove icon, re-add from the site URL); iOS never repaints in place, Android is slow/unreliable; fresh installs get CrewFlow immediately. No feature/logic change.
+// Build: v181 — Chat alerts (Paul: missed messages hurt workflow). Reuses the daily-reminder engine (_fireReminder: chime via WebAudio + vibrate + a system Notification when permission granted). _chatCheckUnread now parses the newest message key (ts_username, shallow read — no body fetch) to detect a NEW message from SOMEONE ELSE per channel; fires ONE alert for the newest, high-water-marked in elg_chat_last_alert so it never repeats, and never alerts for the conversation you're currently viewing (_chatViewing). Unread poll tightened 60s -> 30s. openChat requests Notification permission once (silent if decided). Per-user mute toggle on the chat list (🔔/🔕, elg_chat_alerts, default on) via chatToggleAlerts. HONEST CEILING unchanged and stated in-app: alerts only while the app is running — a web app can't wake a fully-closed phone; real closed-phone push = Firebase Cloud Messaging, a separate project parked with the work-plan automation.
+// Build: v180 — Chat interface refresh (Paul: "make the interface better"). Scoped #chatCss block, no logic change to storage/polling. Conversation list: colored initial avatars (deterministic per name), Site group card with 🏗️ tile, role sub-labels, a live search box filtering people. Thread view: WhatsApp-style bubbles (navy me / white them, tails), Today/Yesterday/date separators, sender name shown once per run in the Site group (colored), tap-to-zoom photos, timestamps inside bubbles. Composer: auto-growing textarea (chatGrow), round send button that disables when empty, photo PREVIEW chip with Remove before sending (was blind "attached — press send"), Enter-to-send on desktop only (Shift+Enter newline; phones keep normal Enter). FAB now shows an unread COUNT badge (was a plain dot). Helpers _chatInitials/_chatColor/_chatAv/_chatDayLabel added.
+// Build: v179 — Category badges for every login. Precilla (HSEQ) and Telisha (HR) had no team chip — they showed blank next to the crew badges. getUserCategory now checks role FIRST: HSEQ -> yellow "HSEQ" chip, HR -> violet "HR" chip, before the Guyana/Suriname crew logic; teamBadgeHtml (Login Users list, etc.) picks these up automatically, and future HR/HSEQ logins get the badge with no extra step. New .team-badge.hseq/.hr/.office CSS. Also aligned the Hub Add-User role list with Settings (added Lead Worker + HR; HSEQ description now "Attendance + Team + Safety") and taught _hrRoleLabel the HR/HSEQ labels. No behaviour change to access — purely identity/labels.
 // Build: v178 — Login-user editing + duplicate-identity fix (Paul: "galan" and "Alejandro Galan" are one person; couldn't edit in the user list). (1) EDIT on each Login User row (admin only, in the tap-to-open action panel): change full name, role and password inline, Save writes to the custom-users overlay so it works for base AND custom logins. The name set here is the single source of truth — getWorkerRoster and getAllPersonnel merge login names, so fixing the name here fixes the roster, attendance and pay in one place; hubSaveUserEdit also drops the old name from custom workers and un-tombstones the new one, and blocks a rename that collides with another login's name. (2) getWorkerRoster/getAllPersonnel now fold known aliases via _canonWorker, so "galan" collapses onto "Alejandro Galan" immediately even before the name is edited (add more pairs in WORKER_ALIASES). Fix for good: open the alejandro login, Edit, set the name to Alejandro Galan.
 // Build: v177 — Weekly safety feed. After every PPE check, observation or permit close, _hseqPublishWeekly() recomputes the current ISO week from /hseq (Mon-Sat dates) and PUTs a no-names aggregate to /reports/safety/<yyyy-Www>: per-day checks/ok/issues, per-crew ok/issues (_fbEncKey-encoded pay-group labels), observation counts by severity, open-permit count. /reports is public-read, so the Monday scheduled report reads it without login — same pattern as the v167 productivity feed. No raw notes or worker names leave the auth-locked /hseq nodes.
 // Build: v176 — Chat + HSEQ revisions per Paul. (1) IN-APP CHAT for every logged-in user: floating 💬 button on all views; Site group channel (everyone) + private DMs; text + photos (camera/gallery, compressed via _compressProfilePhoto); stored /chat/site/<ts_user> and /chat/dm/<userA__userB>/<ts_user>, auth-only rules; 8s poll inside an open chat, 60s unread-dot poll (shallow reads); honest limitation: delivery only while the app is open — no push. Precilla can DM any worker for a full-gear photo; permits are photographed and sent to Paul + Akeem in chat. (2) Permit ISSUE form removed from the Safety tab (Precilla does not issue in the app); open-permit list + close kept for any legacy records; note directs permits to chat. (3) HSEQ Monthly Update PDF — admin-only card on the Safety tab (month picker): PPE compliance per crew (days OK / days with issues + notes), month's observations, permits; sign-off "For: Precilla Sobryan". (4) Admin sees her hub: new admin-only Safety sub-tab in My Hub rendering the same HSEQ view (renderHseqSafety now takes a target container); swipe list + switchHubTab guard updated. Watch item: chat photos are base64 in RTDB (~60-120KB each) — fine for months, revisit if heavy use.
