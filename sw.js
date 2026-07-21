@@ -1,4 +1,4 @@
-const CACHE_NAME = "elgawa-checksheet-v173";
+const CACHE_NAME = "elgawa-checksheet-v177";
 const ASSETS = ["./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 // PDF + rendering libraries — precached so PDF buttons work on weak signal/offline
 const CDN_ASSETS = [

@@ -809,7 +809,8 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
     <button class="hub-subtab admin-item" id="hubPaySubTab" onclick="switchHubTab('pay')">Pay</button>
     <button class="hub-subtab" onclick="switchHubTab('analysis')">Analysis</button>
     <button class="hub-subtab" onclick="switchHubTab('reports')">Reports</button>
-    <button class="hub-subtab admin-item" onclick="switchHubTab('personnel')">Personnel</button>
+    <button class="hub-subtab admin-item" id="hubPersonnelSubTab" onclick="switchHubTab('personnel')">Personnel</button>
+    <button class="hub-subtab admin-item" id="hubSafetySubTab" onclick="switchHubTab('safety')">Safety</button>
   </div>
 </div>
 <div id="hubView" class="hub-section hidden">
@@ -841,6 +842,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
   <div id="hubAnalysisView" style="display:none"></div>
   <div id="hubReportsView" style="display:none"></div>
   <div id="hubPersonnelView" style="display:none"></div>
+  <div id="hubSafetyView" style="display:none"></div>
 </div>
 <div id="workerSignInView" class="hidden" style="max-width:500px;margin:0 auto;padding:16px">
   <div id="workerBackRow" style="display:none;margin-bottom:10px">
@@ -884,9 +886,27 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
     <button class="hr-tab active" id="hrTabMembersBtn" onclick="switchHrTab('members')">👥 <span id="hrTabMembersLbl">Team Members</span></button>
     <button class="hr-tab" id="hrTabAttBtn" onclick="switchHrTab('attendance')">📋 <span id="hrTabAttLbl">Attendance</span></button>
     <button class="hr-tab" id="hrTabProfBtn" onclick="openWorkerProfiles()">👤 <span>Profiles</span></button>
+    <button class="hr-tab" id="hrTabSafetyBtn" onclick="switchHrTab('safety')" style="display:none">🦺 <span>Safety</span></button>
   </div>
   <div id="hrMembersView"></div>
   <div id="hrAttendanceView" style="display:none"></div>
+  <div id="hrSafetyView" style="display:none"></div>
+</div>
+
+<!-- v176: in-app chat — floating button + full-screen overlay -->
+<button id="chatFab" onclick="openChat()" style="display:none;position:fixed;right:14px;bottom:76px;z-index:8500;width:52px;height:52px;border-radius:50%;border:none;background:var(--hdr-grad);color:white;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.28);align-items:center;justify-content:center;cursor:pointer">💬<span id="chatFabDot" style="display:none;position:absolute;top:2px;right:2px;width:12px;height:12px;border-radius:50%;background:#e74c3c;border:2px solid white"></span></button>
+<div id="chatView" style="display:none;position:fixed;inset:0;z-index:9000;background:#f4f6f5;flex-direction:column">
+  <div style="background:var(--hdr-grad);color:white;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <button onclick="chatBack()" style="background:none;border:none;color:white;font-size:18px;cursor:pointer;padding:2px 6px">◀</button>
+    <div style="flex:1;min-width:0"><div id="chatTitle" style="font-weight:800;font-size:15px">Chat</div><div id="chatSub" style="font-size:10px;opacity:.85"></div></div>
+  </div>
+  <div id="chatList" style="flex:1;overflow-y:auto;padding:10px 12px"></div>
+  <div id="chatMsgs" style="display:none;flex:1;overflow-y:auto;padding:10px 12px"></div>
+  <div id="chatInputRow" style="display:none;gap:6px;padding:8px;background:white;border-top:1px solid var(--border);align-items:flex-end;flex-shrink:0">
+    <label style="font-size:20px;cursor:pointer;padding:6px">📷<input id="chatPhotoIn" type="file" accept="image/*" style="display:none" onchange="chatAttachPhoto(this)"></label>
+    <textarea id="chatText" rows="1" placeholder="Message" style="flex:1;padding:9px;border:1px solid #ddd;border-radius:12px;font-size:13px;resize:none"></textarea>
+    <button onclick="chatSend()" style="padding:9px 14px;background:var(--hdr-grad);color:white;border:none;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer">➤</button>
+  </div>
 </div>
 <div id="settingsView" class="settings-panel hidden">
   <div class="back-row"><button class="back-btn" onclick="showDash()" id="backBtn1"></button></div>
@@ -931,7 +951,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
         <input type="text" id="newUsername" placeholder="Username" autocapitalize="none">
         <input type="text" id="newFullName" placeholder="Full Name">
         <div style="position:relative"><input type="password" id="newPassword" placeholder="Password" style="padding-right:42px;width:100%;box-sizing:border-box"><button type="button" onclick="togglePeek('newPassword',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--grey);line-height:1" title="Show password">&#128065;</button></div>
-        <select id="newRole"><option value="Worker" class="optWorker">Worker</option><option value="Lead Worker" class="optLeadWorker">Lead Worker</option><option value="Team Lead" class="optTeamLead">Team Lead</option><option value="Supervisor" class="optSupervisor">Supervisor</option><option value="Engineer" class="optEngineer">Engineer</option><option value="HR" class="optHR">HR (Team + Attendance only)</option></select>
+        <select id="newRole"><option value="Worker" class="optWorker">Worker</option><option value="Lead Worker" class="optLeadWorker">Lead Worker</option><option value="Team Lead" class="optTeamLead">Team Lead</option><option value="Supervisor" class="optSupervisor">Supervisor</option><option value="Engineer" class="optEngineer">Engineer</option><option value="HR" class="optHR">HR (Team + Attendance only)</option><option value="HSEQ">HSEQ (Attendance + Team, read-only)</option></select>
         <button class="btn btn-success full" onclick="addNewUser()" id="addUserBtn"></button>
       </div>
       <button class="btn btn-primary full" onclick="saveUserChanges()" style="margin-top:10px;font-weight:700;font-size:14px" id="saveUsersBtn">💾 Save Changes</button>
@@ -1030,6 +1050,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
 const BASE_USERS={
   admin:{pass:"elgawa2026",name:"Paul Bassoo",role:"Project Lead",teams:"all"},
   telisha:{pass:"telisha2026",name:"Telisha Whyte",role:"HR",teams:"all"},
+  precilla:{pass:"precilla2026",name:"Precilla Sobryan",role:"HSEQ",teams:"all"},
   akeem:{pass:"akeem2026",name:"Akeem Paul",role:"Engineer",teams:"all"},
   shaheed:{pass:"shaheed2026",name:"Shaheed Laismohamedkhan",role:"Engineer",teams:"all"},
   ashish:{pass:"ashish2026",name:"Ashishkumar Moti",role:"Supervisor",teams:"all"},
@@ -1129,7 +1150,7 @@ function getWorkerRoster(){
   getDisabledUsers().forEach(u=>{if(allUsersRaw[u]&&allUsersRaw[u].name)removedSet.add(allUsersRaw[u].name.toLowerCase())});
   // HR-role accounts review the app — they are NOT field workers, so keep them
   // out of the roster (and therefore out of attendance, pay dropdowns, etc.).
-  Object.values(allUsersRaw).forEach(u=>{if(u&&u.role==="HR"&&u.name)removedSet.add(u.name.toLowerCase())});
+  Object.values(allUsersRaw).forEach(u=>{if(u&&(u.role==="HR"||u.role==="HSEQ")&&u.name)removedSet.add(u.name.toLowerCase())});
   // Include ALL personnel: base roster + custom workers + login users. Respect removed list for ALL sources.
   const roster=[
     ...BASE_WORKER_ROSTER.filter(n=>!removedSet.has(n.toLowerCase())),
@@ -2416,17 +2437,29 @@ function showDash(){
   if(analysisTab)analysisTab.style.display=(currentUser.username==="admin")?"inline-block":"none";
   // Analysis in bottom nav — admin only
   const isAdmin=currentUser.username==="admin";
+  // v174: Akeem gets My Hub (view + attendance); Personnel and Pay stay admin-only
+  const canHub=isAdmin||(currentUser&&currentUser.username==="akeem");
 
-  // Attendance in bottom nav — admin only
+  // My Hub in bottom nav — admin + akeem
   const navHubBtn=document.getElementById("navBtnHub");
-  if(navHubBtn)navHubBtn.style.display=isAdmin?"flex":"none";
+  if(navHubBtn)navHubBtn.style.display=canHub?"flex":"none";
 
   // Show divider between regular and admin tabs
   const navDivider=document.getElementById("navDivider");
-  if(navDivider)navDivider.style.display=isAdmin?"block":"none";
+  if(navDivider)navDivider.style.display=canHub?"block":"none";
   // Pay hub sub-tab — admin only
   const hubPaySubTab=document.getElementById("hubPaySubTab");
   if(hubPaySubTab)hubPaySubTab.style.display=isAdmin?"":"none";
+  // Personnel hub sub-tab — admin only (add/remove/disable stays with Paul)
+  const hubPersSubTab=document.getElementById("hubPersonnelSubTab");
+  if(hubPersSubTab)hubPersSubTab.style.display=isAdmin?"":"none";
+  // v176: Safety hub sub-tab — admin only (Paul sees Precilla's HSEQ view + monthly PDF)
+  const hubSafSubTab=document.getElementById("hubSafetySubTab");
+  if(hubSafSubTab)hubSafSubTab.style.display=isAdmin?"":"none";
+  // v176: chat button for every logged-in user; unread dot polls once a minute
+  const chatFab=document.getElementById("chatFab");
+  if(chatFab)chatFab.style.display=currentUser?"flex":"none";
+  if(currentUser&&typeof _chatDotPoll!=="undefined"&&!_chatDotPoll){_chatDotPoll=setInterval(_chatCheckUnread,60000);setTimeout(_chatCheckUnread,3000)}
   // Import section — admin/engineers only, collapsed behind small toggle
   const canImport=currentUser.role==="Project Lead"||currentUser.role==="Engineer";
   const importToggle=document.getElementById("importToggleWrap");
@@ -2465,9 +2498,9 @@ function showDash(){
     stopWorkerRefresh();
   }
 
-  // ═══ HR ROLE DETECTION ═══ read-only Team Members + Attendance only
+  // ═══ HR / HSEQ ROLE DETECTION ═══ read-only Team Members + Attendance only
   const hrv=document.getElementById("hrView");
-  if(currentUser&&currentUser.role==="HR"){
+  if(currentUser&&(currentUser.role==="HR"||currentUser.role==="HSEQ")){
     document.getElementById("dashView").classList.add("hidden");
     const bn=document.getElementById("bottomNav");if(bn)bn.classList.add("hidden");
     ["navBtnForms","navBtnReports","navBtnHistory","navBtnHub","navBtnSettings","navDivider"].forEach(id=>{
@@ -9077,7 +9110,7 @@ function _attRemovedSet(){
   try{
     const allU={...BASE_USERS,...getCustomUsers()};
     getDisabledUsers().forEach(u=>{if(allU[u]&&allU[u].name)set.add(allU[u].name.trim().toLowerCase())});
-    Object.values(allU).forEach(u=>{if(u&&u.role==="HR"&&u.name)set.add(u.name.trim().toLowerCase())});
+    Object.values(allU).forEach(u=>{if(u&&(u.role==="HR"||u.role==="HSEQ")&&u.name)set.add(u.name.trim().toLowerCase())});
   }catch(e){}
   return set;
 }
@@ -10015,7 +10048,7 @@ try{const u=localStorage.getItem("elg_user");if(u){currentUser=JSON.parse(u);
   setTimeout(()=>{
     try{
       const role=currentUser&&currentUser.role;
-      if(role==="HR"||role==="Worker")return; // these roles have their own dedicated view — never restore tabs
+      if(role==="HR"||role==="HSEQ"||role==="Worker")return; // these roles have their own dedicated view — never restore tabs
       const savedTab=localStorage.getItem("elg_active_tab");
       if(savedTab&&savedTab!=="forms")switchTab(savedTab);
     }catch(e){}
@@ -10685,7 +10718,7 @@ function initHubSwipe(){
   
   function getHubTabs(){
     const isAdmin=currentUser&&currentUser.username==="admin";
-    return isAdmin?["overview","attendance","pay","analysis","reports","personnel"]:["overview","attendance","pay","analysis","reports"];
+    return isAdmin?["overview","attendance","pay","analysis","reports","personnel","safety"]:["overview","attendance","analysis","reports"];
   }
   function swipeHub(dir){
     const tabs=getHubTabs();
@@ -10805,15 +10838,17 @@ function initMainSwipe(){
 let _hubActiveTab="overview";
 
 function switchHubTab(tab){
+  // v174: Pay and Personnel are admin-only even if reached by swipe or stored state
+  if((tab==="pay"||tab==="personnel"||tab==="safety")&&!(currentUser&&currentUser.username==="admin"))tab="overview";
   _hubActiveTab=tab;
   // Always hide settings when switching hub tabs
   document.getElementById("settingsView").classList.add("hidden");
   document.querySelectorAll("#hubSubTabs .hub-subtab").forEach((b,i)=>{
-    const tabs=["overview","attendance","pay","analysis","reports","personnel"];
+    const tabs=["overview","attendance","pay","analysis","reports","personnel","safety"];
     b.classList.toggle("active",tabs[i]===tab);
   });
   // Hide all hub internal views
-  ["hubOverviewView","hubPayView","hubReportsView","hubPersonnelView"].forEach(id=>{
+  ["hubOverviewView","hubPayView","hubReportsView","hubPersonnelView","hubSafetyView"].forEach(id=>{
     const el=document.getElementById(id);if(el)el.style.display="none";
   });
   // Hide tabAttendance and analysis when not in those modes
@@ -10853,7 +10888,7 @@ function switchHubTab(tab){
   }else{
     // Hub internal views (overview, pay, reports)
     document.getElementById("hubView").classList.remove("hidden");
-    const viewMap={overview:"hubOverviewView",pay:"hubPayView",reports:"hubReportsView",personnel:"hubPersonnelView"};
+    const viewMap={overview:"hubOverviewView",pay:"hubPayView",reports:"hubReportsView",personnel:"hubPersonnelView",safety:"hubSafetyView"};
     if(viewMap[tab]){
       document.getElementById(viewMap[tab]).style.display="block";
     }
@@ -10861,6 +10896,7 @@ function switchHubTab(tab){
     if(tab==="pay")renderHubPay();
     if(tab==="reports")renderHubReports();
     if(tab==="personnel")renderHubPersonnel();
+    if(tab==="safety")renderHseqSafety("hubSafetyView");
   }
 }
 
@@ -10925,6 +10961,7 @@ function renderHubPersonnel(){
           <option value="Team Lead">Team Lead</option>
           <option value="Supervisor">Supervisor</option>
           <option value="Engineer">Engineer</option>
+          <option value="HSEQ">HSEQ (Attendance + Team, read-only)</option>
         </select>
       </div>
       <button onclick="hubAddUser()" style="width:100%;padding:8px;background:linear-gradient(135deg,var(--teal),#0d9488);color:white;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">Add User</button>
@@ -11522,7 +11559,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v173";
+const APP_VERSION="v177";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -11880,7 +11917,7 @@ let _hrTab="members";let _hrAttDate=null;
 function _hrExcludedNames(){
   // HR & admin accounts are not field workers — keep them off the lists
   const users=getUsers();const set=new Set();
-  Object.entries(users).forEach(([k,u])=>{if(u.name&&(u.role==="HR"||k==="admin"))set.add(u.name.toLowerCase())});
+  Object.entries(users).forEach(([k,u])=>{if(u.name&&(u.role==="HR"||u.role==="HSEQ"||k==="admin"))set.add(u.name.toLowerCase())});
   return set;
 }
 function _hrRoleRank(role){
@@ -11896,21 +11933,323 @@ function _hrRoleLabel(role){
   return map[role]||role;
 }
 function renderHrView(){
-  const ti=document.getElementById("hrTitle");if(ti)ti.textContent=t("humanResources");
+  const ti=document.getElementById("hrTitle");if(ti)ti.textContent=(currentUser&&currentUser.role==="HSEQ")?"HSEQ — Site Attendance":t("humanResources");
   const lbl=document.getElementById("hrUserLabel");if(lbl)lbl.textContent=(currentUser?currentUser.name:"")+" · "+t("hrReadOnly");
   const m=document.getElementById("hrTabMembersLbl");if(m)m.textContent=t("teamMembers");
   const a=document.getElementById("hrTabAttLbl");if(a)a.textContent=t("attendance");
+  // v175: Safety tab for the HSEQ role only
+  const sfb=document.getElementById("hrTabSafetyBtn");
+  if(sfb)sfb.style.display=(currentUser&&currentUser.role==="HSEQ")?"":"none";
   switchHrTab(_hrTab||"members");
 }
 function switchHrTab(tab){
+  if(tab==="safety"&&!(currentUser&&currentUser.role==="HSEQ"))tab="members";
   _hrTab=tab;
-  const mb=document.getElementById("hrTabMembersBtn"),ab=document.getElementById("hrTabAttBtn");
+  const mb=document.getElementById("hrTabMembersBtn"),ab=document.getElementById("hrTabAttBtn"),sb=document.getElementById("hrTabSafetyBtn");
   if(mb)mb.classList.toggle("active",tab==="members");
   if(ab)ab.classList.toggle("active",tab==="attendance");
+  if(sb)sb.classList.toggle("active",tab==="safety");
   document.getElementById("hrMembersView").style.display=tab==="members"?"block":"none";
   document.getElementById("hrAttendanceView").style.display=tab==="attendance"?"block":"none";
-  if(tab==="members")renderHrMembers();else renderHrAttendance();
+  const sv=document.getElementById("hrSafetyView");if(sv)sv.style.display=tab==="safety"?"block":"none";
+  if(tab==="members")renderHrMembers();else if(tab==="safety")renderHseqSafety();else renderHrAttendance();
 }
+
+// ═══════════ HSEQ SAFETY MODULE (v175) — permits, PPE attire checks, walkdown observations ═══════════
+const HSEQ_PERMIT_TYPES=["Hot Work - Brazing","Hot Work - Grinding / Cutting","Working at Height","Confined Space","Electrical","Lifting / Rigging","Other"];
+let _hseqData={permits:{},ppe:{},obs:{},date:null,crews:[]};
+function _hseqEsc(s){return String(s==null?"":s).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
+function _hseqFb(){try{return getFirebaseUrl()||null}catch(e){return null}}
+let _hseqTarget="hrSafetyView";
+function renderHseqSafety(targetId){
+  if(targetId)_hseqTarget=targetId;
+  const cont=document.getElementById(_hseqTarget);if(!cont)return;
+  const date=getGuyanaDate();_hseqData.date=date;
+  cont.innerHTML='<div class="hr-card" style="text-align:center;color:var(--grey);font-size:12px">Loading safety data...</div>';
+  const fb=_hseqFb();
+  if(!fb){cont.innerHTML='<div class="hr-card" style="color:#e74c3c;font-size:12px">Cloud not connected - safety records need a connection.</div>';return}
+  Promise.all([
+    fetch(fb+"/hseq/permits.json").then(r=>r.ok?r.json():null).catch(()=>null),
+    fetch(fb+"/hseq/ppe/"+date+".json").then(r=>r.ok?r.json():null).catch(()=>null),
+    fetch(fb+"/hseq/obs/"+date+".json").then(r=>r.ok?r.json():null).catch(()=>null)
+  ]).then(([permits,ppe,obs])=>{
+    _hseqData.permits=permits||{};_hseqData.ppe=ppe||{};_hseqData.obs=obs||{};
+    _hseqData.crews=Object.keys(PAY_GROUPS).map(g=>PAY_GROUPS[g].label).concat(["Subcontractor / Visitors"]);
+    _hseqRender(cont,date);
+  });
+}
+function _hseqRender(cont,date){
+  const P=_hseqData.permits,ppe=_hseqData.ppe,obs=_hseqData.obs;
+  const openOrToday=Object.entries(P).filter(([id,p])=>p&&(p.status==="open"||p.date===date)).sort((a,b)=>b[0]-a[0]);
+  let h='<div class="hr-card"><h3 style="margin:0 0 8px;font-size:14px;color:var(--navy)">🔥 Permits</h3>';
+  if(!openOrToday.length)h+='<p style="font-size:11px;color:var(--grey);margin:4px 0">No open permits.</p>';
+  openOrToday.forEach(([id,p])=>{
+    h+='<div class="hr-row" style="flex-wrap:wrap"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700">'+_hseqEsc(p.type)+' - '+_hseqEsc(p.area)+'</div>'
+      +'<div style="font-size:10px;color:var(--grey)">'+_hseqEsc(p.holder)+' | '+_hseqEsc(p.date)+' '+_hseqEsc(p.from||"")+'-'+_hseqEsc(p.to||"")+(p.notes?' | '+_hseqEsc(p.notes):'')+'</div></div>'
+      +(p.status==="open"?'<button onclick="hseqClosePermit(\''+id+'\')" style="font-size:10px;padding:5px 10px;background:#e74c3c;color:white;border:none;border-radius:8px;font-weight:700">Close</button>':'<span style="font-size:10px;font-weight:700;color:var(--grey)">CLOSED</span>');
+    h+='</div>';
+  });
+  h+='<p style="font-size:11px;color:var(--grey);margin:8px 0 0;border-top:1px dashed var(--border);padding-top:8px">Permits are not issued in the app. Photograph the signed permit and send it to <b>Paul Bassoo</b> and <b>Akeem Paul</b> in Chat 💬.</p></div>';
+  h+='<div class="hr-card"><h3 style="margin:0 0 8px;font-size:14px;color:var(--navy)">🦺 PPE Check - crews properly attired</h3>';
+  _hseqData.crews.forEach((c,i)=>{
+    const e=ppe[_fbEncKey(c)]||{};
+    h+='<div class="hr-row" style="flex-wrap:wrap;gap:6px"><div style="flex:1;min-width:110px;font-size:12px;font-weight:600">'+_hseqEsc(c)+'</div>'
+      +'<button id="hseqPpeOk_'+i+'" onclick="hseqSavePpe('+i+',true)" style="font-size:10px;padding:5px 10px;border:none;border-radius:8px;font-weight:700;color:white;background:'+(e.ok===true?'#27ae60':'#b8c4bf')+'">Attired OK</button>'
+      +'<button id="hseqPpeNo_'+i+'" onclick="hseqSavePpe('+i+',false)" style="font-size:10px;padding:5px 10px;border:none;border-radius:8px;font-weight:700;color:white;background:'+(e.ok===false?'#e74c3c':'#c9b8b8')+'">Issues</button>'
+      +'<input id="hseqPpeNote_'+i+'" value="'+_hseqEsc(e.notes||"")+'" placeholder="Notes (missing gloves, boots...)" style="flex-basis:100%;padding:6px;border:1px solid #ddd;border-radius:8px;font-size:11px"></div>';
+  });
+  h+='<p style="font-size:10px;color:var(--grey);margin:6px 0 0">Tap a button to save the crew\'s check with the note beside it.</p></div>';
+  h+='<div class="hr-card"><h3 style="margin:0 0 8px;font-size:14px;color:var(--navy)">📝 Walkdown Observations</h3>';
+  const obsList=Object.entries(obs).sort((a,b)=>a[0]-b[0]);
+  if(!obsList.length)h+='<p style="font-size:11px;color:var(--grey);margin:4px 0">Nothing logged today.</p>';
+  obsList.forEach(([id,o])=>{
+    const col=o.severity==="High"?"#e74c3c":(o.severity==="Medium"?"#f39c12":"#27ae60");
+    h+='<div class="hr-row"><span style="font-size:9px;font-weight:800;color:white;background:'+col+';padding:2px 7px;border-radius:8px">'+_hseqEsc(o.severity)+'</span>'
+      +'<div style="flex:1;font-size:11px"><b>'+_hseqEsc(o.area)+':</b> '+_hseqEsc(o.note)+(o.action?' <span style="color:var(--grey)">- Action: '+_hseqEsc(o.action)+'</span>':'')+'</div></div>';
+  });
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px">'
+    +'<input id="hseqOArea" placeholder="Area / level" style="padding:7px;border:1px solid #ddd;border-radius:8px;font-size:11px">'
+    +'<select id="hseqOSev" style="padding:7px;border:1px solid #ddd;border-radius:8px;font-size:11px"><option>Low</option><option>Medium</option><option>High</option></select>'
+    +'<input id="hseqONote" placeholder="Observation" style="grid-column:1/3;padding:7px;border:1px solid #ddd;border-radius:8px;font-size:11px">'
+    +'<input id="hseqOAction" placeholder="Action taken / required" style="grid-column:1/3;padding:7px;border:1px solid #ddd;border-radius:8px;font-size:11px">'
+    +'</div><button onclick="hseqAddObs()" style="width:100%;margin-top:8px;padding:8px;background:linear-gradient(135deg,var(--teal),#0d9488);color:white;border:none;border-radius:8px;font-weight:700;font-size:12px">Log Observation</button></div>';
+  h+='<button onclick="generateHseqDayPDF()" style="width:100%;padding:10px;background:var(--hdr-grad);color:white;border:none;border-radius:10px;font-weight:800;font-size:13px">📄 HSEQ Day Report PDF</button>';
+  if(currentUser&&currentUser.username==="admin"){
+    h+='<div class="hr-card" style="margin-top:12px"><h3 style="margin:0 0 8px;font-size:14px;color:var(--navy)">📆 HSEQ Monthly Update</h3>'
+      +'<div style="display:flex;gap:6px"><input id="hseqMonth" type="month" value="'+String(date).slice(0,7)+'" style="flex:1;padding:7px;border:1px solid #ddd;border-radius:8px;font-size:12px">'
+      +'<button onclick="generateHseqMonthlyPDF()" style="padding:8px 14px;background:linear-gradient(135deg,var(--teal),#0d9488);color:white;border:none;border-radius:8px;font-weight:700;font-size:12px">📄 Build PDF</button></div>'
+      +'<p style="font-size:10px;color:var(--grey);margin:6px 0 0">Month summary of PPE checks, observations and permits - build it and send it to Precilla.</p></div>';
+  }
+  cont.innerHTML=h;
+}
+function generateHseqMonthlyPDF(){
+  if(!_jspdfReady()||!_autotableReady()){requirePdf(generateHseqMonthlyPDF);return}
+  const mEl=document.getElementById("hseqMonth");
+  const month=(mEl&&mEl.value)||getGuyanaDate().slice(0,7);
+  const fb=_hseqFb();if(!fb){showToast("❌ No cloud connection");return}
+  showToast("⏳ Building monthly report...");
+  Promise.all([
+    fetch(fb+"/hseq/ppe.json").then(r=>r.ok?r.json():null).catch(()=>null),
+    fetch(fb+"/hseq/obs.json").then(r=>r.ok?r.json():null).catch(()=>null),
+    fetch(fb+"/hseq/permits.json").then(r=>r.ok?r.json():null).catch(()=>null)
+  ]).then(([ppe,obs,permits])=>{
+    _pdfLoadLogo().then(function(logo){
+    try{
+      const{jsPDF}=window.jspdf;
+      const pdf=new jsPDF("p","mm","a4");const M=14;
+      let y=_pdfHeader(pdf,logo,"HSEQ Monthly Update",month,M);
+      // PPE compliance aggregated per crew
+      const agg={};
+      Object.entries(ppe||{}).forEach(([d,day])=>{
+        if(!d.startsWith(month)||!day)return;
+        Object.values(day).forEach(e=>{
+          if(!e||!e.crew)return;
+          const a=agg[e.crew]=agg[e.crew]||{ok:0,issues:0,notes:[]};
+          if(e.ok===true)a.ok++;else{a.issues++;if(e.notes)a.notes.push(d.slice(8)+": "+e.notes)}
+        });
+      });
+      pdf.setFontSize(11);pdf.setFont(undefined,"bold");pdf.text("PPE checks - crews properly attired",M,y+=8);
+      const pRows=Object.entries(agg).map(([c,a])=>[c,String(a.ok),String(a.issues),a.notes.slice(0,4).join("; ")]);
+      pdf.autoTable({startY:y+2,margin:{left:M,right:M},styles:{fontSize:8},headStyles:{fillColor:[31,78,121]},
+        head:[["Crew","Days OK","Days with issues","Issue notes"]],body:pRows.length?pRows:[["No checks recorded this month","","",""]]});
+      y=pdf.lastAutoTable.finalY;
+      // Observations for the month
+      const oRows=[];
+      Object.entries(obs||{}).forEach(([d,day])=>{
+        if(!d.startsWith(month)||!day)return;
+        Object.values(day).forEach(o=>{if(o)oRows.push([d.slice(8),o.severity||"",o.area||"",o.note||"",o.action||""])});
+      });
+      pdf.setFontSize(11);pdf.setFont(undefined,"bold");pdf.text("Walkdown observations",M,y+=9);
+      pdf.autoTable({startY:y+2,margin:{left:M,right:M},styles:{fontSize:8},headStyles:{fillColor:[31,78,121]},
+        head:[["Day","Severity","Area","Observation","Action"]],body:oRows.length?oRows:[["None recorded","","","",""]]});
+      y=pdf.lastAutoTable.finalY;
+      const permRows=Object.values(permits||{}).filter(p=>p&&String(p.date||"").startsWith(month)).map(p=>[p.date,p.type,p.area,p.holder,(p.status||"").toUpperCase()]);
+      pdf.setFontSize(11);pdf.setFont(undefined,"bold");pdf.text("Permits",M,y+=9);
+      pdf.autoTable({startY:y+2,margin:{left:M,right:M},styles:{fontSize:8},headStyles:{fillColor:[31,78,121]},
+        head:[["Date","Type","Area","Holder","Status"]],body:permRows.length?permRows:[["Permits handled on paper - see chat records","","","",""]]});
+      y=pdf.lastAutoTable.finalY+14;
+      pdf.setFontSize(9);pdf.setFont(undefined,"normal");
+      pdf.text("Prepared by: "+(currentUser?currentUser.name:"")+"    For: Precilla Sobryan (HSEQ)    Signature: ______________",M,y);
+      _pdfFooter(pdf);
+      showPDFPreview(pdf,"HSEQ_Monthly_Update_"+month+".pdf");
+    }catch(e){showToast("❌ PDF failed: "+e.message)}
+    });
+  });
+}
+function _hseqPut(path,obj,then){
+  const fb=_hseqFb();if(!fb){showToast("❌ No cloud connection");return}
+  fetch(fb+path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(obj)})
+    .then(r=>{if(r.ok){showToast("✅ Saved");if(then)then()}else showToast("❌ Save failed ("+r.status+")")})
+    .catch(()=>showToast("❌ Save failed - check signal"));
+}
+function hseqClosePermit(id){_hseqPut("/hseq/permits/"+id+"/status.json","closed",function(){renderHseqSafety();_hseqPublishWeekly()})}
+// v177: publish a no-names weekly safety aggregate to the public /reports node (same
+// pattern as the v167 productivity feed) so the Monday office report can read it.
+function _hseqPublishWeekly(){
+  const fb=_hseqFb();if(!fb)return;
+  const today=getGuyanaDate();
+  let wk=null;try{wk=getISOWeek(today)}catch(e){}
+  if(!wk)return;
+  const d0=new Date(today+"T12:00:00");
+  const dow=(d0.getDay()+6)%7; // 0 = Monday
+  const dates=[];
+  for(let i=0;i<6;i++){const d=new Date(d0);d.setDate(d0.getDate()-dow+i);dates.push(d.toISOString().slice(0,10));}
+  Promise.all([
+    Promise.all(dates.map(dt=>fetch(fb+"/hseq/ppe/"+dt+".json").then(r=>r.ok?r.json():null).catch(()=>null))),
+    Promise.all(dates.map(dt=>fetch(fb+"/hseq/obs/"+dt+".json").then(r=>r.ok?r.json():null).catch(()=>null))),
+    fetch(fb+"/hseq/permits.json").then(r=>r.ok?r.json():null).catch(()=>null)
+  ]).then(([ppeDays,obsDays,permits])=>{
+    const crews={},days={},obs={Low:0,Medium:0,High:0};
+    ppeDays.forEach((day,i)=>{
+      if(!day)return;const dd={checks:0,ok:0,issues:0};
+      Object.values(day).forEach(e=>{
+        if(!e)return;dd.checks++;
+        const k=_fbEncKey(e.crew||"unknown");const c=(crews[k]=crews[k]||{ok:0,issues:0});
+        if(e.ok===true){dd.ok++;c.ok++}else{dd.issues++;c.issues++}
+      });
+      if(dd.checks)days[dates[i]]=dd;
+    });
+    obsDays.forEach(day=>{if(!day)return;Object.values(day).forEach(o=>{if(o&&obs[o.severity]!=null)obs[o.severity]++})});
+    const permitsOpen=Object.values(permits||{}).filter(p=>p&&p.status==="open").length;
+    fetch(fb+"/reports/safety/"+wk+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({week:wk,updated:Date.now(),days:days,crews:crews,obs:obs,permitsOpen:permitsOpen})}).catch(()=>{});
+  });
+}
+function hseqSavePpe(i,ok){
+  const crew=_hseqData.crews[i];const note=document.getElementById("hseqPpeNote_"+i).value.trim();
+  _hseqPut("/hseq/ppe/"+_hseqData.date+"/"+_fbEncKey(crew)+".json",{crew:crew,ok:ok,notes:note,by:currentUser?currentUser.name:"",time:getGuyanaDateTime()},function(){renderHseqSafety();_hseqPublishWeekly()});
+}
+function hseqAddObs(){
+  const area=document.getElementById("hseqOArea").value.trim(),note=document.getElementById("hseqONote").value.trim();
+  if(!area||!note){showToast("Area and observation required");return}
+  _hseqPut("/hseq/obs/"+_hseqData.date+"/"+Date.now()+".json",{area:area,severity:document.getElementById("hseqOSev").value,note:note,action:document.getElementById("hseqOAction").value.trim(),by:currentUser?currentUser.name:"",time:getGuyanaDateTime()},function(){renderHseqSafety();_hseqPublishWeekly()});
+}
+function generateHseqDayPDF(){
+  if(!_jspdfReady()||!_autotableReady()){requirePdf(generateHseqDayPDF);return}
+  const date=_hseqData.date||getGuyanaDate();
+  _pdfLoadLogo().then(function(logo){
+  try{
+    const{jsPDF}=window.jspdf;
+    const pdf=new jsPDF("p","mm","a4");const M=14;
+    let y=_pdfHeader(pdf,logo,"HSEQ Daily Site Report",date,M);
+    const P=Object.values(_hseqData.permits||{}).filter(p=>p&&(p.date===date||p.status==="open"));
+    pdf.setFontSize(11);pdf.setFont(undefined,"bold");pdf.text("Permits",M,y+=8);
+    pdf.autoTable({startY:y+2,margin:{left:M,right:M},styles:{fontSize:8},headStyles:{fillColor:[31,78,121]},
+      head:[["Type","Area","Holder","Valid","Status"]],
+      body:P.length?P.map(p=>[p.type,p.area,p.holder,(p.from||"")+" - "+(p.to||""),(p.status||"").toUpperCase()]):[["No permits","","","",""]]});
+    y=pdf.lastAutoTable.finalY;
+    pdf.setFontSize(11);pdf.setFont(undefined,"bold");pdf.text("PPE Check - crews properly attired",M,y+=9);
+    const ppeRows=Object.values(_hseqData.ppe||{}).map(e=>[e.crew,e.ok===true?"OK":"ISSUES",e.notes||"",e.by||""]);
+    pdf.autoTable({startY:y+2,margin:{left:M,right:M},styles:{fontSize:8},headStyles:{fillColor:[31,78,121]},
+      head:[["Crew","Attired","Notes","Checked by"]],body:ppeRows.length?ppeRows:[["Not checked","","",""]]});
+    y=pdf.lastAutoTable.finalY;
+    pdf.setFontSize(11);pdf.setFont(undefined,"bold");pdf.text("Walkdown Observations",M,y+=9);
+    const oRows=Object.values(_hseqData.obs||{}).map(o=>[o.severity,o.area,o.note,o.action||""]);
+    pdf.autoTable({startY:y+2,margin:{left:M,right:M},styles:{fontSize:8},headStyles:{fillColor:[31,78,121]},
+      head:[["Severity","Area","Observation","Action"]],body:oRows.length?oRows:[["None","","",""]]});
+    y=pdf.lastAutoTable.finalY+14;
+    pdf.setFontSize(9);pdf.setFont(undefined,"normal");
+    pdf.text("HSEQ Officer: "+(currentUser?currentUser.name:"")+"    Signature: ______________________",M,y);
+    _pdfFooter(pdf);
+    showPDFPreview(pdf,"HSEQ_Day_Report_"+date+".pdf");
+  }catch(e){showToast("❌ PDF failed: "+e.message)}
+  });
+}
+// ═══════════ IN-APP CHAT (v176) — site group + direct messages, text and photos ═══════════
+let _chatConvo=null,_chatPoll=null,_chatPhoto=null,_chatDotPoll=null;
+function _chatKey(a,b){return [a,b].sort().join("__")}
+function _chatSeen(){try{return JSON.parse(localStorage.getItem("elg_chat_seen")||"{}")}catch(e){return{}}}
+function _chatMarkSeen(id,ts){const s=_chatSeen();s[id]=ts;try{localStorage.setItem("elg_chat_seen",JSON.stringify(s))}catch(e){}}
+function _chatPathFor(c){return c==="site"?"/chat/site":"/chat/dm/"+_chatKey(currentUser.username,c)}
+function openChat(){
+  if(!currentUser)return;
+  document.getElementById("chatView").style.display="flex";
+  const dot=document.getElementById("chatFabDot");if(dot)dot.style.display="none";
+  chatShowList();
+}
+function chatBack(){
+  if(_chatConvo){if(_chatPoll){clearInterval(_chatPoll);_chatPoll=null}_chatConvo=null;chatShowList();}
+  else{document.getElementById("chatView").style.display="none";if(_chatPoll){clearInterval(_chatPoll);_chatPoll=null}}
+}
+function chatShowList(){
+  _chatConvo=null;if(_chatPoll){clearInterval(_chatPoll);_chatPoll=null}
+  document.getElementById("chatTitle").textContent="Chat";
+  document.getElementById("chatSub").textContent=currentUser.name;
+  document.getElementById("chatMsgs").style.display="none";
+  document.getElementById("chatInputRow").style.display="none";
+  const list=document.getElementById("chatList");list.style.display="block";
+  const users=getUsers();
+  let h='<div class="hr-card" onclick="chatOpenConvo(\'site\')" style="cursor:pointer"><b style="font-size:14px">🏗️ Site — everyone</b><div style="font-size:10px;color:var(--grey)">Group chat for the whole project</div></div>';
+  h+='<p style="font-size:10px;color:var(--grey);margin:10px 0 4px;font-weight:700">DIRECT MESSAGES</p><div class="hr-card">';
+  Object.entries(users).filter(([un])=>un!==currentUser.username).sort((a,b)=>String(a[1].name).localeCompare(String(b[1].name))).forEach(([un,u])=>{
+    h+='<div class="hr-row" onclick="chatOpenConvo(\''+un+'\')" style="cursor:pointer"><div style="flex:1;font-size:13px;font-weight:600">'+_hseqEsc(u.name)+'</div><span style="font-size:10px;color:var(--grey)">'+_hseqEsc(u.role||"")+'</span></div>';
+  });
+  h+='</div><p style="font-size:9.5px;color:var(--grey);margin-top:8px">Messages arrive while the app is open (checked every few seconds in a chat, every minute elsewhere). No signal, no delivery — this backs up the radio and WhatsApp, it does not replace them for emergencies.</p>';
+  list.innerHTML=h;
+}
+function chatOpenConvo(c){
+  _chatConvo=c;_chatPhoto=null;
+  const users=getUsers();
+  document.getElementById("chatTitle").textContent=c==="site"?"🏗️ Site — everyone":((users[c]&&users[c].name)||c);
+  document.getElementById("chatSub").textContent=c==="site"?"Everyone on the project sees this":"Private conversation";
+  document.getElementById("chatList").style.display="none";
+  document.getElementById("chatMsgs").style.display="block";
+  document.getElementById("chatInputRow").style.display="flex";
+  chatLoad(true);
+  _chatPoll=setInterval(()=>chatLoad(false),8000);
+}
+function chatLoad(scroll){
+  const fb=getFirebaseUrl();if(!fb||!_chatConvo)return;
+  const convo=_chatConvo;
+  fetch(fb+_chatPathFor(convo)+".json").then(r=>r.ok?r.json():null).then(data=>{
+    if(convo!==_chatConvo)return;
+    const box=document.getElementById("chatMsgs");
+    const msgs=Object.entries(data||{}).sort((a,b)=>a[0].localeCompare(b[0]));
+    let h="",lastTs=0;
+    msgs.forEach(([id,m])=>{
+      if(!m)return;const mine=m.u===(currentUser&&currentUser.username);lastTs=Math.max(lastTs,m.ts||0);
+      h+='<div style="display:flex;'+(mine?'justify-content:flex-end;':'')+'margin-bottom:6px"><div style="max-width:78%;padding:7px 10px;border-radius:12px;background:'+(mine?'var(--navy)':'white')+';color:'+(mine?'white':'#222')+';box-shadow:var(--shadow)">'
+        +((!mine&&convo==="site")?'<div style="font-size:9px;font-weight:800;color:var(--navy)">'+_hseqEsc(m.n)+'</div>':'')
+        +(m.p?'<img src="'+m.p+'" style="max-width:100%;border-radius:8px;margin:3px 0" onclick="window.open(this.src)">':'')
+        +(m.t?'<div style="font-size:12.5px;white-space:pre-wrap;word-break:break-word">'+_hseqEsc(m.t)+'</div>':'')
+        +'<div style="font-size:8.5px;opacity:.6;text-align:right">'+new Date(m.ts||0).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})+'</div></div></div>';
+    });
+    box.innerHTML=h||'<p style="text-align:center;color:var(--grey);font-size:11px;margin-top:20px">No messages yet.</p>';
+    if(scroll||box.scrollTop>box.scrollHeight-box.clientHeight-220)box.scrollTop=box.scrollHeight;
+    if(lastTs)_chatMarkSeen(convo==="site"?"site":_chatKey(currentUser.username,convo),lastTs);
+  }).catch(()=>{});
+}
+function chatAttachPhoto(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  _compressProfilePhoto(f,url=>{_chatPhoto=url;showToast("📷 Photo attached — press send")});
+  inp.value="";
+}
+function chatSend(){
+  const ta=document.getElementById("chatText");const txt=ta.value.trim();
+  if(!txt&&!_chatPhoto)return;
+  const fb=getFirebaseUrl();if(!fb){showToast("❌ No cloud connection");return}
+  const ts=Date.now();const id=ts+"_"+currentUser.username;
+  const msg={u:currentUser.username,n:currentUser.name,t:txt,ts:ts};if(_chatPhoto)msg.p=_chatPhoto;
+  fetch(fb+_chatPathFor(_chatConvo)+"/"+id+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(msg)})
+    .then(r=>{if(r.ok){ta.value="";_chatPhoto=null;chatLoad(true)}else showToast("❌ Send failed ("+r.status+")")})
+    .catch(()=>showToast("❌ Send failed — check signal"));
+}
+function _chatCheckUnread(){
+  if(!currentUser)return;const fb=getFirebaseUrl();if(!fb)return;
+  const seen=_chatSeen();let unread=false;
+  const lastKeyTs=ks=>{const ids=Object.keys(ks||{}).sort();return ids.length?parseInt(ids[ids.length-1])||0:0};
+  fetch(fb+"/chat/site.json?shallow=true").then(r=>r.ok?r.json():null).then(ks=>{
+    if(lastKeyTs(ks)>(seen["site"]||0))unread=true;
+    return fetch(fb+"/chat/dm.json?shallow=true").then(r=>r.ok?r.json():null);
+  }).then(pairs=>{
+    const mine=Object.keys(pairs||{}).filter(k=>k.split("__").includes(currentUser.username)).slice(0,15);
+    return Promise.all(mine.map(k=>fetch(fb+"/chat/dm/"+k+".json?shallow=true").then(r=>r.ok?r.json():null).then(ks=>({k:k,ts:lastKeyTs(ks)}))));
+  }).then(res=>{
+    (res||[]).forEach(x=>{if(x.ts>(seen[x.k]||0))unread=true});
+    const dot=document.getElementById("chatFabDot");
+    if(dot)dot.style.display=unread?"block":"none";
+  }).catch(()=>{});
+}
+
 function renderHrMembers(){
   const cont=document.getElementById("hrMembersView");if(!cont)return;
   const users=getUsers();
@@ -12319,7 +12658,7 @@ function openWorkerProfiles(){
 }
 function closeWorkerProfiles(){
   const v=document.getElementById("workerProfilesView");if(v)v.classList.add("hidden");
-  if(currentUser&&currentUser.role==="HR"){const h=document.getElementById("hrView");if(h){h.classList.remove("hidden");}return;}
+  if(currentUser&&(currentUser.role==="HR"||currentUser.role==="HSEQ")){const h=document.getElementById("hrView");if(h){h.classList.remove("hidden");}return;}
   const bn=document.getElementById("bottomNav");if(bn)bn.classList.remove("hidden");
   const dv=document.getElementById("dashView");if(dv)dv.classList.remove("hidden");
 }
@@ -12952,6 +13291,10 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v177 — Weekly safety feed. After every PPE check, observation or permit close, _hseqPublishWeekly() recomputes the current ISO week from /hseq (Mon-Sat dates) and PUTs a no-names aggregate to /reports/safety/<yyyy-Www>: per-day checks/ok/issues, per-crew ok/issues (_fbEncKey-encoded pay-group labels), observation counts by severity, open-permit count. /reports is public-read, so the Monday scheduled report reads it without login — same pattern as the v167 productivity feed. No raw notes or worker names leave the auth-locked /hseq nodes.
+// Build: v176 — Chat + HSEQ revisions per Paul. (1) IN-APP CHAT for every logged-in user: floating 💬 button on all views; Site group channel (everyone) + private DMs; text + photos (camera/gallery, compressed via _compressProfilePhoto); stored /chat/site/<ts_user> and /chat/dm/<userA__userB>/<ts_user>, auth-only rules; 8s poll inside an open chat, 60s unread-dot poll (shallow reads); honest limitation: delivery only while the app is open — no push. Precilla can DM any worker for a full-gear photo; permits are photographed and sent to Paul + Akeem in chat. (2) Permit ISSUE form removed from the Safety tab (Precilla does not issue in the app); open-permit list + close kept for any legacy records; note directs permits to chat. (3) HSEQ Monthly Update PDF — admin-only card on the Safety tab (month picker): PPE compliance per crew (days OK / days with issues + notes), month's observations, permits; sign-off "For: Precilla Sobryan". (4) Admin sees her hub: new admin-only Safety sub-tab in My Hub rendering the same HSEQ view (renderHseqSafety now takes a target container); swipe list + switchHubTab guard updated. Watch item: chat photos are base64 in RTDB (~60-120KB each) — fine for months, revisit if heavy use.
+// Build: v175 — HSEQ Safety module (HSEQ is a separate person from HR; her job = permits, safety, crews properly attired). New Safety tab in the HSEQ view (role-gated, guard in switchHrTab): (1) PERMITS — issue (type incl. Hot Work Brazing/Grinding, Height, Confined Space, Electrical, Lifting; area, holder, valid times, conditions) and close; open permits listed; stored /hseq/permits/<id>. (2) PPE CHECK — per crew (pay-group labels + Subcontractor/Visitors): Attired OK / Issues + note, stored /hseq/ppe/<date>/<encKey(crew)>. (3) WALKDOWN OBSERVATIONS — area, Low/Med/High severity, note, action, stored /hseq/obs/<date>/<id>. All writes single-entry PUTs with r.ok checks and toasts. (4) HSEQ Day Report PDF — letterhead, permits/PPE/observations tables, sign-off line, via the shared _pdfHeader/_pdfFooter/showPDFPreview path. Nodes live under the default auth!=null rules; nothing public.
+// Build: v174 — Access changes. (1) Akeem (username akeem) gets My Hub in the bottom nav: Overview, Attend, Analysis, Reports. Pay and Personnel stay admin-only — sub-tab buttons hidden for him, the swipe order skips them, and switchHubTab bounces any stored/forced attempt back to Overview, so he can see the attendance sheet but cannot add, disable or remove personnel (that stays with admin). (2) New HSEQ role + base login precilla / precilla2026 (Precilla Sobryan) routed to the read-only Team Members + Attendance view (same screens as HR, title reads "HSEQ — Site Attendance"): live daily register incl. pending self sign-ins, weekly grid, day/weekly PDFs, team list. No pay, no personnel, no work plan. HSEQ accounts are excluded from worker rosters and registers everywhere HR accounts are, and HSEQ is an option in both add-user role selects for future accounts.
 // Build: v173 — Removed workers stay out of the register (without losing anyone's pay). The remove/disable tombstone was applied to the roster and lists but NOT to the raw attendance register, so removed people lingered as stray rows on current days. Now _attRemovedSet() (same exclusion the roster uses: removed base workers + disabled logins + HR accounts) drives two guards: (1) _attMarkWorker refuses to write a removed name, so a lingering login/confirm can't add them to new days; (2) _scrubRemovedAtt at the load boundary (cloudLoadAttendance + loadAttendance) drops a removed person's ABSENT rows only — a day they were actually marked PRESENT is kept, because that is real worked time that must still be paid. So removal sticks going forward while the history of what someone worked before removal is preserved. Raw cloud data untouched; absent rows clear from a day on its next save.
 // Build: v172 — Duplicate-identity fix. WORKER_ALIASES map + _canonWorker() folds an alias sign-in name into one roster name at the register write choke-point (_attMarkWorker): a self sign-in under "galan" now lands as "Alejandro Galan", and any stray alias row already on a day is merged (earliest in / latest out / present OR) and removed, so a person can never appear twice in the register or the productivity totals. Add future aliases in WORKER_ALIASES. Also: login + Settings version tags now read from APP_VERSION on load (were stuck at v167 while the app was v171 — fixed the drift so the version diagnostic is trustworthy). Historical Galan double-rows (15 days) were merged in the database separately; backup at /backups/galanMerge_20260720.
 // Build: v171 — Personnel fixes. (1) REMOVED USERS STAY REMOVED: the hub Personnel list now respects remove-tombstones (base users live in code, so removed ones kept rendering forever — the "Yosvani reappears" bug); Remove now works for base AND custom users and also tombstones the person's NAME into the removed-workers list, taking them off the worker roster, attendance defaults, weekly grids and pay lists (past records kept); Settings-side removeUser does the same; getPayGroupWorkers filters to active roster names so Finance PDF drops removed people; hub Disable/Enable now cloud-sync (never did before). (2) Cleaner list: status by left border color + single role chip, Disable/Enable/Remove hidden until the row is tapped.
