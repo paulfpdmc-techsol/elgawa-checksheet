@@ -1157,7 +1157,9 @@ function getWorkerRoster(){
     ...getCustomWorkers().filter(n=>!removedSet.has(n.toLowerCase()))
   ];
   const allUsers=getUsers();
-  const userFullNames=Object.values(allUsers).filter(u=>u.name).map(u=>u.name);
+  // v178: fold known aliases (e.g. login "galan" -> "Alejandro Galan") so a person
+  // with a messy login name doesn't show twice next to their real roster name.
+  const userFullNames=Object.values(allUsers).filter(u=>u.name).map(u=>_canonWorker(u.name));
   userFullNames.forEach(name=>{
     if(removedSet.has(name.toLowerCase()))return;
     if(!roster.some(r=>r.toLowerCase()===name.toLowerCase()))roster.push(name);
@@ -1168,7 +1170,7 @@ function getAllPersonnel(){
   // Everyone: workers + team leads/supervisors/engineers (for tool assignment etc.)
   const workers=getWorkerRoster();
   const allUsers=getUsers();
-  const userFullNames=Object.values(allUsers).filter(u=>u.name).map(u=>u.name);
+  const userFullNames=Object.values(allUsers).filter(u=>u.name).map(u=>_canonWorker(u.name));
   const combined=[...new Set([...workers,...userFullNames])];
   return combined.sort((a,b)=>a.localeCompare(b));
 }
@@ -10932,17 +10934,33 @@ function renderHubPersonnel(){
     // tapped. Two always-on buttons per row made the list unreadable on phones.
     const roleChip=`<span style="font-size:9px;background:${isDisabled?"#95a5a6":"var(--teal)"};color:white;padding:1px 7px;border-radius:8px;margin-left:6px">${u.role||"—"}</span>`;
     const disChip=isDisabled?`<span style="font-size:9px;background:#e74c3c;color:white;padding:1px 7px;border-radius:8px;margin-left:4px">Disabled</span>`:"";
-    html+=`<div onclick="hubToggleUserRow('${uname}')" style="padding:8px 12px;margin-bottom:4px;background:${isDisabled?"#fdf3f3":"white"};border-radius:10px;border:1px solid #eceff1;border-left:4px solid ${isDisabled?"#e74c3c":"#27ae60"};cursor:pointer">
-      <div style="display:flex;align-items:center;justify-content:space-between">
+    // v178: role options for the inline editor, current role preselected
+    const roleOpts=["Worker","Lead Worker","Team Lead","Supervisor","Engineer","HR","HSEQ"].map(r=>`<option value="${r}"${(u.role===r)?" selected":""}>${r}</option>`).join("");
+    const eNm=String(u.name||"").replace(/"/g,"&quot;");
+    html+=`<div style="padding:8px 12px;margin-bottom:4px;background:${isDisabled?"#fdf3f3":"white"};border-radius:10px;border:1px solid #eceff1;border-left:4px solid ${isDisabled?"#e74c3c":"#27ae60"}">
+      <div onclick="hubToggleUserRow('${uname}')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:13px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name}${roleChip}${disChip}</div>
           <div style="font-size:10px;color:var(--grey);margin-top:1px">@${uname} &middot; ${isBase?"Built-in":"Custom"}${teamBadgeHtml(uname,u.name)}</div>
         </div>
         <span style="color:#b0bec5;font-size:15px;flex-shrink:0;margin-left:6px">&#8942;</span>
       </div>
-      <div id="hubUAct_${uname}" style="display:none;gap:6px;margin-top:8px" onclick="event.stopPropagation()">
+      <div id="hubUAct_${uname}" style="display:none;gap:6px;margin-top:8px">
+        <button onclick="hubEditUser('${uname}')" style="flex:1;font-size:11px;padding:7px 0;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700">Edit</button>
         ${isDisabled?`<button onclick="hubEnableUser('${uname}')" style="flex:1;font-size:11px;padding:7px 0;background:#27ae60;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700">Enable</button>`:`<button onclick="hubDisableUser('${uname}')" style="flex:1;font-size:11px;padding:7px 0;background:#f39c12;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700">Disable</button>`}
         <button onclick="hubRemoveUser('${uname}')" style="flex:1;font-size:11px;padding:7px 0;background:#e74c3c;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700">Remove</button>
+      </div>
+      <div id="hubUEdit_${uname}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px dashed #dfe6e9">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <input id="hubUEName_${uname}" value="${eNm}" placeholder="Full name" style="padding:7px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+          <select id="hubUERole_${uname}" style="padding:7px;border:1px solid #ddd;border-radius:8px;font-size:12px">${roleOpts}</select>
+          <input id="hubUEPass_${uname}" placeholder="New password (blank = keep)" style="grid-column:1/3;padding:7px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+        </div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button onclick="hubSaveUserEdit('${uname}')" style="flex:1;font-size:11px;padding:7px 0;background:linear-gradient(135deg,var(--teal),#0d9488);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700">Save changes</button>
+          <button onclick="document.getElementById('hubUEdit_${uname}').style.display='none'" style="flex:1;font-size:11px;padding:7px 0;background:#95a5a6;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700">Cancel</button>
+        </div>
+        <p style="font-size:9px;color:var(--grey);margin:6px 0 0">The name you set here is the one stored on the worker roster, attendance and pay - fixing it here fixes it everywhere.</p>
       </div>
     </div>`;
   });
@@ -11032,7 +11050,46 @@ function hubToggleUserRow(uname){
   const act=document.getElementById("hubUAct_"+uname);
   if(!act)return;
   document.querySelectorAll("[id^='hubUAct_']").forEach(p=>{if(p!==act)p.style.display="none"});
+  document.querySelectorAll("[id^='hubUEdit_']").forEach(p=>{p.style.display="none"});
   act.style.display=act.style.display==="none"?"flex":"none";
+}
+// v178: admin edits a login user's name, role and password inline. The name is the
+// single source of truth — a worker with a login is stored under this name across
+// the roster, attendance and pay, so fixing "galan" -> "Alejandro Galan" here
+// collapses the duplicate. Edits write to the custom-users overlay (works for base
+// and custom logins alike) and migrate any stale roster copy of the old name.
+function hubEditUser(uname){
+  const p=document.getElementById("hubUEdit_"+uname);if(!p)return;
+  document.querySelectorAll("[id^='hubUEdit_']").forEach(x=>{if(x!==p)x.style.display="none"});
+  p.style.display=p.style.display==="none"?"block":"none";
+}
+function hubSaveUserEdit(uname){
+  const nmEl=document.getElementById("hubUEName_"+uname);
+  const roleEl=document.getElementById("hubUERole_"+uname);
+  const passEl=document.getElementById("hubUEPass_"+uname);
+  if(!nmEl||!roleEl)return;
+  const nm=nmEl.value.trim();const role=roleEl.value;const pass=passEl.value.trim();
+  if(!nm){showToast("Name required");return}
+  const base=({...BASE_USERS,...getCustomUsers()})[uname]||{};
+  const oldName=base.name||"";
+  // Block a rename that collides with a DIFFERENT existing login's name
+  const clash=Object.entries(getUsers()).some(([k,u])=>k!==uname&&u.name&&u.name.toLowerCase()===nm.toLowerCase());
+  if(clash){showToast("Another login already uses that name");return}
+  const cu=getCustomUsers();
+  cu[uname]={pass:pass||base.pass||(uname+"2026"),name:nm,role:role,teams:base.teams||"all"};
+  saveCustomUsers(cu);
+  if(oldName&&oldName.toLowerCase()!==nm.toLowerCase()){
+    // Drop the old (messy) name from custom workers + un-tombstone the new name
+    saveCustomWorkers(getCustomWorkers().filter(n=>n.toLowerCase()!==oldName.toLowerCase()));
+    saveRemovedWorkers(getRemovedWorkers().filter(n=>n.toLowerCase()!==nm.toLowerCase()));
+    let rb=[];try{rb=JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]")}catch(e){}
+    rb=rb.filter(n=>n.toLowerCase()!==nm.toLowerCase());
+    try{localStorage.setItem("elg_base_workers_removed",JSON.stringify(rb))}catch(e){}
+  }
+  USERS=getUsers();
+  renderHubPersonnel();
+  if(typeof cloudSaveUsers==="function")cloudSaveUsers();
+  showToast(nm+" updated");
 }
 function hubDisableUser(uname){
   showModal("Disable User","Disable "+uname+"? They won't be able to log in and drop off attendance lists, but their records are kept.",()=>{
@@ -11559,7 +11616,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v177";
+const APP_VERSION="v178";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -13291,6 +13348,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v178 — Login-user editing + duplicate-identity fix (Paul: "galan" and "Alejandro Galan" are one person; couldn't edit in the user list). (1) EDIT on each Login User row (admin only, in the tap-to-open action panel): change full name, role and password inline, Save writes to the custom-users overlay so it works for base AND custom logins. The name set here is the single source of truth — getWorkerRoster and getAllPersonnel merge login names, so fixing the name here fixes the roster, attendance and pay in one place; hubSaveUserEdit also drops the old name from custom workers and un-tombstones the new one, and blocks a rename that collides with another login's name. (2) getWorkerRoster/getAllPersonnel now fold known aliases via _canonWorker, so "galan" collapses onto "Alejandro Galan" immediately even before the name is edited (add more pairs in WORKER_ALIASES). Fix for good: open the alejandro login, Edit, set the name to Alejandro Galan.
 // Build: v177 — Weekly safety feed. After every PPE check, observation or permit close, _hseqPublishWeekly() recomputes the current ISO week from /hseq (Mon-Sat dates) and PUTs a no-names aggregate to /reports/safety/<yyyy-Www>: per-day checks/ok/issues, per-crew ok/issues (_fbEncKey-encoded pay-group labels), observation counts by severity, open-permit count. /reports is public-read, so the Monday scheduled report reads it without login — same pattern as the v167 productivity feed. No raw notes or worker names leave the auth-locked /hseq nodes.
 // Build: v176 — Chat + HSEQ revisions per Paul. (1) IN-APP CHAT for every logged-in user: floating 💬 button on all views; Site group channel (everyone) + private DMs; text + photos (camera/gallery, compressed via _compressProfilePhoto); stored /chat/site/<ts_user> and /chat/dm/<userA__userB>/<ts_user>, auth-only rules; 8s poll inside an open chat, 60s unread-dot poll (shallow reads); honest limitation: delivery only while the app is open — no push. Precilla can DM any worker for a full-gear photo; permits are photographed and sent to Paul + Akeem in chat. (2) Permit ISSUE form removed from the Safety tab (Precilla does not issue in the app); open-permit list + close kept for any legacy records; note directs permits to chat. (3) HSEQ Monthly Update PDF — admin-only card on the Safety tab (month picker): PPE compliance per crew (days OK / days with issues + notes), month's observations, permits; sign-off "For: Precilla Sobryan". (4) Admin sees her hub: new admin-only Safety sub-tab in My Hub rendering the same HSEQ view (renderHseqSafety now takes a target container); swipe list + switchHubTab guard updated. Watch item: chat photos are base64 in RTDB (~60-120KB each) — fine for months, revisit if heavy use.
 // Build: v175 — HSEQ Safety module (HSEQ is a separate person from HR; her job = permits, safety, crews properly attired). New Safety tab in the HSEQ view (role-gated, guard in switchHrTab): (1) PERMITS — issue (type incl. Hot Work Brazing/Grinding, Height, Confined Space, Electrical, Lifting; area, holder, valid times, conditions) and close; open permits listed; stored /hseq/permits/<id>. (2) PPE CHECK — per crew (pay-group labels + Subcontractor/Visitors): Attired OK / Issues + note, stored /hseq/ppe/<date>/<encKey(crew)>. (3) WALKDOWN OBSERVATIONS — area, Low/Med/High severity, note, action, stored /hseq/obs/<date>/<id>. All writes single-entry PUTs with r.ok checks and toasts. (4) HSEQ Day Report PDF — letterhead, permits/PPE/observations tables, sign-off line, via the shared _pdfHeader/_pdfFooter/showPDFPreview path. Nodes live under the default auth!=null rules; nothing public.
