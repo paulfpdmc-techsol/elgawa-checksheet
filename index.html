@@ -2353,7 +2353,32 @@ function forceRefresh(){
   }catch(e){done()}
 }
 
+// v189: HR, HSEQ and Worker have their own dedicated screens and their nav
+// buttons are hidden — so if ANY code path pushes them to the technical dashboard
+// (back button, a stray switchTab, a restored tab) they get stranded with no way
+// back. These two helpers re-assert the right screen for the role instead.
+function _dedicatedRole(){
+  const r=currentUser&&currentUser.role;
+  return (r==="HR"||r==="HSEQ"||r==="Worker")?r:null;
+}
+function _routeRoleHome(){
+  const r=_dedicatedRole();if(!r)return false;
+  ["dashView","formView","settingsView","reportView","tabForms","tabReports","tabHistory","hubView","hubSubTabsWrap","tabAttendance","workerProfilesView","myProfileView","workPlanView"].forEach(function(id){
+    const el=document.getElementById(id);if(el)el.classList.add("hidden");
+  });
+  const bn=document.getElementById("bottomNav");if(bn)bn.classList.add("hidden");
+  if(r==="Worker"){
+    const w=document.getElementById("workerSignInView");
+    if(w){w.classList.remove("hidden");try{renderWorkerSignIn()}catch(e){}}
+  }else{
+    const h=document.getElementById("hrView");
+    if(h){h.classList.remove("hidden");try{renderHrView()}catch(e){}}
+  }
+  try{window.scrollTo(0,0)}catch(e){}
+  return true;
+}
 function switchTab(tab,btn){
+  if(_routeRoleHome())return; // dedicated-view roles never enter the technical tabs
   // Update bottom nav active state
   document.querySelectorAll(".bottom-nav .bnav-item").forEach(b=>b.classList.remove("active"));
   const navMap={forms:"navBtnForms",reports:"navBtnReports",history:"navBtnHistory",hub:"navBtnHub"};
@@ -2398,6 +2423,16 @@ window.addEventListener("popstate",function(e){
   // If a modal is open, close it
   const modal=document.querySelector(".modal-overlay");
   if(modal){modal.remove();history.pushState({tab:"modal"},"",location.pathname);return}
+  // v189: HR / HSEQ / Worker — back button returns them to THEIR screen (and keeps
+  // them in the app) instead of dumping them on the technical dashboard.
+  if(_dedicatedRole()){
+    const wp=document.getElementById("workerProfilesView"),mp=document.getElementById("myProfileView");
+    if(wp&&!wp.classList.contains("hidden"))wp.classList.add("hidden");
+    if(mp&&!mp.classList.contains("hidden"))mp.classList.add("hidden");
+    _routeRoleHome();
+    history.pushState({tab:"home"},"",location.pathname);
+    return;
+  }
   // If form is open, go back to dashboard
   const fv=document.getElementById("formView");
   if(fv&&!fv.classList.contains("hidden")){
@@ -10175,8 +10210,9 @@ try{const u=localStorage.getItem("elg_user");if(u){currentUser=JSON.parse(u);
   // Restore last active tab on refresh
   setTimeout(()=>{
     try{
-      const role=currentUser&&currentUser.role;
-      if(role==="HR"||role==="HSEQ"||role==="Worker")return; // these roles have their own dedicated view — never restore tabs
+      // v189: dedicated views — never restore a technical tab; re-assert their own
+      // screen instead (covers any timing race on refresh that left the dash showing).
+      if(_dedicatedRole()){_routeRoleHome();return;}
       const savedTab=localStorage.getItem("elg_active_tab");
       if(savedTab&&savedTab!=="forms")switchTab(savedTab);
     }catch(e){}
@@ -11744,7 +11780,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v188";
+const APP_VERSION="v189";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -13597,6 +13633,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v189 — FIX: HR/HSEQ stranded on the technical page. Their nav buttons are hidden, so any navigation that unhid dashView left them stuck with no way back — the phone BACK button was the main culprit (the popstate handler called switchTab("forms") with no role guard), and a restored tab could do the same on refresh. Added _dedicatedRole() + _routeRoleHome(): switchTab now returns straight to the role's own screen for HR/HSEQ/Worker, the back button re-asserts their view (closing Profiles/My Profile first) and keeps them in the app, and the refresh session-restore re-asserts it too instead of just skipping. Root-level guard, so no future code path can strand them either.
 // Build: v188 — Daily data backup (Firebase free tier has NO automatic backups; one bad delete could lose everything). New admin-only "Backup All Data" button on the dashboard downloads a dated JSON of the whole database (CrewFlow_Backup_<date>.json) straight to the device — uses _origFetch with the service-account token so the fetch wrapper doesn't double-append auth, and the browser streams the file so size (photos included) is no constraint. Also auto-runs once per day, 8s after the ADMIN opens the app (guarded by elg_last_backup date + _backupAutoDone), so a fresh backup lands on Paul's machine daily with zero effort. Admin-gated: only Paul's login backs up, so there's a single clean source. Nothing else changed.
 // Build: v187 — FIX broken cloud sync (root cause found live). Diagnosis: rules were fine (auth!=null, non-expiring) and quota was fine (35MB/7d, 49MB storage), but accounts:signUp returned 400 TOO_MANY_ATTEMPTS_TRY_LATER — the app created a NEW anonymous user every 55 min on every phone, so over weeks Firebase blocked anonymous sign-ups; no token → every write 401 → app mislabels it "rules expired". Fix: enabled Email/Password provider + created ONE shared account (crewflow.sync@elgawa.app) in Firebase; app now signs in with that account ONCE and refreshes its token via securetoken (stored in elg_fb_refresh), never creating new users. signInWithPassword is not subject to the anonymous throttle, so sync restores immediately on this build (verified live: signIn 200, authed DB write 200, refresh 200). Rules unchanged (data stays auth-protected, NOT made public). _fbSignInAnon kept as an alias of _fbSignIn for the fetch-wrapper retry path.
 // Build: v186 — Worker language + chat unread bubbles. (1) Casual-worker Sign In/Out buttons stayed English because the worker view is built dynamically and setLang only refreshed static labels (applyLang) — and workers had no language switch at all. Added a language row (English/Español/Nederlands) at the top of the worker sign-in view, and setLang now re-renders the worker view AND the HR view so every dynamic button follows the chosen language; renderWorkerSignIn highlights the active language. (2) Chat: per-conversation unread bubbles. _chatCheckUnread now COUNTS unread messages per channel (from the shallow key list ts_username, no body reads) into _chatUnreadMap; the conversation list shows a red count badge on Site and each DM, chats with unread float to the top, and the FAB shows the combined total (now up to 99+). No storage/logic change to messages themselves.
