@@ -657,6 +657,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
     <button onclick="openMyProfile()" id="myProfileDashBtn" style="width:100%;margin-bottom:10px;padding:11px;border:1.5px solid var(--navy);border-radius:12px;background:white;color:var(--navy);font-size:14px;font-weight:700;cursor:pointer">👤 My Profile</button>
     <button onclick="openWorkerProfiles()" id="workforceProfilesBtn" style="display:none;width:100%;margin-bottom:10px;padding:11px;border:none;border-radius:12px;background:var(--navy);color:white;font-size:14px;font-weight:700;cursor:pointer">👥 Workforce Profiles</button>
     <button onclick="openWorkPlan()" id="workPlanBtn" style="display:none;width:100%;margin-bottom:10px;padding:11px;border:none;border-radius:12px;background:#7E5BB5;color:white;font-size:14px;font-weight:700;cursor:pointer">📐 Work Plan &amp; Output</button>
+    <button onclick="backupAllData()" id="backupDataBtn" style="display:none;width:100%;margin-bottom:10px;padding:11px;border:1.5px solid #0d9488;border-radius:12px;background:white;color:#0d9488;font-size:14px;font-weight:700;cursor:pointer">⬇️ Backup All Data</button>
     <div class="settings-row" id="settingsRow">
     <button class="pill-btn" onclick="exportCSV()" id="exportBtn" style="display:none">📊 Export CSV</button></div>
     <div class="view-toggle-row" id="viewToggleRow">
@@ -2548,6 +2549,13 @@ function showDash(){
   // Workforce Profiles roster button — admin only (holds addresses/IDs)
   const wpBtn=document.getElementById("workforceProfilesBtn");
   if(wpBtn)wpBtn.style.display=(currentUser&&currentUser.username==="admin")?"block":"none";
+  // v188: Backup button + once-daily auto backup — admin only (single backup source)
+  const bkBtn=document.getElementById("backupDataBtn");
+  if(bkBtn)bkBtn.style.display=(currentUser&&currentUser.username==="admin")?"block":"none";
+  if(currentUser&&currentUser.username==="admin"&&!_backupAutoDone){
+    _backupAutoDone=true;
+    try{if((localStorage.getItem("elg_last_backup")||"")!==getGuyanaDate())setTimeout(function(){backupAllData(true)},8000);}catch(e){}
+  }
 
   // Work Plan & Output button — planners and recorders (v166)
   const wplBtn=document.getElementById("workPlanBtn");
@@ -7674,6 +7682,35 @@ function saveFirebaseUrl(url){
   url=url.trim().replace(/\/+$/,"");
   localStorage.setItem("elg_firebase_url",url);
 }
+// v188: full-database backup — admin downloads a dated JSON of everything the
+// service account can read. Uses _origFetch with an explicit token so the fetch
+// wrapper doesn't double-append auth. Runs once/day automatically (auto=true) and
+// on demand from the Backup All Data button. Browser downloads the file straight
+// to the device, so size is no constraint and nothing goes through a size-limited
+// channel. This is the safety net: Firebase (free tier) has no automatic backups.
+let _backupAutoDone=false;
+function backupAllData(auto){
+  if(!currentUser||currentUser.username!=="admin"){if(!auto)showToast("Admin only");return;}
+  const fb=getFirebaseUrl();if(!fb){if(!auto)showToast("⚠️ No cloud connection");return;}
+  if(!auto)showToast("⏳ Preparing backup…");
+  const go=function(tok){
+    if(!tok){if(!auto)showToast("⚠️ Could not sign in for backup");return;}
+    _origFetch(fb+"/.json?auth="+encodeURIComponent(tok))
+      .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.blob();})
+      .then(function(blob){
+        const dt=getGuyanaDate();
+        const a=document.createElement("a");
+        a.href=URL.createObjectURL(blob);
+        a.download="CrewFlow_Backup_"+dt+".json";
+        document.body.appendChild(a);a.click();
+        setTimeout(function(){try{URL.revokeObjectURL(a.href);a.remove();}catch(e){}},3000);
+        try{localStorage.setItem("elg_last_backup",dt);}catch(e){}
+        showToast("✅ Backup saved ("+(blob.size/1048576).toFixed(1)+" MB) — check Downloads");
+      })
+      .catch(function(e){showToast("⚠️ Backup failed: "+(e&&e.message?e.message:"unknown"));});
+  };
+  if(_fbToken)go(_fbToken); else _fbSignIn().then(go);
+}
 function cloudSaveSheet(data){
   const fb=getFirebaseUrl();if(!fb)return Promise.resolve(false);
   const date=data.date||getGuyanaDate();
@@ -11707,7 +11744,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v187";
+const APP_VERSION="v188";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -13560,6 +13597,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v188 — Daily data backup (Firebase free tier has NO automatic backups; one bad delete could lose everything). New admin-only "Backup All Data" button on the dashboard downloads a dated JSON of the whole database (CrewFlow_Backup_<date>.json) straight to the device — uses _origFetch with the service-account token so the fetch wrapper doesn't double-append auth, and the browser streams the file so size (photos included) is no constraint. Also auto-runs once per day, 8s after the ADMIN opens the app (guarded by elg_last_backup date + _backupAutoDone), so a fresh backup lands on Paul's machine daily with zero effort. Admin-gated: only Paul's login backs up, so there's a single clean source. Nothing else changed.
 // Build: v187 — FIX broken cloud sync (root cause found live). Diagnosis: rules were fine (auth!=null, non-expiring) and quota was fine (35MB/7d, 49MB storage), but accounts:signUp returned 400 TOO_MANY_ATTEMPTS_TRY_LATER — the app created a NEW anonymous user every 55 min on every phone, so over weeks Firebase blocked anonymous sign-ups; no token → every write 401 → app mislabels it "rules expired". Fix: enabled Email/Password provider + created ONE shared account (crewflow.sync@elgawa.app) in Firebase; app now signs in with that account ONCE and refreshes its token via securetoken (stored in elg_fb_refresh), never creating new users. signInWithPassword is not subject to the anonymous throttle, so sync restores immediately on this build (verified live: signIn 200, authed DB write 200, refresh 200). Rules unchanged (data stays auth-protected, NOT made public). _fbSignInAnon kept as an alias of _fbSignIn for the fetch-wrapper retry path.
 // Build: v186 — Worker language + chat unread bubbles. (1) Casual-worker Sign In/Out buttons stayed English because the worker view is built dynamically and setLang only refreshed static labels (applyLang) — and workers had no language switch at all. Added a language row (English/Español/Nederlands) at the top of the worker sign-in view, and setLang now re-renders the worker view AND the HR view so every dynamic button follows the chosen language; renderWorkerSignIn highlights the active language. (2) Chat: per-conversation unread bubbles. _chatCheckUnread now COUNTS unread messages per channel (from the shallow key list ts_username, no body reads) into _chatUnreadMap; the conversation list shows a red count badge on Site and each DM, chats with unread float to the top, and the FAB shows the combined total (now up to 99+). No storage/logic change to messages themselves.
 // Build: v185 — Finish the CrewFlow rebrand on the app's FACE (Paul: "it still loads as elgawa checksheet"). The loading SPLASH ("ELGAWA / Daily Checksheet v6.0"), the LOGIN title ("ELGAWA GUYANA INC."), the top-bar BRAND ("ELGAWA") and the Settings>About line were all hardcoded ELGAWA text, separate from the icon/manifest — now all read "CrewFlow" / "Site Team Checksheet". PDF letterhead + report/WhatsApp export headers deliberately KEPT as ELGAWA (that's the letterhead Paul wants). No logic change.
