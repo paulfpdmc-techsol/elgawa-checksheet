@@ -851,6 +851,11 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
   <div id="workerBackRow" style="display:none;margin-bottom:10px">
     <button class="btn-s" onclick="closeMyAttendance()" style="font-size:13px;padding:8px 16px;border:1.5px solid var(--border);background:white;color:var(--navy);border-radius:8px;cursor:pointer;font-weight:600">◀ Back to Dashboard</button>
   </div>
+  <div style="display:flex;gap:6px;justify-content:center;margin-bottom:12px">
+    <button class="wlang-btn" data-l="en" onclick="setLang('en')" style="flex:1;max-width:110px;padding:9px;border:1.5px solid var(--border);border-radius:10px;background:white;font-size:13px;font-weight:700;cursor:pointer">English</button>
+    <button class="wlang-btn" data-l="es" onclick="setLang('es')" style="flex:1;max-width:110px;padding:9px;border:1.5px solid var(--border);border-radius:10px;background:white;font-size:13px;font-weight:700;cursor:pointer">Español</button>
+    <button class="wlang-btn" data-l="nl" onclick="setLang('nl')" style="flex:1;max-width:110px;padding:9px;border:1.5px solid var(--border);border-radius:10px;background:white;font-size:13px;font-weight:700;cursor:pointer">Nederlands</button>
+  </div>
   <div style="text-align:center;margin-bottom:16px">
     <div style="font-size:48px;margin-bottom:8px">🏗️</div>
     <h2 style="color:var(--navy);margin:0" id="workerGreeting">Good Morning</h2>
@@ -2298,7 +2303,17 @@ function doLogout(){
 function setLang(l){LANG=l;try{localStorage.setItem("elg_lang",l)}catch(e){}
   document.querySelectorAll(".lang-btn").forEach(b=>b.classList.toggle("active",b.textContent.includes(l==="en"?"Eng":l==="es"?"Esp":"Ned")));
   const tb=document.getElementById("langToggleBtn");if(tb)tb.textContent="🌐 "+(l==="en"?"EN":l==="es"?"ES":"NL");
-  applyLang();}
+  // v186: highlight the worker-view language buttons
+  document.querySelectorAll(".wlang-btn").forEach(b=>{const on=b.getAttribute("data-l")===l;b.style.background=on?"var(--navy)":"white";b.style.color=on?"white":"var(--navy)";b.style.borderColor=on?"var(--navy)":"var(--border)"});
+  applyLang();
+  // v186: applyLang only updates static labels — the worker sign-in view and the
+  // HR view are built dynamically, so re-render them or their buttons keep the old
+  // language (this is why the casual-worker Sign In/Out buttons stayed English).
+  try{
+    if(currentUser&&currentUser.role==="Worker"){const w=document.getElementById("workerSignInView");if(w&&!w.classList.contains("hidden")&&typeof renderWorkerSignIn==="function")renderWorkerSignIn();}
+    const hrv=document.getElementById("hrView");if(hrv&&!hrv.classList.contains("hidden")&&typeof renderHrView==="function")renderHrView();
+  }catch(e){}
+}
 function cycleLang(){const order=["en","es","nl"];const i=(order.indexOf(LANG)+1)%3;setLang(order[i]);}
 
 let _reportRefreshTimer=null;
@@ -7593,17 +7608,39 @@ function getFirebaseUrl(){return localStorage.getItem("elg_firebase_url")||DEFAU
 // Firebase console, and (3) set the security rules to require auth. See the
 // notes handed over with this change.
 const FB_API_KEY="AIzaSyA-AUWf2X8_tUhDv4N9-AjcWEiWgxhOCxs"; // Firebase Web API key (public client key — safe to embed)
-let _fbToken=null;
+// v187: ONE shared sign-in account instead of per-device anonymous sign-ups.
+// The old code called accounts:signUp every 55 min on every phone, creating a
+// brand-new anonymous user each time; after weeks that tripped Firebase's
+// TOO_MANY_ATTEMPTS block and ALL cloud sync stopped. This account signs in once
+// (or refreshes a stored token) and never creates new users, so it can't recur.
+const FB_SVC_EMAIL="crewflow.sync@elgawa.app";
+const FB_SVC_PASS="Cf9!kRze2Lm7qXa8";
+let _fbToken=null,_fbRefreshTok=null;
+try{_fbRefreshTok=localStorage.getItem("elg_fb_refresh")||null}catch(e){}
 function _fbAuthEnabled(){return typeof FB_API_KEY==="string"&&FB_API_KEY.indexOf("PASTE_")!==0&&FB_API_KEY.length>10;}
 const _origFetch=window.fetch.bind(window);
-function _fbSignInAnon(){
-  if(!_fbAuthEnabled())return Promise.resolve(null);
-  return _origFetch("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+FB_API_KEY,
-    {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({returnSecureToken:true})})
+function _fbStoreRefresh(rt){if(rt){_fbRefreshTok=rt;try{localStorage.setItem("elg_fb_refresh",rt)}catch(e){}}}
+function _fbPasswordSignIn(){
+  return _origFetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key="+FB_API_KEY,
+    {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:FB_SVC_EMAIL,password:FB_SVC_PASS,returnSecureToken:true})})
     .then(function(r){return r.ok?r.json():null;})
-    .then(function(d){if(d&&d.idToken)_fbToken=d.idToken;return _fbToken;})
+    .then(function(d){if(d&&d.idToken){_fbToken=d.idToken;_fbStoreRefresh(d.refreshToken);}return _fbToken;})
     .catch(function(){return null;});
 }
+function _fbSignIn(){
+  if(!_fbAuthEnabled())return Promise.resolve(null);
+  // Refresh the existing session first (cheap, no new user); fall back to a full
+  // password sign-in only if there's no refresh token or the refresh fails.
+  if(_fbRefreshTok){
+    return _origFetch("https://securetoken.googleapis.com/v1/token?key="+FB_API_KEY,
+      {method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"grant_type=refresh_token&refresh_token="+encodeURIComponent(_fbRefreshTok)})
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(d){if(d&&d.id_token){_fbToken=d.id_token;_fbStoreRefresh(d.refresh_token);return _fbToken;}return _fbPasswordSignIn();})
+      .catch(function(){return _fbPasswordSignIn();});
+  }
+  return _fbPasswordSignIn();
+}
+var _fbSignInAnon=_fbSignIn; // old name kept for existing call sites
 // Wrap fetch so EVERY database call carries the token. Non-database calls and
 // the sign-in call itself are untouched. If a call is rejected for missing auth
 // (401/403), sign in and retry once — so timing on startup can never lock us out.
@@ -7631,8 +7668,8 @@ window.fetch=function(input,init){
   });
 };
 // Sign in as soon as the app loads, and refresh the token before it expires (~1h).
-_fbSignInAnon();
-setInterval(_fbSignInAnon,55*60*1000);
+_fbSignIn();
+setInterval(_fbSignIn,50*60*1000);
 function saveFirebaseUrl(url){
   url=url.trim().replace(/\/+$/,"");
   localStorage.setItem("elg_firebase_url",url);
@@ -11670,7 +11707,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v185";
+const APP_VERSION="v187";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -12327,15 +12364,18 @@ function chatRenderList(q){
   const list=document.getElementById("chatList");if(!list)return;
   const seen=_chatSeen();q=(q||"").toLowerCase();
   const siteUnread=false; // dot on the group handled by header count; keep list clean
+  const um=_chatUnreadMap||{};
   let h='<div class="chat-conv" onclick="chatOpenConvo(\'site\')">'
     +'<div class="chat-av" style="width:46px;height:46px;font-size:20px;background:var(--hdr-grad)">🏗️</div>'
-    +'<div style="flex:1;min-width:0"><div class="cc-nm">Site — everyone</div><div class="cc-sub">Whole project group chat</div></div></div>';
+    +'<div style="flex:1;min-width:0"><div class="cc-nm">Site — everyone</div><div class="cc-sub">Whole project group chat</div></div>'+_chatBadge(um["site"]||0)+'</div>';
   const people=_chatListCache.filter(p=>!q||p.name.toLowerCase().includes(q)||p.role.toLowerCase().includes(q));
+  // people with unread messages float to the top of the list
+  people.sort((a,b)=>((um[b.un]||0)>0?1:0)-((um[a.un]||0)>0?1:0)||a.name.localeCompare(b.name));
   h+='<div class="chat-sec">DIRECT MESSAGES</div>';
   if(!people.length)h+='<p style="font-size:12px;color:#93a09b;text-align:center;margin:16px">No one matches "'+_hseqEsc(q)+'".</p>';
   people.forEach(p=>{
     h+='<div class="chat-conv" onclick="chatOpenConvo(\''+p.un+'\')">'+_chatAv(p.name,46,18)
-      +'<div style="flex:1;min-width:0"><div class="cc-nm">'+_hseqEsc(p.name)+'</div><div class="cc-sub">'+_hseqEsc(p.role||"Team")+'</div></div></div>';
+      +'<div style="flex:1;min-width:0"><div class="cc-nm">'+_hseqEsc(p.name)+'</div><div class="cc-sub">'+_hseqEsc(p.role||"Team")+'</div></div>'+_chatBadge(um[p.un]||0)+'</div>';
   });
   const alOn=_chatAlertsOn();
   h+='<div class="chat-conv" onclick="chatToggleAlerts()" style="margin-top:12px;background:'+(alOn?"#eafaf2":"#f3f3f0")+'">'
@@ -12443,39 +12483,36 @@ function _chatViewing(convo){
   const cv=document.getElementById("chatView");
   return cv&&cv.style.display!=="none"&&_chatConvo===convo;
 }
+let _chatUnreadMap={};
+function _chatBadge(n){return n>0?'<div style="background:#e74c3c;color:#fff;min-width:20px;height:20px;padding:0 5px;border-radius:10px;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(n>99?"99+":n)+'</div>':''}
 function _chatCheckUnread(){
   if(!currentUser)return;const fb=getFirebaseUrl();if(!fb)return;
-  const seen=_chatSeen();const me=currentUser.username;let count=0;
-  const lastKey=ks=>{const ids=Object.keys(ks||{}).sort();return ids.length?ids[ids.length-1]:null};
-  const tsOf=k=>k?parseInt(k)||0:0;
-  const senderOf=k=>{if(!k)return"";const p=k.split("_");return p.slice(1).join("_")};
-  const cand=[]; // {ts,label,convo}
+  const seen=_chatSeen();const me=currentUser.username;
+  const map={};const cand=[];
+  // count unread keys (ts_username) newer than last-seen, not from me — no body reads
+  const scan=(ks,seenTs)=>{let c=0,newest=0,newestSender="";Object.keys(ks||{}).forEach(id=>{const p=id.split("_");const ts=parseInt(p[0])||0;const sender=p.slice(1).join("_");if(sender!==me&&ts>(seenTs||0)){c++;if(ts>newest){newest=ts;newestSender=sender;}}});return{c,newest,newestSender};};
   fetch(fb+"/chat/site.json?shallow=true").then(r=>r.ok?r.json():null).then(ks=>{
-    const lk=lastKey(ks),ts=tsOf(lk);
-    if(ts>(seen["site"]||0))count++;
-    if(ts>(seen["site"]||0)&&ts>_chatLastAlert()&&senderOf(lk)!==me&&!_chatViewing("site"))cand.push({ts:ts,label:"Site chat",convo:"site"});
+    const u=scan(ks,seen["site"]);
+    if(u.c>0){map["site"]=u.c;if(u.newest>_chatLastAlert()&&!_chatViewing("site"))cand.push({ts:u.newest,label:"Site chat",convo:"site"});}
     return fetch(fb+"/chat/dm.json?shallow=true").then(r=>r.ok?r.json():null);
   }).then(pairs=>{
-    const mine=Object.keys(pairs||{}).filter(k=>k.split("__").includes(me)).slice(0,20);
-    return Promise.all(mine.map(k=>fetch(fb+"/chat/dm/"+k+".json?shallow=true").then(r=>r.ok?r.json():null).then(ks=>({k:k,lk:lastKey(ks)}))));
+    const mine=Object.keys(pairs||{}).filter(k=>k.split("__").includes(me)).slice(0,30);
+    return Promise.all(mine.map(k=>fetch(fb+"/chat/dm/"+k+".json?shallow=true").then(r=>r.ok?r.json():null).then(ks=>({k:k,ks:ks}))));
   }).then(res=>{
     const users=getUsers();
     (res||[]).forEach(x=>{
-      const ts=tsOf(x.lk),sender=senderOf(x.lk);
-      if(ts>(seen[x.k]||0))count++;
       const other=x.k.split("__").filter(u=>u!==me)[0]||"";
-      if(ts>(seen[x.k]||0)&&ts>_chatLastAlert()&&sender!==me&&!_chatViewing(other)){
-        cand.push({ts:ts,label:(users[sender]&&users[sender].name)||sender,convo:other});
-      }
+      const u=scan(x.ks,seen[x.k]);
+      if(u.c>0){map[other]=u.c;if(u.newest>_chatLastAlert()&&!_chatViewing(other))cand.push({ts:u.newest,label:(users[u.newestSender]&&users[u.newestSender].name)||u.newestSender,convo:other});}
     });
+    _chatUnreadMap=map;
+    const total=Object.values(map).reduce((a,b)=>a+b,0);
     const dot=document.getElementById("chatFabDot");
-    if(dot){if(count>0){dot.style.display="block";dot.textContent=count>9?"9+":String(count)}else dot.style.display="none"}
-    if(cand.length){
-      cand.sort((a,b)=>b.ts-a.ts);
-      const top=cand[0];
-      _chatSetLastAlert(top.ts);
-      _chatAlert("💬 "+top.label,top.convo==="site"?"New message in Site chat":"New message from "+top.label);
-    }
+    if(dot){if(total>0){dot.style.display="block";dot.textContent=total>99?"99+":String(total)}else dot.style.display="none"}
+    // repaint the conversation list so each chat shows its own unread bubble
+    const lv=document.getElementById("chatList"),cv=document.getElementById("chatView");
+    if(lv&&lv.style.display!=="none"&&cv&&cv.style.display!=="none"){const sb=document.getElementById("chatSearch");chatRenderList(sb?sb.value:"");}
+    if(cand.length){cand.sort((a,b)=>b.ts-a.ts);const top=cand[0];_chatSetLastAlert(top.ts);_chatAlert("💬 "+top.label,top.convo==="site"?"New message in Site chat":"New message from "+top.label);}
   }).catch(()=>{});
 }
 
@@ -13032,6 +13069,8 @@ function closeMyAttendance(){
   const dv=document.getElementById("dashView");if(dv)dv.classList.remove("hidden");
 }
 function renderWorkerSignIn(){
+  // v186: highlight the worker-view language button for the current language
+  try{document.querySelectorAll(".wlang-btn").forEach(b=>{const on=b.getAttribute("data-l")===LANG;b.style.background=on?"var(--navy)":"white";b.style.color=on?"white":"var(--navy)";b.style.borderColor=on?"var(--navy)":"var(--border)"});}catch(e){}
   const now=getGuyanaTimeNow();
   const hour=now.getHours();
   const greeting=hour<12?t("wGoodMorning"):hour<17?t("wGoodAfternoon"):t("wGoodEvening");
@@ -13521,6 +13560,8 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v187 — FIX broken cloud sync (root cause found live). Diagnosis: rules were fine (auth!=null, non-expiring) and quota was fine (35MB/7d, 49MB storage), but accounts:signUp returned 400 TOO_MANY_ATTEMPTS_TRY_LATER — the app created a NEW anonymous user every 55 min on every phone, so over weeks Firebase blocked anonymous sign-ups; no token → every write 401 → app mislabels it "rules expired". Fix: enabled Email/Password provider + created ONE shared account (crewflow.sync@elgawa.app) in Firebase; app now signs in with that account ONCE and refreshes its token via securetoken (stored in elg_fb_refresh), never creating new users. signInWithPassword is not subject to the anonymous throttle, so sync restores immediately on this build (verified live: signIn 200, authed DB write 200, refresh 200). Rules unchanged (data stays auth-protected, NOT made public). _fbSignInAnon kept as an alias of _fbSignIn for the fetch-wrapper retry path.
+// Build: v186 — Worker language + chat unread bubbles. (1) Casual-worker Sign In/Out buttons stayed English because the worker view is built dynamically and setLang only refreshed static labels (applyLang) — and workers had no language switch at all. Added a language row (English/Español/Nederlands) at the top of the worker sign-in view, and setLang now re-renders the worker view AND the HR view so every dynamic button follows the chosen language; renderWorkerSignIn highlights the active language. (2) Chat: per-conversation unread bubbles. _chatCheckUnread now COUNTS unread messages per channel (from the shallow key list ts_username, no body reads) into _chatUnreadMap; the conversation list shows a red count badge on Site and each DM, chats with unread float to the top, and the FAB shows the combined total (now up to 99+). No storage/logic change to messages themselves.
 // Build: v185 — Finish the CrewFlow rebrand on the app's FACE (Paul: "it still loads as elgawa checksheet"). The loading SPLASH ("ELGAWA / Daily Checksheet v6.0"), the LOGIN title ("ELGAWA GUYANA INC."), the top-bar BRAND ("ELGAWA") and the Settings>About line were all hardcoded ELGAWA text, separate from the icon/manifest — now all read "CrewFlow" / "Site Team Checksheet". PDF letterhead + report/WhatsApp export headers deliberately KEPT as ELGAWA (that's the letterhead Paul wants). No logic change.
 // Build: v184 — HR/HSEQ view lands on ATTENDANCE (was Team Members), so HR opens straight onto the register + downloads and never has to hunt for it (fixes "can't see attendance"). Attendance tab moved first in the HR tab row. Download row given a clear "DOWNLOAD" label + bigger PDF/Excel/Weekly buttons; the dev-only Test PDF button demoted to a small "Download not working? Tap to test" text link so it doesn't clutter her screen. Note: if HR is still on an old cached build she must reinstall to get this (same home-screen-icon caching as the rebrand).
 // Build: v183 — Final CrewFlow icon: crew triangle with a white hard-hatted lead at the centre, light-blue airflow arcs orbiting, snowflakes in the gaps, on the app-purple gradient (HVAC + teamwork). Rendered from SVG via ImageMagick + composited on a smooth PIL gradient to avoid banding; icon-192/512.png replaced. Everything else per v182 (name CrewFlow, ELGAWA letterhead preserved via logo-letterhead.png). sw cache v183 so phones re-fetch the new icon.
