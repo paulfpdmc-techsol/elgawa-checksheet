@@ -1425,71 +1425,71 @@ const COMMON_ISSUES=["Material Delay","Drawing Discrepancy","Access Blocked","Eq
 const TEAMS={
   ducting:{name:"Ducting",icon:"\u{1F527}",color:"#2E75B6",css:"ducting",subtitle:"Ductwork Installation (P3 & Galvanized)",
     extraFields:[{id:"ductSystem",label:"Duct System"},{id:"specRef",label:"Spec Reference"}],
-    workKeys:["task","area","ductSize","length","pctDone","status"],
-    workLabels:["Task","Area","Duct Size","Length(m)","% Done","Status"],
+    workKeys:["task","area","ductSize","length","pctDone","status","note"],
+    workLabels:["Task","Area","Duct Size","Length(m)","% Done","Status","Note"],
     materials:["P3 Duct Panels","Galvanized Steel Duct","GI Straight Runs","GI Elbows/Bends","GI Reducers/Tees","Pre-fab Sections","Elbows/Bends","Reducers/Tees","Flex Connectors","Threaded Rod","Clamps/Trapeze","Anchors","Mastic Sealant","Duct Tape/Gaskets","Screws/Rivets","Flanges/Gaskets"],
     checklist:["Duct aligned & level","Joints sealed","Hangers at correct spacing","Flex connections at AHU","Fire dampers installed","Access doors per drawing","Labels applied","Area cleaned"]
   },
   copper:{name:"Copper Piping",icon:"\u{1F529}",color:"#C05621",css:"copper",subtitle:"Refrigerant & Chilled Water",
     extraFields:[{id:"pipeSystem",label:"Pipe System"},{id:"pressureTest",label:"Pressure Test Due"}],
-    workKeys:["task","area","pipeSize","length","pctDone","status"],
-    workLabels:["Task","Area","Pipe Size","Length(m)","% Done","Status"],
+    workKeys:["task","area","pipeSize","length","pctDone","status","note"],
+    workLabels:["Task","Area","Pipe Size","Length(m)","% Done","Status","Note"],
     materials:["Copper Pipe","Elbows/Couplings","Brazing Rods","Flux","Nitrogen","Isolation Valves","Check Valves","Strainers/Gauges","Armaflex","Pipe Clamps","Pipe Sleeves","Teflon Tape"],
     checklist:["Routes per drawing","Brazing joints sound","N2 purge during brazing","Pressure test held","Valves correct orientation","Supports at intervals","Insulation no gaps","Labels/arrows applied"]
   },
   ahu:{name:"AHU Equipment",icon:"\u{2744}\u{FE0F}",color:"#548235",css:"ahu",subtitle:"AHU Installation",
     extraFields:[{id:"ahuModel",label:"AHU Tag/Model"},{id:"drawingRef",label:"Drawing Ref"}],
-    workKeys:["task","ahuTag","area","qty","pctDone","status"],
-    workLabels:["Task","AHU Tag","Area","Qty","% Done","Status"],
+    workKeys:["task","ahuTag","area","qty","pctDone","status","note"],
+    workLabels:["Task","AHU Tag","Area","Qty","% Done","Status","Note"],
     materials:["AHU Unit","Anti-vib Mounts","Flex Duct Connectors","Electrical","Condensate Pipe","Filters","Control Panel","Mounting Hardware","Refrigerant","Belt/Pulley"],
     checklist:["AHU per drawing","Anti-vib mounts","Duct sealed","Piping complete","Condensate trapped","Electrical connected","Filters in","Fan rotation OK"]
   },
   insulation:{name:"Insulation",icon:"\u{1F9F1}",color:"#7030A0",css:"insulation",subtitle:"Thermal & Acoustic",
     extraFields:[{id:"insType",label:"Insulation Type"},{id:"specRef",label:"Spec Reference"}],
-    workKeys:["task","area","system","length","pctDone","status"],
-    workLabels:["Task","Area","System","Length(m)","% Done","Status"],
+    workKeys:["task","area","system","length","pctDone","status","note"],
+    workLabels:["Task","Area","System","Length(m)","% Done","Status","Note"],
     materials:["Duct Wrap/Board","Armaflex (pipe)","Armaflex (sheet)","Adhesive","Weld Clips","Vapour Tape","Aluminium Jacket","Canvas Tape","Fire-rated Wrap","Sealant"],
     checklist:["Correct thickness","No gaps/exposed","Vapour barrier intact","Joints taped","Secured (pins/glue)","Fire-rated done","Cladding applied","Area cleaned"]
   },
   general:{name:"General Labour",icon:"\u{1F477}",color:"#BF8F00",css:"general",subtitle:"Site Support & Material Handling",
     extraFields:[{id:"assignedTo",label:"Assigned To"},{id:"priorityArea",label:"Priority Area"}],
-    workKeys:["task","area","assignedTo","volume","pctDone","status"],
-    workLabels:["Task","Area","Assigned To","Qty","% Done","Status"],
+    workKeys:["task","area","assignedTo","volume","pctDone","status","note"],
+    workLabels:["Task","Area","Assigned To","Qty","% Done","Status","Note"],
     materials:["Scaffolding/Ladders","PPE","Cleaning Supplies","Trash Bags","Hand Tools","Trolley/Transport","Water/Consumables","Signage/Barricades"],
     checklist:["Materials delivered correct area","Area cleaned","Debris removed","Tools returned","Scaffolding tagged","Walkways clear","PPE worn","Site secured"]
   },
   refrigerant:{name:"Refrigerant Support",icon:"\u{1F9CA}",color:"#0077B6",css:"refrigerant",subtitle:"Refrigerant Support",
     extraFields:[{id:"refSystem",label:"System"},{id:"refChargeSpec",label:"Charge Spec"}],
-    workKeys:["task","area","system","refType","pctDone","status"],
-    workLabels:["Task","Area","System","Ref Type","% Done","Status"],
+    workKeys:["task","area","system","refType","pctDone","status","note"],
+    workLabels:["Task","Area","System","Ref Type","% Done","Status","Note"],
     materials:["Refrigerant R410A","Refrigerant R22","Nitrogen","Vacuum Pump Oil","Gauge Manifold Set","Charging Hose","Core Valves","Flare Nuts","Leak Detector Fluid","Recovery Cylinder"],
     checklist:["System evacuated properly","Vacuum holds 500 microns","Charge weight verified","No leaks detected","Gauge readings normal","Recovery completed","Labels updated","Area secured"]
   },
   drainage:{name:"Drainage / Condensate",icon:"\u{1F4A7}",color:"#0096C7",css:"drainage",subtitle:"Drainage / Condensate",
     extraFields:[{id:"drainSystem",label:"Drain System"},{id:"drainSpec",label:"Spec Reference"}],
-    workKeys:["task","area","pipeSize","length","pctDone","status"],
-    workLabels:["Task","Area","Pipe Size","Length(m)","% Done","Status"],
+    workKeys:["task","area","pipeSize","length","pctDone","status","note"],
+    workLabels:["Task","Area","Pipe Size","Length(m)","% Done","Status","Note"],
     materials:["PVC Pipe","PVC Fittings","PVC Cement/Primer","Condensate Pump","P-Trap","Drain Pan","Pipe Hangers","Insulation Tape","Thread Tape","Sealant"],
     checklist:["Slope correct for drainage","P-trap installed","No leaks at joints","Condensate pump working","Drain pan secured","Insulation applied","Route per drawing","Area cleaned"]
   },
   controls:{name:"Controls / Electrical",icon:"\u{26A1}",color:"#E63946",css:"controls",subtitle:"Controls / Electrical",
     extraFields:[{id:"ctrlSystem",label:"BMS System"},{id:"ctrlDrawing",label:"Drawing Ref"}],
-    workKeys:["task","area","device","cableType","pctDone","status"],
-    workLabels:["Task","Area","Device","Cable Type","% Done","Status"],
+    workKeys:["task","area","device","cableType","pctDone","status","note"],
+    workLabels:["Task","Area","Device","Cable Type","% Done","Status","Note"],
     materials:["Control Cable","Thermostat","BMS Controller","Actuator","Sensor/Probe","Junction Box","Cable Tray","Wire Nuts","Conduit","Labels/Tags"],
     checklist:["Wiring per diagram","Connections tight","Thermostat calibrated","Actuator stroke tested","BMS points verified","Labels applied","Conduit secured","Power isolated during work"]
   },
   commissioning:{name:"Commissioning / Testing",icon:"\u{2705}",color:"#2D6A4F",css:"commissioning",subtitle:"Commissioning / Testing",
     extraFields:[{id:"commSystem",label:"System"},{id:"commSpec",label:"Spec Reference"}],
-    workKeys:["task","area","system","reading","pctDone","status"],
-    workLabels:["Task","Area","System","Reading","% Done","Status"],
+    workKeys:["task","area","system","reading","pctDone","status","note"],
+    workLabels:["Task","Area","System","Reading","% Done","Status","Note"],
     materials:["Balancing Hood","Anemometer","Manometer","Thermometer","Pressure Gauge","Test Forms","Punch List Forms","Calibration Tools","Balancing Dampers","TAB Report Forms"],
     checklist:["Pre-commissioning checks done","Airflow balanced to spec","Temperature delta verified","Pressure test passed","Punch items documented","Client witness if required","TAB report completed","System handed over"]
   },
   welding:{name:"Welding & Fabrication",icon:"\u{1F525}",color:"#D4380D",css:"welding",subtitle:"Welding & Metal Fabrication",
     extraFields:[{id:"weldType",label:"Weld Type",options:["MIG","TIG","Stick/SMAW","Oxy-Acetylene"]},{id:"jointType",label:"Joint Type",options:["Butt","Fillet","Lap","Tee","Corner","Edge"]},{id:"materialSpec",label:"Material / Thickness"},{id:"rodWire",label:"Rod / Wire Used"},{id:"inspectionResult",label:"Inspection",options:["Pending","Pass","Fail","N/A"]}],
-    workKeys:["task","area","weldDetail","joints","pctDone","status"],
-    workLabels:["Task","Area","Weld Detail","Joints","% Done","Status"],
+    workKeys:["task","area","weldDetail","joints","pctDone","status","note"],
+    workLabels:["Task","Area","Weld Detail","Joints","% Done","Status","Note"],
     materials:["Welding Rod (6011)","Welding Rod (7018)","MIG Wire","TIG Filler Rod","Flux Core Wire","Grinding Discs","Cutting Discs","Wire Brush","Anti-Spatter Spray","Welding Gas (Argon)","Welding Gas (CO2)","Welding Gas (Oxy-Acetylene)","Steel Plate","Steel Angle","Steel Channel","Steel Pipe","Welding Blanket","Soapstone/Marker"],
     checklist:["Hot work permit obtained","Fire watch in place","Welding area clear of combustibles","PPE worn (helmet/gloves/leathers)","Machine settings correct","Ground clamp secure","Joints cleaned before welding","Welds visually inspected","Slag removed","Grinding completed","Inspection marked","Area cleaned & secured"]
   }
@@ -1636,6 +1636,7 @@ const T={
   blocked:{en:"Blocked",es:"Bloqueado",nl:"Geblokkeerd"},
   statusLabel:{en:"Status",es:"Estado",nl:"Status"},
   statusPick:{en:"Choose status",es:"Elegir estado",nl:"Kies status"},
+  workNotePh:{en:"Anything else worth saying",es:"Algo más que valga la pena decir",nl:"Iets anders dat de moeite waard is"},
   humanResources:{en:"Human Resources",es:"Recursos Humanos",nl:"Personeelszaken"},
   teamMembers:{en:"Team Members",es:"Miembros del Equipo",nl:"Teamleden"},
   hrReadOnly:{en:"Read-only access",es:"Acceso de solo lectura",nl:"Alleen-lezen toegang"},
@@ -5538,6 +5539,21 @@ function onTaskChange(sel,idx){
   }
 }
 
+// v192: which work-row fields are quantities. Everything else stays free text.
+const WORK_NUM_KEYS={length:1,qty:1,joints:1,volume:1};
+// Pull the unit out of the label the app already carries, e.g. "Length(m)" -> "m".
+function _workUnit(label){const m=/\(([^)]+)\)/.exec(label||"");return m?m[1]:"";}
+// Split a legacy free-text quantity into a number plus whatever else was typed.
+// "5.60 metro" -> 5.60 with "5.60 metro" carried into the note, so re-saving an
+// old sheet on the new build can never silently drop what somebody wrote.
+function _splitQty(v){
+  const s=String(v==null?"":v).trim();
+  if(s==="")return{num:"",carried:""};
+  if(/^\d+(\.\d+)?$/.test(s))return{num:s,carried:""};
+  const m=/\d+(\.\d+)?/.exec(s);
+  return{num:m?m[0]:"",carried:s};
+}
+var _carriedNotes={};
 function buildWorkRow(tm,i,row){
   // Stored values stay C/IP/NS/BL (every report keys off these) but the worker
   // now sees readable, translated labels instead of cryptic codes.
@@ -5567,6 +5583,21 @@ function buildWorkRow(tm,i,row){
       // If old data has a value not in our list, include it
       const extraOpt=(curPct&&!pctOptions.includes(curPct))?`<option value="${curPct}" selected>${curPct}%</option>`:"";
       h+=`<div class="mini-field"><label>${tm.workLabels[j]}</label><select data-work="${i}" data-key="pctDone" style="font-weight:700;color:${curPct==="100"?"#155724":(curPct&&parseInt(curPct)>=50?"#856404":"#721c24")}"><option value="">--</option>${extraOpt}${pctOptions.filter(p=>p!=="").map(p=>`<option value="${p}" ${curPct===p?"selected":""}>${p}%</option>`).join("")}</select></div>`;
+    }else if(WORK_NUM_KEYS[k]){
+      // v192: quantity fields accept a NUMBER only. They used to be plain text,
+      // so the database holds "5.60 metro", "18 pares", "15 unidades conectadas"
+      // and "32 unidades (50-50)" in the same column as bare numbers, which is
+      // why three months of output could not be totalled. The unit was always
+      // declared in the label — "Length(m)" — it just was not enforced.
+      const sp=_splitQty(row[k]);
+      const unit=_workUnit(tm.workLabels[j]);
+      h+=`<div class="mini-field"><label>${tm.workLabels[j]}</label><div style="display:flex;align-items:center;gap:6px"><input data-work="${i}" data-key="${k}" type="number" inputmode="decimal" step="any" min="0" value="${sp.num}" style="flex:1;min-width:0"${sp.carried?' data-carried="1"':''}>${unit?`<span style="font-size:11px;font-weight:700;color:#666;white-space:nowrap">${unit}</span>`:""}</div></div>`;
+      if(sp.carried) _carriedNotes[i]=sp.carried;
+    }else if(k==="note"){
+      // Anything the number field cannot hold goes here, so crews keep writing
+      // the context they always wrote and nothing is lost on the way in.
+      const nv=row.note||_carriedNotes[i]||"";
+      h+=`<div class="mini-field" style="grid-column:1/-1"><label>${tm.workLabels[j]}</label><input data-work="${i}" data-key="note" value="${String(nv).replace(/"/g,"&quot;")}" placeholder="${t("workNotePh")}"></div>`;
     }else{
       h+=`<div class="mini-field"><label>${tm.workLabels[j]}</label><input data-work="${i}" data-key="${k}" value="${row[k]||""}"></div>`;
     }
@@ -7749,7 +7780,33 @@ function backupAllData(auto){
 function cloudSaveSheet(data){
   const fb=getFirebaseUrl();if(!fb)return Promise.resolve(false);
   const date=data.date||getGuyanaDate();
-  return fetch(`${fb}/checksheets/${date}.json`,{method:"POST",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}})
+  // v191: one sheet per team per person per day. Every save used to POST a new
+  // record, and a fresh _id was minted each time, so re-submitting appended
+  // another sheet instead of replacing the last one. Kenneth Soerowidjojo filed
+  // five ducting sheets between 20:33 and 20:39 on 2026-05-05, all carrying the
+  // same four man-days; 43 of 200 team-days in the database hold more than one
+  // sheet. That silently multiplied every count read off this node. Different
+  // people on the same team on the same day are legitimate and are preserved —
+  // only the same person re-filing collapses. Two areas in one day go in the
+  // work rows inside the sheet, which is what they are for.
+  const who=(data.submittedBy||data.savedBy||"").trim().toLowerCase();
+  const team=(data.teamKey||"").trim();
+  const post=()=>fetch(`${fb}/checksheets/${date}.json`,{method:"POST",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}});
+  if(!who||!team) return post().then(r=>{if(!r.ok)throw new Error("sync fail");return true}).catch(()=>false);
+  return fetch(`${fb}/checksheets/${date}.json`).then(fbJson).catch(()=>null)
+    .then(obj=>{
+      let hitKey=null;
+      if(obj&&typeof obj==="object"){
+        Object.keys(obj).forEach(k=>{
+          if(hitKey)return;
+          const r=obj[k];if(!r)return;
+          const rw=(r.submittedBy||r.savedBy||"").trim().toLowerCase();
+          if((r.teamKey||"").trim()===team&&rw===who) hitKey=k;
+        });
+      }
+      if(hitKey) return fetch(`${fb}/checksheets/${date}/${hitKey}.json`,{method:"PUT",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}});
+      return post();
+    })
     .then(r=>{if(!r.ok)throw new Error("sync fail");return true})
     .catch(()=>false);
 }
@@ -11780,7 +11837,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v189";
+const APP_VERSION="v192";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -11966,21 +12023,43 @@ function _wpSaveOutput(date,planId){
   if(!(qty>0)){showToast("Enter the quantity achieved");return;}
   if(!(men>0)){showToast("Enter how many men worked");return;}
   const fb=getFirebaseUrl();if(!fb){showToast("No cloud connection configured");return;}
-  const finish=(t2,r2)=>{
+  // v190: the plan id is resolved below and passed in, rather than read from the
+  // outer scope, because unplanned output can now acquire one.
+  const finish=(t2,r2,pid,note)=>{
     const auto=_wpCanPlan();
     const id="sp"+Date.now();
-    const rec={planId:planId||null,team:t2,ref:r2,qty:qty,men:men,by:currentUser?currentUser.username:"",at:Date.now(),confirmed:auto};
+    const rec={planId:pid||null,team:t2,ref:r2,qty:qty,men:men,by:currentUser?currentUser.username:"",at:Date.now(),confirmed:auto};
     if(auto){rec.confirmedBy=currentUser?currentUser.username:"";rec.confirmedAt=Date.now();}
     fetch(fb+"/sectionprogress/"+date+"/"+id+".json",{method:"PUT",body:JSON.stringify(rec)})
-      .then(r=>{if(r.ok){showToast(auto?"✅ Output recorded and approved":"✅ Recorded — pending approval");_wpRenderOutput(date);if(auto)_wpPublishSnapshot();}else showToast("⚠️ Save failed (HTTP "+r.status+")");})
+      .then(r=>{if(r.ok){showToast((note?note+" ":"")+(auto?"✅ Output recorded and approved":"✅ Recorded — pending approval"));_wpRenderOutput(date);if(auto)_wpPublishSnapshot();}else showToast("⚠️ Save failed (HTTP "+r.status+")");})
       .catch(()=>showToast("⚠️ Save failed — check connection"));
   };
   if(planId){
     _wpLoadPlans(date).then(plans=>{
       const p=plans[planId];if(!p){showToast("Plan row not found — reload");return;}
-      finish(p.team,p.ref);
+      finish(p.team,p.ref,planId,"");
     });
-  }else finish(team,ref);
+  }else{
+    // v190: output entered through the unplanned box used to save with planId null,
+    // so it attached to no target and the day read as "nothing delivered" even when
+    // the crew had done the work. Now, if a target exists for the same crew, the
+    // same section and the same date, the entry is attached to it automatically.
+    // Genuinely unplanned work still saves free, which is what that box is for.
+    _wpLoadPlans(date).then(plans=>{
+      const nm=s=>String(s||"").trim().toLowerCase().replace(/\s+/g," ");
+      const hits=Object.keys(plans||{}).filter(id=>{
+        const p=plans[id];
+        return p&&p.ref===ref&&nm(p.team)===nm(team);
+      }).sort();
+      if(!hits.length){finish(team,ref,null,"");return;}
+      // more than one target for the same crew and section on one day is unusual;
+      // attach to the largest so the entry lands against the substantive one.
+      let best=hits[0],bestQ=-1;
+      hits.forEach(id=>{const q=parseFloat(plans[id].qty)||0;if(q>bestQ){bestQ=q;best=id;}});
+      const p=plans[best];
+      finish(p.team,p.ref,best,hits.length>1?"🎯 Counted against a target for this section.":"🎯 Counted against today's target.");
+    }).catch(()=>finish(team,ref,null,""));
+  }
 }
 function _wpApprove(date,id){
   const fb=getFirebaseUrl();if(!fb)return;
@@ -13633,6 +13712,9 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v192 — Quantity fields become numbers. Every work-row quantity (length, qty, joints, volume) was a plain text input, so the database holds "5.60 metro", "8.60 metros", "18 pares", "15 unidades conectadas" and "32 unidades (50-50)" sitting in the same column as bare numbers. Measured across the whole history: 101 quantity cells are clean numbers and 146 are free text, which is why three months of site output could not be totalled and could not be back-filled into the PM Console. The unit was never the problem — it has always been declared in the label ("Length(m)") and is now shown beside the field and enforced by input type=number with inputmode=decimal, so phones open the numeric keypad. NOTHING IS LOST: a new full-width Note field is added to every team's work row, and when an old sheet with a free-text quantity is opened the number is extracted into the numeric field while the original text is carried into the Note, so re-saving legacy data cannot silently drop what somebody wrote. On the existing history that recovers a usable number from 123 of the 146 messy cells, 84 percent. "note" was appended to every team's workKeys and workLabels, so it flows into the PDF and Excel exports automatically without touching either export path. Crews get one extra optional box and a numeric keypad; nothing they do today stops working.
+// Build: v191 — Stop duplicate checksheets. cloudSaveSheet always POSTed a new record and a fresh _id was minted on each save, so re-submitting appended another sheet for the same team and day instead of replacing the last one. Found in the 8 Aug database read: Kenneth Soerowidjojo filed five ducting sheets between 20:33 and 20:39 on 2026-05-05, all carrying the same four man-days, and 43 of 200 team-days hold more than one sheet — which multiplied every man-day and quantity count read off /checksheets by an unknown factor and made the history impossible to back-fill into the PM Console. Now: one sheet per team per PERSON per day. On save the day's node is read and any existing record with the same teamKey and the same submitter (trimmed, case-insensitive) is PUT over rather than appended. Different people on the same team on the same day are legitimate and are preserved untouched — on 5 May that correctly keeps Jose Gonzalez, Julio Caraballo and Jose Rodriguez while collapsing Kenneth's five into one. Two areas in one day belong in the work rows inside the sheet. If the pre-read fails for any reason it falls back to the old POST so a save is never lost. Crews see no change whatsoever. Nothing else touched.
+// Build: v190 — CLOSE THE TARGET GAP. Root cause of "we can't see progress against plan": targets were agreed verbally and never entered, and only admin/Engineer/Project Lead can create an assignment (_wpCanPlan), so the Work Plan screen was always empty. Crews therefore used the "Unplanned output" box, which saved with planId:null, so output attached to no target and every day read as nothing-delivered even when the work was done. Two halves to the fix. (1) OUTSIDE THIS APP: targets now arrive in bulk from the PM Console (BBI/ELGAWA_PM_Console/console.html), which uploads Akeem's Excel and writes /workplans/<date>/<id> in exactly this app's record shape — no app change needed for that, the app already reads it. (2) HERE: _wpSaveOutput no longer saves unplanned output blind. Before writing, it loads the day's plans and looks for a target with the same ref and the same crew (name compared case-insensitively and whitespace-collapsed, since the crew field is free text with a datalist). One match attaches; several attach to the largest, which is the substantive one; none saves free exactly as before, because genuinely unplanned work is what that box is for. The crew sees "🎯 Counted against today's target." and does nothing differently. finish() now takes the plan id as a parameter instead of closing over the outer planId, which is the only structural change. Verified: 11 assertions on the matching logic (exact, case-different, extra whitespace, right crew wrong section, unknown crew, multiple targets, no plans, null plans, determinism), full file node --check clean, sw.js bumped to v190.
 // Build: v189 — FIX: HR/HSEQ stranded on the technical page. Their nav buttons are hidden, so any navigation that unhid dashView left them stuck with no way back — the phone BACK button was the main culprit (the popstate handler called switchTab("forms") with no role guard), and a restored tab could do the same on refresh. Added _dedicatedRole() + _routeRoleHome(): switchTab now returns straight to the role's own screen for HR/HSEQ/Worker, the back button re-asserts their view (closing Profiles/My Profile first) and keeps them in the app, and the refresh session-restore re-asserts it too instead of just skipping. Root-level guard, so no future code path can strand them either.
 // Build: v188 — Daily data backup (Firebase free tier has NO automatic backups; one bad delete could lose everything). New admin-only "Backup All Data" button on the dashboard downloads a dated JSON of the whole database (CrewFlow_Backup_<date>.json) straight to the device — uses _origFetch with the service-account token so the fetch wrapper doesn't double-append auth, and the browser streams the file so size (photos included) is no constraint. Also auto-runs once per day, 8s after the ADMIN opens the app (guarded by elg_last_backup date + _backupAutoDone), so a fresh backup lands on Paul's machine daily with zero effort. Admin-gated: only Paul's login backs up, so there's a single clean source. Nothing else changed.
 // Build: v187 — FIX broken cloud sync (root cause found live). Diagnosis: rules were fine (auth!=null, non-expiring) and quota was fine (35MB/7d, 49MB storage), but accounts:signUp returned 400 TOO_MANY_ATTEMPTS_TRY_LATER — the app created a NEW anonymous user every 55 min on every phone, so over weeks Firebase blocked anonymous sign-ups; no token → every write 401 → app mislabels it "rules expired". Fix: enabled Email/Password provider + created ONE shared account (crewflow.sync@elgawa.app) in Firebase; app now signs in with that account ONCE and refreshes its token via securetoken (stored in elg_fb_refresh), never creating new users. signInWithPassword is not subject to the anonymous throttle, so sync restores immediately on this build (verified live: signIn 200, authed DB write 200, refresh 200). Rules unchanged (data stays auth-protected, NOT made public). _fbSignInAnon kept as an alias of _fbSignIn for the fetch-wrapper retry path.
