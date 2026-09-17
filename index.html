@@ -7727,7 +7727,16 @@ window.fetch=function(input,init){
   }
   return _origFetch(input,init).then(function(res){
     if(isFb&&(res.status===401||res.status===403)&&_fbAuthEnabled()){
-      return _fbSignInAnon().then(function(tok){
+      // v194: a rejection means the identity we are holding is no longer accepted.
+      // The usual cause is a refresh token left over from the pre-v187 anonymous
+      // days. It still refreshes successfully, so _fbSignIn() never falls through
+      // to the password sign-in and the app retries the same rejected identity
+      // forever - which is exactly what happened when the database rules stopped
+      // accepting anonymous accounts. Throw the stored token away and sign in
+      // cleanly as the shared account, so every phone heals itself on first 401.
+      _fbToken=null; _fbRefreshTok=null;
+      try{localStorage.removeItem("elg_fb_refresh")}catch(e){}
+      return _fbPasswordSignIn().then(function(tok){
         if(!tok)return res;
         var base=url.replace(/([?&])auth=[^&]*/,"$1").replace(/[?&]$/,"");
         var sep=base.indexOf("?")>-1?"&":"?";var u2=base+sep+"auth="+encodeURIComponent(tok);
@@ -11837,7 +11846,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v192";
+const APP_VERSION="v194";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -11862,7 +11871,24 @@ const WP_SECTIONS=[
  {ref:"AW-07",name:"Copper 5/8\" (15.9mm)",unit:"m",qty:1450,labour:30627.50},
  {ref:"AW-08",name:"VRF indoor units (2nd order)",unit:"pcs",qty:80,labour:2598.40},
  {ref:"AW-09",name:"VRF outdoor units (2nd order)",unit:"pcs",qty:14,labour:2590.00},
- {ref:"AW-10",name:"Digital mixing valve",unit:"sum",qty:1,labour:3000.00}
+ {ref:"AW-10",name:"Digital mixing valve",unit:"sum",qty:1,labour:3000.00},
+ // v191: ADJ-01 was missing. Without it this list summed to 477,978.05 against the
+ // mastersheet's 475,299.65 — the 2,678.40 gap is the insulation tube already paid
+ // for inside the copper BOQ rate. qty 0 keeps it out of every quantity total and
+ // _wpLpu already guards against dividing by it.
+ {ref:"ADJ-01",name:"Less: insulation tube in the BOQ rate",unit:"-",qty:0,labour:-2678.40},
+ // v191: TRACKING LINES. Real work that costs real man-days but is not separately
+ // billable, because it is already inside the AW rates. labour 0 ON PURPOSE — giving
+ // these a value would earn the same money twice. qty 0 because there is no take-off
+ // for them. TK-05/06/07 have no quantity column on their checksheets at all, so they
+ // are measured in completed tasks, which is an activity count and not a measurement.
+ {ref:"TK-01",name:"Insulation",unit:"m",qty:0,labour:0},
+ {ref:"TK-02",name:"Drainage and condensate",unit:"m",qty:0,labour:0},
+ {ref:"TK-03",name:"Welding and fabrication",unit:"joints",qty:0,labour:0},
+ {ref:"TK-04",name:"General labour",unit:"qty",qty:0,labour:0},
+ {ref:"TK-05",name:"Controls and electrical",unit:"tasks",qty:0,labour:0},
+ {ref:"TK-06",name:"Commissioning and testing",unit:"tasks",qty:0,labour:0},
+ {ref:"TK-07",name:"Refrigerant support",unit:"tasks",qty:0,labour:0}
 ];
 function _wpSec(ref){for(var i=0;i<WP_SECTIONS.length;i++)if(WP_SECTIONS[i].ref===ref)return WP_SECTIONS[i];return null;}
 function _wpLpu(ref){var s=_wpSec(ref);return s&&s.qty?s.labour/s.qty:0;}
@@ -13712,6 +13738,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v193 — TRACK EVERY TEAM, and fix the labour total. Two things. (1) WP_SECTIONS was missing ADJ-01 and therefore summed to 477,978.05 against the mastersheet's 475,299.65; the 2,678.40 gap is the insulation tube already paid for inside the copper BOQ rate. ADJ-01 added at qty 0, labour -2,678.40, so the list now totals exactly 475,299.65. This defect has been open since the PM Console was first built and is now closed on both sides. (2) Seven TRACKING lines added: TK-01 insulation, TK-02 drainage and condensate, TK-03 welding and fabrication, TK-04 general labour, TK-05 controls and electrical, TK-06 commissioning and testing, TK-07 refrigerant support. Until now those five crews had quantity columns on their checksheets and nowhere for the numbers to go, so their work and their man-days were invisible to the console. All seven carry labour 0 DELIBERATELY — that work is already inside the AW rates, and giving it a value would earn the same money twice and inflate every margin figure. qty is 0 because there is no take-off for them, so percent complete is meaningless on these lines and neither app pretends otherwise. TK-05/06/07 have no quantity column on their checksheets at all, so the console counts them in completed tasks, which is an activity count and is labelled as one. _wpLpu already guards against dividing by a zero qty, so nothing else needed changing. Crews get seven more options in the section dropdown and nothing they do today stops working. Verified: WP_SECTIONS totals 475,299.65 exactly, 18 lines, full file node --check clean, sw.js v193, and the console's own suite at 248 assertions passing.
 // Build: v192 — Quantity fields become numbers. Every work-row quantity (length, qty, joints, volume) was a plain text input, so the database holds "5.60 metro", "8.60 metros", "18 pares", "15 unidades conectadas" and "32 unidades (50-50)" sitting in the same column as bare numbers. Measured across the whole history: 101 quantity cells are clean numbers and 146 are free text, which is why three months of site output could not be totalled and could not be back-filled into the PM Console. The unit was never the problem — it has always been declared in the label ("Length(m)") and is now shown beside the field and enforced by input type=number with inputmode=decimal, so phones open the numeric keypad. NOTHING IS LOST: a new full-width Note field is added to every team's work row, and when an old sheet with a free-text quantity is opened the number is extracted into the numeric field while the original text is carried into the Note, so re-saving legacy data cannot silently drop what somebody wrote. On the existing history that recovers a usable number from 123 of the 146 messy cells, 84 percent. "note" was appended to every team's workKeys and workLabels, so it flows into the PDF and Excel exports automatically without touching either export path. Crews get one extra optional box and a numeric keypad; nothing they do today stops working.
 // Build: v191 — Stop duplicate checksheets. cloudSaveSheet always POSTed a new record and a fresh _id was minted on each save, so re-submitting appended another sheet for the same team and day instead of replacing the last one. Found in the 8 Aug database read: Kenneth Soerowidjojo filed five ducting sheets between 20:33 and 20:39 on 2026-05-05, all carrying the same four man-days, and 43 of 200 team-days hold more than one sheet — which multiplied every man-day and quantity count read off /checksheets by an unknown factor and made the history impossible to back-fill into the PM Console. Now: one sheet per team per PERSON per day. On save the day's node is read and any existing record with the same teamKey and the same submitter (trimmed, case-insensitive) is PUT over rather than appended. Different people on the same team on the same day are legitimate and are preserved untouched — on 5 May that correctly keeps Jose Gonzalez, Julio Caraballo and Jose Rodriguez while collapsing Kenneth's five into one. Two areas in one day belong in the work rows inside the sheet. If the pre-read fails for any reason it falls back to the old POST so a save is never lost. Crews see no change whatsoever. Nothing else touched.
 // Build: v190 — CLOSE THE TARGET GAP. Root cause of "we can't see progress against plan": targets were agreed verbally and never entered, and only admin/Engineer/Project Lead can create an assignment (_wpCanPlan), so the Work Plan screen was always empty. Crews therefore used the "Unplanned output" box, which saved with planId:null, so output attached to no target and every day read as nothing-delivered even when the work was done. Two halves to the fix. (1) OUTSIDE THIS APP: targets now arrive in bulk from the PM Console (BBI/ELGAWA_PM_Console/console.html), which uploads Akeem's Excel and writes /workplans/<date>/<id> in exactly this app's record shape — no app change needed for that, the app already reads it. (2) HERE: _wpSaveOutput no longer saves unplanned output blind. Before writing, it loads the day's plans and looks for a target with the same ref and the same crew (name compared case-insensitively and whitespace-collapsed, since the crew field is free text with a datalist). One match attaches; several attach to the largest, which is the substantive one; none saves free exactly as before, because genuinely unplanned work is what that box is for. The crew sees "🎯 Counted against today's target." and does nothing differently. finish() now takes the plan id as a parameter instead of closing over the outer planId, which is the only structural change. Verified: 11 assertions on the matching logic (exact, case-different, extra whitespace, right crew wrong section, unknown crew, multiple targets, no plans, null plans, determinism), full file node --check clean, sw.js bumped to v190.
