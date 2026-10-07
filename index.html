@@ -657,6 +657,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
     <button onclick="openMyProfile()" id="myProfileDashBtn" style="width:100%;margin-bottom:10px;padding:11px;border:1.5px solid var(--navy);border-radius:12px;background:white;color:var(--navy);font-size:14px;font-weight:700;cursor:pointer">👤 My Profile</button>
     <button onclick="openWorkerProfiles()" id="workforceProfilesBtn" style="display:none;width:100%;margin-bottom:10px;padding:11px;border:none;border-radius:12px;background:var(--navy);color:white;font-size:14px;font-weight:700;cursor:pointer">👥 Workforce Profiles</button>
     <button onclick="openWorkPlan()" id="workPlanBtn" style="display:none;width:100%;margin-bottom:10px;padding:11px;border:none;border-radius:12px;background:#7E5BB5;color:white;font-size:14px;font-weight:700;cursor:pointer">📐 Work Plan &amp; Output</button>
+    <button onclick="openJobs()" id="jobsBtn" style="display:none;width:100%;margin-bottom:10px;padding:11px;border:1.5px solid var(--teal);border-radius:12px;background:white;color:var(--navy);font-size:14px;font-weight:700;cursor:pointer">🧰 Jobs</button>
     <button onclick="backupAllData()" id="backupDataBtn" style="display:none;width:100%;margin-bottom:10px;padding:11px;border:1.5px solid #0d9488;border-radius:12px;background:white;color:#0d9488;font-size:14px;font-weight:700;cursor:pointer">⬇️ Backup All Data</button>
     <div class="settings-row" id="settingsRow">
     <button class="pill-btn" onclick="exportCSV()" id="exportBtn" style="display:none">📊 Export CSV</button></div>
@@ -879,6 +880,11 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
 <div id="workPlanView" class="hidden" style="max-width:680px;margin:0 auto;padding:16px;padding-bottom:40px">
   <div class="back-row"><button class="back-btn" onclick="closeWorkPlan()">← Back</button></div>
   <div id="workPlanBody"></div>
+</div>
+<!-- v195/v196: Jobs — job cards, dispatch, equipment register, service reports -->
+<div id="jobsView" class="hidden" style="max-width:680px;margin:0 auto;padding:16px;padding-bottom:40px">
+  <div class="back-row"><button class="back-btn" id="jobsBackBtn" onclick="_jbBack()">← Back</button></div>
+  <div id="jobsBody"></div>
 </div>
 <div id="workerProfilesView" class="hidden" style="max-width:680px;margin:0 auto;padding:16px;padding-bottom:40px">
   <div style="margin-bottom:10px"><button class="btn-s" onclick="closeWorkerProfiles()" style="font-size:13px;padding:8px 16px;border:1.5px solid var(--border);background:white;color:var(--navy);border-radius:8px;cursor:pointer;font-weight:600">◀ Back</button></div>
@@ -2308,6 +2314,7 @@ function setLang(l){LANG=l;try{localStorage.setItem("elg_lang",l)}catch(e){}
   // v186: highlight the worker-view language buttons
   document.querySelectorAll(".wlang-btn").forEach(b=>{const on=b.getAttribute("data-l")===l;b.style.background=on?"var(--navy)":"white";b.style.color=on?"white":"var(--navy)";b.style.borderColor=on?"var(--navy)":"var(--border)"});
   applyLang();
+  try{_jbLabel();if(_jbIsOpen())_jbRender(false);}catch(e){}
   // v186: applyLang only updates static labels — the worker sign-in view and the
   // HR view are built dynamically, so re-render them or their buttons keep the old
   // language (this is why the casual-worker Sign In/Out buttons stayed English).
@@ -2364,7 +2371,7 @@ function _dedicatedRole(){
 }
 function _routeRoleHome(){
   const r=_dedicatedRole();if(!r)return false;
-  ["dashView","formView","settingsView","reportView","tabForms","tabReports","tabHistory","hubView","hubSubTabsWrap","tabAttendance","workerProfilesView","myProfileView","workPlanView"].forEach(function(id){
+  ["dashView","formView","settingsView","reportView","tabForms","tabReports","tabHistory","hubView","hubSubTabsWrap","tabAttendance","workerProfilesView","myProfileView","workPlanView","jobsView"].forEach(function(id){
     const el=document.getElementById(id);if(el)el.classList.add("hidden");
   });
   const bn=document.getElementById("bottomNav");if(bn)bn.classList.add("hidden");
@@ -2434,6 +2441,12 @@ window.addEventListener("popstate",function(e){
     history.pushState({tab:"home"},"",location.pathname);
     return;
   }
+  // v195: Jobs view — back steps from a job to the list, then out to the dashboard
+  if(typeof _jbIsOpen==="function"&&_jbIsOpen()){
+    const inner=_jbNav.length>0;_jbBack();
+    history.pushState({tab:inner?"jobs":"forms"},"",location.pathname);
+    return;
+  }
   // If form is open, go back to dashboard
   const fv=document.getElementById("formView");
   if(fv&&!fv.classList.contains("hidden")){
@@ -2495,6 +2508,834 @@ function setTeamView(mode){
     listBtn.classList.add("active");gridBtn.classList.remove("active");
   }
 }
+// ═══ JOBS, DISPATCH, EQUIPMENT, SERVICE REPORTS (v195–v196) ═══
+// Job cards for install, service and repair work on ANY project, not just BBI.
+// Data paths (all new, nothing else in the app reads or writes them):
+//   /jobs/{id}        job card, hours log, service report text, seen marks
+//   /jobphotos/{id}   service report photos + client signature (kept apart so
+//                     the job list stays a small download)
+//   /equipment/{id}   equipment register: one record per unit
+// Planners (admin, Engineer, Project Lead) create, dispatch, edit and delete.
+// Team leads, lead workers and supervisors see their jobs, move the status,
+// log hours, fill service reports and add units to the register.
+// Location is read ONLY at three moments: job start, job finish and client
+// sign-off. There is no background tracking.
+const JB_TXT={
+ en:{btn:"🧰 Jobs",title:"Jobs",sub:"Every job, start to finish.",tabJobs:"Jobs",tabDispatch:"Dispatch",tabEquip:"Equipment",
+  mine:"Mine",open:"Open",done:"Done",all:"All",newJob:"New job",editJob:"Edit job",newPill:"New",today:"Today",
+  s_open:"Open",s_progress:"In progress",s_hold:"On hold",s_done:"Done",
+  p_low:"Low",p_normal:"Normal",p_high:"High",p_urgent:"Urgent",
+  t_install:"Installation",t_service:"Service",t_repair:"Repair",t_pm:"Maintenance",
+  f_title:"Job",f_type:"Type",f_pri:"Priority",f_client:"Client",f_site:"Site / location",f_project:"Project",f_assigned:"Assigned to",f_est:"Estimated man-hours",f_due:"Due date",f_sched:"Scheduled for",f_notes:"Notes",f_equip:"Equipment on this job",
+  ph_title:"e.g. Replace compressor, AHU-2",ph_client:"Client name",ph_site:"Building, floor, room",ph_project:"e.g. Pasha Global",ph_eqSearch:"Search tag, brand, serial, client",
+  save:"Save job",cancel:"Cancel",edit:"Edit",del:"Delete job",
+  start:"Start job",hold:"Put on hold",resume:"Resume",complete:"Mark done",reopen:"Reopen",
+  logHrs:"Log hours",date:"Date",people:"People",hrsEach:"Hours each",note:"Note (optional)",saveHrs:"Save hours",
+  hoursLog:"Hours logged",noHours:"No hours logged yet.",mh:"man-hours",of:"of",noEst:"no estimate",
+  created:"Created",started:"Started",finished:"Finished",late:"Overdue",due:"Due",sched:"Scheduled",
+  locStart:"Location at start",locDone:"Location at finish",map:"Open map",locWait:"Getting location…",
+  empty_mine:"No open jobs assigned to you.",empty_open:"No open jobs. Tap New job to add one.",empty_done:"No finished jobs yet.",empty_all:"No jobs yet. Tap New job to add the first one.",
+  loading:"Loading…",saved:"✅ Job saved",hrsSaved:"✅ Hours saved",failed:"⚠️ Save failed. Check your connection and try again.",noCloud:"⚠️ No cloud connection",
+  needTitle:"Enter what the job is",needHrs:"Enter people and hours",
+  delQ:"Delete this job?",delMsg:"The job card, its hours, its service report and photos are removed. This cannot be undone.",deleted:"Job deleted",unassigned:"Not assigned",back:"← Back",
+  // dispatch
+  dispTitle:"Dispatch",notDispatched:"Not dispatched",lateSched:"Behind schedule",nothingDay:"Nothing scheduled for this day.",assign:"Assign",dispatchBtn:"Dispatch",dispatched:"✅ Dispatched",pickLead:"Pick a lead and a date",nobody:"Nobody",
+  // equipment
+  addUnit:"Add unit",editUnit:"Edit unit",unit:"Unit",eqAll:"All",eqDue:"Service due",eqWarr:"Warranty ending",
+  e_tag:"Tag / unit ID",e_type:"Type",e_brand:"Brand",e_model:"Model",e_serial:"Serial number",e_ref:"Refrigerant",e_cap:"Capacity",e_client:"Client",e_site:"Site",e_loc:"Location in building",e_install:"Installed",e_warr:"Warranty ends",e_pm:"Service every (months)",e_last:"Last service",e_next:"Next service",e_notes:"Notes",
+  ph_tag:"e.g. AHU-2 or IDU-3F-12",ph_cap:"e.g. 24,000 BTU",ph_loc:"Floor, room",
+  et_split:"Split unit",et_vrfi:"VRF indoor",et_vrfo:"VRF outdoor",et_ahu:"AHU",et_fcu:"FCU",et_chiller:"Chiller",et_pkg:"Package unit",et_fan:"Exhaust fan",et_other:"Other",
+  st_over:"Service overdue",st_due:"Service due",st_ok:"Up to date",st_warr:"Warranty ending",st_warrx:"Warranty expired",st_nopm:"No service plan",
+  remind:"units need service soon",remindW:"warranties ending",remindOne:"unit needs service soon",remindWOne:"warranty ending",
+  eqSaved:"✅ Unit saved",saveUnit:"Save unit",needTag:"Enter the unit tag",history:"Service history",noHistory:"No jobs on this unit yet.",makeJob:"Create service job",delUnit:"Delete unit",
+  delUnitQ:"Delete this unit?",delUnitMsg:"The unit is removed from the register. Jobs that listed it keep their history.",unitDeleted:"Unit deleted",eqEmpty:"No units in the register yet. Tap Add unit.",eqEmptyF:"No units match.",pmTitle:"Preventive maintenance",
+  // service report
+  report:"Service report",fillReport:"Fill service report",editReport:"Edit report",viewPdf:"Service report PDF",signed:"Signed by",draftSaved:"Draft saved",
+  r_date:"Service date",r_work:"Work performed",r_eq:"Units serviced",r_read:"Readings (fill what you measured)",r_parts:"Parts and materials used",r_photos:"Photos",r_client:"Client name",r_sig:"Client signature",
+  ph_work:"What was found and what was done",ph_parts:"One item per line, e.g. 1 x run capacitor 45/5 µF",
+  rd_sat:"Supply air °C",rd_rat:"Return air °C",rd_sp:"Suction psi",rd_dp:"Discharge psi",rd_amps:"Running amps",rd_volts:"Voltage",rd_ref:"Refrigerant",rd_add:"Refrigerant added kg",
+  addPhoto:"Add photos",clearSig:"Clear",saveDraft:"Save draft",signOff:"Client signs off, finish job",
+  needWork:"Describe the work performed",needSign:"Client name and signature are needed to sign off",reportDone:"✅ Signed off. Job finished.",pdfWait:"PDF tools are still loading. Try again in a few seconds.",pdfMaking:"⏳ Building PDF…",photoMax:"Up to 8 photos per report",r_time:"Time on this visit (logged when the client signs)",
+  bannerDue:"due for service"},
+ es:{btn:"🧰 Trabajos",title:"Trabajos",sub:"Cada trabajo, de principio a fin.",tabJobs:"Trabajos",tabDispatch:"Despacho",tabEquip:"Equipos",
+  mine:"Míos",open:"Abiertos",done:"Terminados",all:"Todos",newJob:"Nuevo trabajo",editJob:"Editar trabajo",newPill:"Nuevo",today:"Hoy",
+  s_open:"Abierto",s_progress:"En curso",s_hold:"En espera",s_done:"Terminado",
+  p_low:"Baja",p_normal:"Normal",p_high:"Alta",p_urgent:"Urgente",
+  t_install:"Instalación",t_service:"Servicio",t_repair:"Reparación",t_pm:"Mantenimiento",
+  f_title:"Trabajo",f_type:"Tipo",f_pri:"Prioridad",f_client:"Cliente",f_site:"Lugar",f_project:"Proyecto",f_assigned:"Asignado a",f_est:"Horas-hombre estimadas",f_due:"Fecha límite",f_sched:"Programado para",f_notes:"Notas",f_equip:"Equipos de este trabajo",
+  ph_title:"ej. Cambiar compresor, AHU-2",ph_client:"Nombre del cliente",ph_site:"Edificio, piso, cuarto",ph_project:"ej. Pasha Global",ph_eqSearch:"Buscar etiqueta, marca, serie, cliente",
+  save:"Guardar trabajo",cancel:"Cancelar",edit:"Editar",del:"Eliminar trabajo",
+  start:"Iniciar trabajo",hold:"Poner en espera",resume:"Continuar",complete:"Marcar terminado",reopen:"Reabrir",
+  logHrs:"Registrar horas",date:"Fecha",people:"Personas",hrsEach:"Horas c/u",note:"Nota (opcional)",saveHrs:"Guardar horas",
+  hoursLog:"Horas registradas",noHours:"Todavía no hay horas.",mh:"horas-hombre",of:"de",noEst:"sin estimado",
+  created:"Creado",started:"Iniciado",finished:"Terminado",late:"Atrasado",due:"Para",sched:"Programado",
+  locStart:"Ubicación al iniciar",locDone:"Ubicación al terminar",map:"Ver mapa",locWait:"Obteniendo ubicación…",
+  empty_mine:"No tienes trabajos abiertos asignados.",empty_open:"No hay trabajos abiertos.",empty_done:"Todavía no hay trabajos terminados.",empty_all:"Todavía no hay trabajos.",
+  loading:"Cargando…",saved:"✅ Trabajo guardado",hrsSaved:"✅ Horas guardadas",failed:"⚠️ No se guardó. Revisa la conexión e intenta otra vez.",noCloud:"⚠️ Sin conexión a la nube",
+  needTitle:"Escribe qué trabajo es",needHrs:"Escribe personas y horas",
+  delQ:"¿Eliminar este trabajo?",delMsg:"Se borra el trabajo, sus horas, su reporte y fotos. No se puede deshacer.",deleted:"Trabajo eliminado",unassigned:"Sin asignar",back:"← Atrás",
+  dispTitle:"Despacho",notDispatched:"Sin despachar",lateSched:"Atrasados",nothingDay:"Nada programado para este día.",assign:"Asignar",dispatchBtn:"Despachar",dispatched:"✅ Despachado",pickLead:"Elige un líder y una fecha",nobody:"Nadie",
+  addUnit:"Agregar equipo",editUnit:"Editar equipo",unit:"Equipo",eqAll:"Todos",eqDue:"Servicio pendiente",eqWarr:"Garantía por vencer",
+  e_tag:"Etiqueta / ID",e_type:"Tipo",e_brand:"Marca",e_model:"Modelo",e_serial:"Número de serie",e_ref:"Refrigerante",e_cap:"Capacidad",e_client:"Cliente",e_site:"Lugar",e_loc:"Ubicación en el edificio",e_install:"Instalado",e_warr:"Garantía hasta",e_pm:"Servicio cada (meses)",e_last:"Último servicio",e_next:"Próximo servicio",e_notes:"Notas",
+  ph_tag:"ej. AHU-2 o IDU-3F-12",ph_cap:"ej. 24,000 BTU",ph_loc:"Piso, cuarto",
+  et_split:"Split",et_vrfi:"VRF interior",et_vrfo:"VRF exterior",et_ahu:"AHU",et_fcu:"FCU",et_chiller:"Chiller",et_pkg:"Paquete",et_fan:"Extractor",et_other:"Otro",
+  st_over:"Servicio vencido",st_due:"Servicio pronto",st_ok:"Al día",st_warr:"Garantía por vencer",st_warrx:"Garantía vencida",st_nopm:"Sin plan de servicio",
+  remind:"equipos necesitan servicio pronto",remindW:"garantías por vencer",remindOne:"equipo necesita servicio pronto",remindWOne:"garantía por vencer",
+  eqSaved:"✅ Equipo guardado",saveUnit:"Guardar equipo",needTag:"Escribe la etiqueta del equipo",history:"Historial de servicio",noHistory:"Todavía no hay trabajos en este equipo.",makeJob:"Crear trabajo de servicio",delUnit:"Eliminar equipo",
+  delUnitQ:"¿Eliminar este equipo?",delUnitMsg:"Se quita del registro. Los trabajos que lo usaron mantienen su historial.",unitDeleted:"Equipo eliminado",eqEmpty:"Todavía no hay equipos. Toca Agregar equipo.",eqEmptyF:"Ningún equipo coincide.",pmTitle:"Mantenimiento preventivo",
+  report:"Reporte de servicio",fillReport:"Llenar reporte de servicio",editReport:"Editar reporte",viewPdf:"PDF del reporte",signed:"Firmado por",draftSaved:"Borrador guardado",
+  r_date:"Fecha del servicio",r_work:"Trabajo realizado",r_eq:"Equipos atendidos",r_read:"Lecturas (llena lo que mediste)",r_parts:"Repuestos y materiales usados",r_photos:"Fotos",r_client:"Nombre del cliente",r_sig:"Firma del cliente",
+  ph_work:"Qué se encontró y qué se hizo",ph_parts:"Uno por línea, ej. 1 x capacitor 45/5 µF",
+  rd_sat:"Aire de suministro °C",rd_rat:"Aire de retorno °C",rd_sp:"Succión psi",rd_dp:"Descarga psi",rd_amps:"Amperaje",rd_volts:"Voltaje",rd_ref:"Refrigerante",rd_add:"Refrigerante agregado kg",
+  addPhoto:"Agregar fotos",clearSig:"Borrar",saveDraft:"Guardar borrador",signOff:"Cliente firma, terminar trabajo",
+  needWork:"Describe el trabajo realizado",needSign:"Se necesita nombre y firma del cliente",reportDone:"✅ Firmado. Trabajo terminado.",pdfWait:"El PDF todavía carga. Intenta en unos segundos.",pdfMaking:"⏳ Generando PDF…",photoMax:"Máximo 8 fotos por reporte",r_time:"Tiempo en esta visita (se registra al firmar)",
+  bannerDue:"con servicio pendiente"}
+};
+function jt(k){const l=(typeof LANG!=="undefined"&&JB_TXT[LANG])?LANG:"en";return (JB_TXT[l]&&JB_TXT[l][k])||JB_TXT.en[k]||k;}
+function jte(k){return JB_TXT.en[k]||k;} // English, for client-facing PDFs
+const JB_PRI=["urgent","high","normal","low"],JB_TYPES=["install","service","repair","pm"];
+const EQ_TYPES=["split","vrfi","vrfo","ahu","fcu","chiller","pkg","fan","other"];
+const JB_READ=["sat","rat","sp","dp","amps","volts","ref","add"];
+let _jbJobs={},_jbEq={},_jbFilter=null,_eqFilter="all",_eqQuery="",_jbDispDate=null,_jbDraft=null;
+// Navigation: _jbS is the current screen, _jbNav the screens behind it. The
+// in-view back button and the phone back button both pop one screen.
+let _jbS={mode:"list",tab:"jobs"},_jbNav=[];
+
+function _jbCanPlan(){return _wpCanPlan();}
+function _jbCanUse(){return _wpCanRecord();}
+function _jbArr(a){return Array.isArray(a)?a.filter(Boolean):(a?Object.values(a).filter(Boolean):[]);}
+function _jbMine(j){return !!(currentUser&&j&&_jbArr(j.assigned).indexOf(currentUser.name)>-1);}
+function _jbCanAct(j){return _jbCanPlan()||_jbMine(j);}
+function _jbNew(j){return !!(_jbMine(j)&&j.status!=="done"&&!(j.seen&&currentUser&&j.seen[currentUser.username]));}
+function _jbMh(j){let t=0;Object.values((j&&j.log)||{}).forEach(e=>{if(e)t+=(parseFloat(e.crew)||0)*(parseFloat(e.hrs)||0)});return Math.round(t*10)/10;}
+function _jbToday(){return getGuyanaDate();}
+function _jbLate(j){return !!(j&&j.due&&j.status!=="done"&&j.due<_jbToday());}
+function _jbPlusDays(d,n){const x=new Date(d+"T12:00:00");x.setDate(x.getDate()+n);return x.toISOString().slice(0,10);}
+function _jbAddMonths(d,n){const x=new Date(d+"T12:00:00");const day=x.getDate();x.setDate(1);x.setMonth(x.getMonth()+n);const last=new Date(x.getFullYear(),x.getMonth()+1,0).getDate();x.setDate(Math.min(day,last));return x.toISOString().slice(0,10);}
+function _jbD(s){if(!s)return"";try{const d=typeof s==="number"?new Date(s):new Date(String(s).length===10?s+"T12:00:00":s);if(isNaN(d))return String(s);return d.toLocaleDateString(LANG==="es"?"es":LANG==="nl"?"nl":"en-GB",{day:"numeric",month:"short",year:"numeric"});}catch(e){return s}}
+function _jbDE(s){if(!s)return"";try{const d=typeof s==="number"?new Date(s):new Date(String(s).length===10?s+"T12:00:00":s);return isNaN(d)?String(s):d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});}catch(e){return String(s)}}
+function _jbNum(n){return (Math.round((parseFloat(n)||0)*10)/10).toString();}
+function _jbSchedLbl(j){if(!j.schedDate)return"";return "📅 "+(j.schedDate===_jbToday()?jt("today"):_jbD(j.schedDate));}
+
+// ── data ──
+function _jbGet(path){
+  const fb=getFirebaseUrl();if(!fb)return Promise.reject(new Error("no cloud"));
+  return fetch(fb+path+".json").then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json();});
+}
+// A failed read keeps the last data on screen instead of blanking it.
+function _jbLoad(){return _jbGet("/jobs").then(d=>{_jbJobs=d||{};return _jbJobs;}).catch(()=>_jbJobs);}
+function _eqLoad(){return _jbGet("/equipment").then(d=>{_jbEq=d||{};return _jbEq;}).catch(()=>_jbEq);}
+function _jbLoadAll(){return Promise.all([_jbLoad(),_eqLoad()]);}
+function _jbLoadPhotos(id){return _jbGet("/jobphotos/"+id).then(d=>d||{}).catch(()=>({}));}
+function _jbWrite(path,method,data){
+  const fb=getFirebaseUrl();if(!fb){showToast(jt("noCloud"));return Promise.reject(new Error("no cloud"));}
+  return fetch(fb+path+".json",{method:method,body:data===undefined?undefined:JSON.stringify(data),headers:{"Content-Type":"application/json"}})
+    .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json();});
+}
+// Location stamp. Asked for only at job start, finish and sign-off; gives up
+// after 8 seconds so a weak signal never blocks the crew.
+function _jbGeo(){
+  return new Promise(res=>{
+    if(!navigator.geolocation){res(null);return;}
+    let done=false;const fin=v=>{if(!done){done=true;res(v);}};
+    setTimeout(()=>fin(null),9000);
+    try{navigator.geolocation.getCurrentPosition(p=>fin({lat:+p.coords.latitude.toFixed(6),lng:+p.coords.longitude.toFixed(6),acc:Math.round(p.coords.accuracy||0),at:Date.now()}),()=>fin(null),{enableHighAccuracy:true,timeout:8000,maximumAge:60000});}catch(e){fin(null);}
+  });
+}
+function _jbMapLink(l){return l&&l.lat?'<a href="https://maps.google.com/?q='+l.lat+','+l.lng+'" target="_blank" rel="noopener" style="color:var(--navy);font-weight:700">'+jt("map")+'</a> <span style="color:var(--grey);font-weight:400">±'+(l.acc||"?")+' m</span>':"";}
+
+// ── equipment status ──
+function _eqNext(e){const pm=parseFloat(e&&e.pmMonths)||0;const base=e&&(e.lastService||e.installDate);return pm>0&&base?_jbAddMonths(base,pm):"";}
+function _eqSvc(e){const n=_eqNext(e);if(!n)return "nopm";const t=_jbToday();if(n<t)return "over";if(n<=_jbPlusDays(t,30))return "due";return "ok";}
+function _eqWar(e){const w=e&&e.warrantyEnd;if(!w)return "";const t=_jbToday();if(w<t)return "x";if(w<=_jbPlusDays(t,60))return "ending";return "";}
+function _eqLabel(e){return (e.tag||"?")+(e.brand||e.model?" ("+[e.brand,e.model].filter(Boolean).join(" ")+")":"");}
+function _eqCounts(){let due=0,war=0;Object.values(_jbEq).forEach(e=>{if(!e)return;const s=_eqSvc(e);if(s==="over"||s==="due")due++;if(_eqWar(e)==="ending")war++;});return {due:due,war:war};}
+
+// ── dashboard button + badge ──
+function _jbLabel(){const b=document.getElementById("jobsBtn");if(b)b.innerHTML=jt("btn")+(b._jbBadge?' <span style="background:var(--danger);color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px">'+b._jbBadge+'</span>':"");}
+// Leads see how many new jobs are waiting for them; planners see how many units
+// are due for service. One small read when the dashboard opens.
+function _jbBadge(){
+  const b=document.getElementById("jobsBtn");if(!b||!_jbCanUse())return;
+  const p=_jbCanPlan()?_eqLoad().then(()=>{const c=_eqCounts().due;return c?c+" "+jt("bannerDue"):"";})
+    :_jbLoad().then(()=>{const c=Object.values(_jbJobs).filter(j=>j&&_jbNew(j)).length;return c?c+" "+jt("newPill").toLowerCase():"";});
+  p.then(t=>{b._jbBadge=t;_jbLabel();}).catch(()=>{});
+}
+
+function _jbCss(){
+  if(document.getElementById("jbCss"))return;
+  const s=document.createElement("style");s.id="jbCss";
+  s.textContent=
+   "#jobsView .jb-chips{display:flex;gap:6px;overflow-x:auto;margin:10px 0;padding-bottom:2px}"
+  +".jb-chip{border:1.5px solid var(--border);background:#fff;color:var(--navy);border-radius:20px;padding:7px 13px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer}"
+  +".jb-chip.on{background:var(--navy);border-color:var(--navy);color:#fff}"
+  +".jb-chip b{opacity:.7;margin-left:5px}"
+  +".jb-tabs{display:flex;background:var(--lt-grey);border:1px solid var(--border);border-radius:12px;padding:3px;margin:12px 0 4px}"
+  +".jb-tab{flex:1;border:none;background:none;padding:9px 6px;border-radius:9px;font-size:13px;font-weight:700;color:var(--grey);cursor:pointer}"
+  +".jb-tab.on{background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(126,91,181,.18)}"
+  +".jb-card{display:block;width:100%;text-align:left;background:#fff;border:none;border-left:5px solid var(--navy);border-radius:12px;box-shadow:var(--shadow);padding:11px 12px;margin-bottom:9px;cursor:pointer;font:inherit;color:inherit}"
+  +".jb-card:focus-visible,.jb-chip:focus-visible,.jb-tab:focus-visible{outline:3px solid var(--teal);outline-offset:2px}"
+  +".jb-p-urgent{border-left-color:var(--danger)}.jb-p-high{border-left-color:#e67e22}.jb-p-low{border-left-color:#cfc7d6}"
+  +".jb-e-over{border-left-color:var(--danger)}.jb-e-due{border-left-color:#e67e22}.jb-e-ok{border-left-color:var(--success)}.jb-e-nopm{border-left-color:#cfc7d6}"
+  +".jb-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px}"
+  +".jb-no{font-size:11px;font-weight:800;color:var(--grey)}"
+  +".jb-pri{font-size:10px;font-weight:800;margin-left:6px}.jb-pri.urgent{color:var(--danger)}.jb-pri.high{color:#c0650f}"
+  +".jb-new{font-size:10px;font-weight:800;margin-left:6px;background:var(--danger);color:#fff;border-radius:8px;padding:1px 7px}"
+  +".jb-pill{font-size:10px;font-weight:800;padding:3px 9px;border-radius:10px;white-space:nowrap}"
+  +".jb-s-open{background:var(--blue-bg);color:var(--navy)}.jb-s-progress{background:#FFF1CC;color:#7a5900}.jb-s-hold{background:#efedf1;color:var(--grey)}.jb-s-done{background:#e1f4e6;color:#1b7a3a}"
+  +".jb-s-over{background:#fde3e6;color:#b4232f}.jb-s-due{background:#FFF1CC;color:#7a5900}.jb-s-ok{background:#e1f4e6;color:#1b7a3a}.jb-s-nopm{background:#efedf1;color:var(--grey)}"
+  +".jb-title{font-size:15px;font-weight:800;color:var(--navy);line-height:1.25}"
+  +".jb-sub{font-size:12px;color:#3d3644;margin-top:2px}"
+  +".jb-meta{font-size:11px;color:var(--grey);margin-top:4px}"
+  +".jb-late,.jb-row>span.jb-late:last-child{color:var(--danger);font-weight:800}"
+  +".jb-bar{height:6px;background:var(--lt-grey);border-radius:4px;overflow:hidden;margin-top:8px}"
+  +".jb-bar i{display:block;height:100%;background:var(--teal);border-radius:4px}.jb-bar.over i{background:var(--danger)}"
+  +".jb-mh{font-size:11px;color:var(--grey);margin-top:3px}"
+  +".jb-box{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:12px;margin-bottom:10px}"
+  +".jb-box h4{margin:0 0 8px;font-size:13px;color:var(--navy)}"
+  +".jb-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}"
+  +".jb-row:last-child{border-bottom:none}.jb-row>span:first-child{color:var(--grey);flex-shrink:0}.jb-row>span:last-child{text-align:right;font-weight:600;color:#2b2530;white-space:pre-wrap;word-break:break-word}"
+  +".jb-in{width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:8px;font-family:inherit;box-sizing:border-box;background:#fff;color:#2b2530}"
+  +".jb-lbl{font-size:11px;font-weight:700;color:var(--grey);margin:2px 0 3px;display:block}"
+  +".jb-two{display:flex;gap:8px}.jb-two>div{flex:1;min-width:0}"
+  +".jb-acts{display:flex;gap:8px;flex-wrap:wrap}.jb-acts .btn{flex:1;min-width:120px;padding:10px}"
+  +".jb-ghost{background:#fff!important;color:var(--navy)!important;border:1.5px solid var(--border)!important;box-shadow:none!important}"
+  +".jb-dang{background:#fff!important;color:var(--danger)!important;border:1.5px solid #f3c2c7!important;box-shadow:none!important}"
+  +".jb-big{font-size:28px;font-weight:800;color:var(--navy);line-height:1}"
+  +".jb-crew{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;max-height:220px;overflow-y:auto}"
+  +".jb-crew label{display:flex;align-items:center;gap:5px;border:1.5px solid var(--border);border-radius:16px;padding:6px 10px;font-size:12px;cursor:pointer;background:#fff}"
+  +".jb-crew input{margin:0}.jb-crew label:has(input:checked){border-color:var(--navy);background:var(--blue-bg);font-weight:700}"
+  +".jb-log{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}.jb-log:last-child{border-bottom:none}"
+  +".jb-x{border:none;background:none;color:var(--danger);font-size:15px;cursor:pointer;padding:2px 6px}"
+  +".jb-empty{text-align:center;color:var(--grey);font-size:13px;padding:28px 12px}"
+  +".jb-remind{display:block;width:100%;text-align:left;border:1.5px solid #f1c27d;background:#FFF7E6;color:#7a4b00;border-radius:12px;padding:10px 12px;font-size:12px;font-weight:700;margin:8px 0;cursor:pointer}"
+  +".jb-eqlink{display:inline-block;border:1.5px solid var(--border);border-radius:14px;padding:4px 10px;margin:0 6px 6px 0;font-size:12px;font-weight:700;color:var(--navy);background:#fff;cursor:pointer}"
+  +".jb-day{display:flex;align-items:center;gap:8px;margin:10px 0}.jb-day button{border:1.5px solid var(--border);background:#fff;color:var(--navy);border-radius:50%;width:36px;height:36px;font-size:14px;cursor:pointer;flex-shrink:0}"
+  +".jb-disp{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;margin-bottom:8px}"
+  +".jb-disp .jb-ctl{display:flex;gap:6px;margin-top:8px}.jb-disp .jb-ctl select,.jb-disp .jb-ctl input{flex:1;min-width:0;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:#fff}"
+  +".jb-disp .jb-ctl button{border:none;background:var(--navy);color:#fff;border-radius:8px;padding:0 12px;font-weight:700;font-size:12px;cursor:pointer}"
+  +".jb-sech{font-size:12px;font-weight:800;color:var(--navy);margin:14px 0 6px}"
+  +".jb-thumbs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.jb-thumbs div{position:relative;width:76px;height:76px;border-radius:8px;overflow:hidden;background:var(--lt-grey)}"
+  +".jb-thumbs img{width:100%;height:100%;object-fit:cover}.jb-thumbs button{position:absolute;top:2px;right:2px;border:none;background:rgba(0,0,0,.6);color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer}"
+  +".jb-sig{width:100%;height:160px;border:1.5px dashed var(--border);border-radius:10px;background:#fff;touch-action:none;display:block}"
+  +".jb-read{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}"
+  +".jb-file{display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--navy);color:var(--navy);border-radius:10px;padding:10px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:8px}";
+  document.head.appendChild(s);
+}
+
+// ── open / close / navigation ──
+function openJobs(){
+  if(!_jbCanUse())return;
+  ["dashView","hrView","workerProfilesView","workPlanView"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add("hidden")});
+  const bn=document.getElementById("bottomNav");if(bn)bn.classList.add("hidden");
+  const v=document.getElementById("jobsView");if(v)v.classList.remove("hidden");
+  if(!_jbFilter)_jbFilter=_jbCanPlan()?"open":"mine";
+  _jbS={mode:"list",tab:"jobs"};_jbNav=[];_jbDraft=null;
+  _jbCss();window.scrollTo(0,0);_jbRender(true);
+}
+function closeJobs(){
+  const v=document.getElementById("jobsView");if(v)v.classList.add("hidden");
+  const bn=document.getElementById("bottomNav");if(bn)bn.classList.remove("hidden");
+  const dv=document.getElementById("dashView");if(dv)dv.classList.remove("hidden");
+  _jbDraft=null;try{_jbBadge();}catch(e){}
+}
+function _jbIsOpen(){const v=document.getElementById("jobsView");return !!(v&&!v.classList.contains("hidden"));}
+function _jbGo(patch){_jbNav.push(Object.assign({},_jbS));_jbS=Object.assign({},_jbS,patch);window.scrollTo(0,0);_jbRender(false);}
+function _jbReplace(patch,reload){_jbS=Object.assign({},_jbS,patch);window.scrollTo(0,0);_jbRender(!!reload);}
+function _jbBack(reload){
+  if(_jbS.mode==="report")_jbDraft=null;
+  if(_jbNav.length){_jbS=_jbNav.pop();window.scrollTo(0,0);_jbRender(!!reload);}
+  else closeJobs();
+}
+function _jbTab(t){_jbS.tab=t;_jbRender(false);}
+
+function _jbRender(reload){
+  const body=document.getElementById("jobsBody");if(!body)return;
+  const bb=document.getElementById("jobsBackBtn");if(bb)bb.textContent=jt("back");
+  const m=_jbS.mode;
+  const draw=()=>{
+    if(m==="detail")return _jbRenderDetail();
+    if(m==="form")return _jbRenderForm();
+    if(m==="report")return _jbRenderReport();
+    if(m==="eq")return _eqRenderDetail();
+    if(m==="eqform")return _eqRenderForm();
+    _jbRenderHome();
+  };
+  if(reload){
+    if(m==="list"){_jbRenderHome(true);_jbLoadAll().then(()=>{if(_jbS.mode==="list")_jbRenderHome();});}
+    else{body.innerHTML='<div class="jb-empty">'+jt("loading")+'</div>';_jbLoadAll().then(draw);}
+  }else draw();
+}
+
+// ── home: tabs ──
+function _jbRenderHome(loading){
+  const body=document.getElementById("jobsBody");if(!body)return;
+  const tab=(_jbS.tab==="dispatch"&&!_jbCanPlan())?"jobs":_jbS.tab;
+  const tabs=[["jobs",jt("tabJobs")]];if(_jbCanPlan())tabs.push(["dispatch",jt("tabDispatch")]);tabs.push(["equipment",jt("tabEquip")]);
+  let btn="";
+  if(tab==="jobs"&&_jbCanPlan())btn='<button class="btn btn-primary" style="padding:9px 14px;min-height:0;flex-shrink:0" onclick="_jbGo({mode:\'form\',edit:null,prefill:null})">+ '+jt("newJob")+'</button>';
+  if(tab==="equipment")btn='<button class="btn btn-primary" style="padding:9px 14px;min-height:0;flex-shrink:0" onclick="_jbGo({mode:\'eqform\',eqEdit:null})">+ '+jt("addUnit")+'</button>';
+  let h='<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">'
+    +'<div><h2 style="color:var(--navy);margin:0">'+jt("title")+'</h2><p style="color:var(--grey);font-size:12px;margin:2px 0 0">'+jt("sub")+'</p></div>'+btn+'</div>'
+    +'<div class="jb-tabs" role="tablist">'+tabs.map(t=>'<button role="tab" class="jb-tab'+(tab===t[0]?" on":"")+'" onclick="_jbTab(\''+t[0]+'\')">'+t[1]+'</button>').join("")+'</div>'
+    +'<div id="jbTabBody">'+(loading?'<div class="jb-empty">'+jt("loading")+'</div>':"")+'</div>';
+  body.innerHTML=h;
+  if(loading)return;
+  if(tab==="jobs")_jbRenderJobsTab();
+  else if(tab==="dispatch")_jbRenderDispatch();
+  else _eqRenderTab();
+}
+function _jbRemindHtml(){
+  const c=_eqCounts();if(!c.due&&!c.war)return "";
+  const parts=[];
+  if(c.due)parts.push(c.due+" "+(c.due===1?jt("remindOne"):jt("remind")));
+  if(c.war)parts.push(c.war+" "+(c.war===1?jt("remindWOne"):jt("remindW")));
+  return '<button class="jb-remind" onclick="_eqFilter=\''+(c.due?"due":"warranty")+'\';_jbTab(\'equipment\')">🔔 '+parts.join(", ")+'</button>';
+}
+
+// ── jobs tab ──
+function _jbSetFilter(f){_jbFilter=f;_jbRenderJobsTab();}
+function _jbPass(j,f){
+  if(f==="mine")return _jbMine(j)&&j.status!=="done";
+  if(f==="open")return j.status!=="done";
+  if(f==="done")return j.status==="done";
+  return true;
+}
+function _jbList(){return Object.entries(_jbJobs).filter(([,j])=>j&&typeof j==="object").map(([id,j])=>Object.assign({_id:id},j));}
+function _jbSort(a,b){
+  const pr=p=>{const i=JB_PRI.indexOf(p||"normal");return i<0?2:i;};
+  if(a.status==="done"&&b.status==="done")return (b.doneAt||0)-(a.doneAt||0);
+  if((a.status==="done")!==(b.status==="done"))return a.status==="done"?1:-1;
+  if(pr(a.priority)!==pr(b.priority))return pr(a.priority)-pr(b.priority);
+  if(_jbLate(a)!==_jbLate(b))return _jbLate(a)?-1:1;
+  const sa=a.schedDate||"9999",sb=b.schedDate||"9999";if(sa!==sb)return sa<sb?-1:1;
+  const da=a.due||"9999",db=b.due||"9999";if(da!==db)return da<db?-1:1;
+  return (b.createdAt||0)-(a.createdAt||0);
+}
+function _jbRenderJobsTab(){
+  const el=document.getElementById("jbTabBody");if(!el)return;
+  const all=_jbList();
+  let h=_jbCanPlan()?_jbRemindHtml():"";
+  h+='<div class="jb-chips">'+["mine","open","done","all"].map(f=>'<button class="jb-chip'+(_jbFilter===f?" on":"")+'" onclick="_jbSetFilter(\''+f+'\')">'+jt(f)+'<b>'+all.filter(j=>_jbPass(j,f)).length+'</b></button>').join("")+'</div>';
+  const rows=all.filter(j=>_jbPass(j,_jbFilter)).sort(_jbSort);
+  h+=rows.length?rows.map(_jbCardHtml).join(""):'<div class="jb-box jb-empty">'+jt("empty_"+_jbFilter)+'</div>';
+  el.innerHTML=h;
+}
+function _jbCardHtml(j){
+  const mh=_jbMh(j),est=parseFloat(j.estHrs)||0,pct=est?Math.min(100,mh/est*100):0;
+  const crew=_jbArr(j.assigned);
+  const where=[j.client,j.site].filter(Boolean).map(escHtml).join(" · ");
+  const meta=[jt("t_"+(j.type||"install"))];
+  meta.push(crew.length?crew.map(escHtml).join(", "):jt("unassigned"));
+  if(j.schedDate&&j.status!=="done")meta.push(_jbSchedLbl(j));
+  if(j.due)meta.push(_jbLate(j)?'<span class="jb-late">'+jt("late")+' · '+_jbD(j.due)+'</span>':jt("due")+" "+_jbD(j.due));
+  const pri=(j.priority==="urgent"||j.priority==="high")?'<span class="jb-pri '+j.priority+'">'+jt("p_"+j.priority)+'</span>':"";
+  return '<button class="jb-card jb-p-'+(j.priority||"normal")+'" onclick="_jbGo({mode:\'detail\',id:\''+j._id+'\'})">'
+    +'<div class="jb-top"><span><span class="jb-no">'+escHtml(j.no||"")+'</span>'+pri+(_jbNew(j)?'<span class="jb-new">'+jt("newPill")+'</span>':"")+'</span><span class="jb-pill jb-s-'+(j.status||"open")+'">'+jt("s_"+(j.status||"open"))+'</span></div>'
+    +'<div class="jb-title">'+escHtml(j.title||"")+'</div>'
+    +(where?'<div class="jb-sub">'+where+'</div>':"")
+    +'<div class="jb-meta">'+meta.join(" · ")+'</div>'
+    +(est||mh?'<div class="jb-bar'+(est&&mh>est?" over":"")+'"><i style="width:'+(est?pct:0)+'%"></i></div><div class="jb-mh">'+_jbNum(mh)+(est?" "+jt("of")+" "+_jbNum(est):"")+" "+jt("mh")+'</div>':"")
+    +'</button>';
+}
+
+// ── job detail ──
+function _jbRenderDetail(){
+  const body=document.getElementById("jobsBody");if(!body)return;
+  const id=_jbS.id,j=_jbJobs[id];
+  if(!j){_jbBack(false);return;}
+  // First time an assigned lead opens a job, mark it seen (clears the New badge).
+  if(_jbNew(j)){const u=currentUser.username;j.seen=Object.assign({},j.seen||{},{[u]:Date.now()});_jbWrite("/jobs/"+id+"/seen","PATCH",{[u]:Date.now()}).catch(()=>{});}
+  const mh=_jbMh(j),est=parseFloat(j.estHrs)||0,pct=est?Math.min(100,mh/est*100):0,st=j.status||"open",act=_jbCanAct(j);
+  const crew=_jbArr(j.assigned);
+  const userName=u=>{const x=getUsers()[u];return x&&x.name?x.name:(u||"");};
+  let h='<div class="jb-box">'
+    +'<div class="jb-top"><span><span class="jb-no">'+escHtml(j.no||"")+'</span>'+((j.priority==="urgent"||j.priority==="high")?'<span class="jb-pri '+j.priority+'">'+jt("p_"+j.priority)+'</span>':"")+'</span><span class="jb-pill jb-s-'+st+'">'+jt("s_"+st)+'</span></div>'
+    +'<div class="jb-title" style="font-size:18px">'+escHtml(j.title||"")+'</div>'
+    +'<div style="display:flex;align-items:flex-end;gap:8px;margin-top:12px"><span class="jb-big">'+_jbNum(mh)+'</span><span style="font-size:12px;color:var(--grey);padding-bottom:2px">'+(est?jt("of")+" "+_jbNum(est)+" ":"")+jt("mh")+(est?"":" · "+jt("noEst"))+'</span></div>'
+    +(est?'<div class="jb-bar'+(mh>est?" over":"")+'"><i style="width:'+pct+'%"></i></div>':"")
+    +'</div>';
+  if(act){
+    const b=[];
+    if(st==="open"){b.push(["progress","start","btn-primary"]);b.push(["hold","hold","jb-ghost"]);}
+    if(st==="progress"){b.push(["done","complete","btn-success"]);b.push(["hold","hold","jb-ghost"]);}
+    if(st==="hold")b.push(["progress","resume","btn-primary"]);
+    if(st==="done")b.push(["progress","reopen","jb-ghost"]);
+    h+='<div class="jb-acts" style="margin-bottom:10px">'+b.map(x=>'<button class="btn '+x[2]+'" onclick="_jbSetStatus(\''+x[0]+'\',this)">'+jt(x[1])+'</button>').join("")+'</div>';
+  }
+  // Service report block
+  const r=j.report;
+  h+='<div class="jb-box"><h4>📝 '+jt("report")+'</h4>';
+  if(r&&r.signed){
+    h+='<div style="font-size:12px;color:#2b2530;margin-bottom:8px">'+jt("signed")+' <b>'+escHtml(r.clientName||"")+'</b> · '+_jbD(r.signedAt)+'</div>';
+  }else if(r){
+    h+='<div style="font-size:12px;color:var(--grey);margin-bottom:8px">'+jt("draftSaved")+' · '+_jbD(r.at)+' · '+escHtml(r.byName||"")+'</div>';
+  }
+  h+='<div class="jb-acts">';
+  if(r)h+='<button class="btn btn-primary" onclick="_jbReportPdf(\''+id+'\')">📄 '+jt("viewPdf")+'</button>';
+  if(act&&(!r||!r.signed||_jbCanPlan()))h+='<button class="btn '+(r?"jb-ghost":"btn-primary")+'" onclick="_jbGo({mode:\'report\'})">'+(r?jt("editReport"):jt("fillReport"))+'</button>';
+  h+='</div></div>';
+  // Equipment on the job
+  const eqIds=_jbArr(j.equipment);
+  if(eqIds.length){
+    h+='<div class="jb-box"><h4>'+jt("f_equip")+'</h4>'+eqIds.map(eid=>{const e=_jbEq[eid];return e?'<button class="jb-eqlink" onclick="_jbGo({mode:\'eq\',eq:\''+eid+'\'})">'+escHtml(_eqLabel(e))+'</button>':"";}).join("")+'</div>';
+  }
+  const rows=[[jt("f_type"),jt("t_"+(j.type||"install"))],[jt("f_client"),j.client],[jt("f_site"),j.site],[jt("f_project"),j.project],
+    [jt("f_assigned"),crew.length?crew.join(", "):jt("unassigned")],
+    [jt("f_sched"),j.schedDate?_jbD(j.schedDate):""],
+    [jt("f_due"),j.due?(_jbLate(j)?jt("late")+" · ":"")+_jbD(j.due):""],[jt("f_notes"),j.notes],
+    [jt("created"),_jbD(j.createdAt)+(j.createdBy?" · "+userName(j.createdBy):"")],
+    [jt("started"),j.startedAt?_jbD(j.startedAt):""],[jt("finished"),j.doneAt?_jbD(j.doneAt)+(j.doneBy?" · "+userName(j.doneBy):""):""]];
+  h+='<div class="jb-box">'+rows.filter(x=>x[1]).map(x=>'<div class="jb-row"><span>'+x[0]+'</span><span'+(x[0]===jt("f_due")&&_jbLate(j)?' class="jb-late"':"")+'>'+escHtml(String(x[1]))+'</span></div>').join("")
+    +(j.locStart?'<div class="jb-row"><span>'+jt("locStart")+'</span><span>'+_jbMapLink(j.locStart)+'</span></div>':"")
+    +(j.locDone?'<div class="jb-row"><span>'+jt("locDone")+'</span><span>'+_jbMapLink(j.locDone)+'</span></div>':"")
+    +'</div>';
+  if(act&&st!=="done"){
+    h+='<div class="jb-box"><h4>'+jt("logHrs")+'</h4>'
+      +'<label class="jb-lbl" for="jbLogDate">'+jt("date")+'</label><input id="jbLogDate" type="date" class="jb-in" value="'+_jbToday()+'">'
+      +'<div class="jb-two"><div><label class="jb-lbl" for="jbLogCrew">'+jt("people")+'</label><input id="jbLogCrew" type="number" inputmode="numeric" min="1" class="jb-in" value="'+(crew.length||1)+'"></div>'
+      +'<div><label class="jb-lbl" for="jbLogHrs">'+jt("hrsEach")+'</label><input id="jbLogHrs" type="number" inputmode="decimal" min="0" step="0.5" class="jb-in" placeholder="8"></div></div>'
+      +'<input id="jbLogNote" class="jb-in" placeholder="'+jt("note")+'">'
+      +'<button class="btn btn-primary" style="width:100%" onclick="_jbAddHours(this)">'+jt("saveHrs")+'</button></div>';
+  }
+  const log=Object.entries(j.log||{}).filter(([,e])=>e).sort((a,b)=>(b[1].date||"").localeCompare(a[1].date||"")||(b[1].at||0)-(a[1].at||0));
+  h+='<div class="jb-box"><h4>'+jt("hoursLog")+'</h4>';
+  if(!log.length)h+='<div style="font-size:12px;color:var(--grey)">'+jt("noHours")+'</div>';
+  log.forEach(([lid,e])=>{
+    const m=(parseFloat(e.crew)||0)*(parseFloat(e.hrs)||0);
+    h+='<div class="jb-log"><div style="flex:1;min-width:0"><div style="font-weight:700;color:var(--navy)">'+_jbD(e.date)+' · '+_jbNum(m)+' '+jt("mh")+'</div>'
+      +'<div style="color:var(--grey)">'+_jbNum(e.crew)+' × '+_jbNum(e.hrs)+' h · '+escHtml(e.byName||"")+'</div>'
+      +(e.note?'<div style="margin-top:2px;color:#3d3644">'+escHtml(e.note)+'</div>':"")+'</div>'
+      +(_jbCanPlan()?'<button class="jb-x" aria-label="Remove" onclick="_jbDelHours(\''+lid+'\')">✕</button>':"")+'</div>';
+  });
+  h+='</div>';
+  if(_jbCanPlan())h+='<div class="jb-acts"><button class="btn jb-ghost" onclick="_jbGo({mode:\'form\',edit:\''+id+'\',prefill:null})">'+jt("edit")+'</button><button class="btn jb-dang" onclick="_jbDelete()">'+jt("del")+'</button></div>';
+  body.innerHTML=h;
+}
+
+// ── job form ──
+function _jbCrewOptions(){
+  const names=[];
+  Object.values(getUsers()).forEach(u=>{if(u&&u.name&&["Team Lead","Lead Worker","Supervisor","Engineer","Project Lead"].includes(u.role)&&names.indexOf(u.name)<0)names.push(u.name)});
+  return names.sort();
+}
+function _jbDatalist(id,field){
+  const vals=[];[_jbJobs,_jbEq].forEach(src=>Object.values(src).forEach(j=>{const v=j&&j[field];if(v&&vals.indexOf(v)<0)vals.push(v)}));
+  return '<datalist id="'+id+'">'+vals.sort().map(v=>'<option value="'+escHtml(v)+'">').join("")+'</datalist>';
+}
+function _jbEqFilterChips(inputId,boxId){
+  const q=((document.getElementById(inputId)||{}).value||"").toLowerCase();
+  document.querySelectorAll("#"+boxId+" label").forEach(l=>{l.style.display=(!q||l.getAttribute("data-s").indexOf(q)>-1||l.querySelector("input").checked)?"":"none";});
+}
+function _jbEqChips(boxId,selected,onlyIds){
+  const ids=onlyIds||Object.keys(_jbEq).filter(k=>_jbEq[k]);
+  ids.sort((a,b)=>String((_jbEq[a]||{}).tag||"").localeCompare(String((_jbEq[b]||{}).tag||""),undefined,{numeric:true}));
+  return '<div class="jb-crew" id="'+boxId+'">'+ids.map(k=>{const e=_jbEq[k];if(!e)return"";
+    const s=[e.tag,e.brand,e.model,e.serial,e.client,e.site,e.location].filter(Boolean).join(" ").toLowerCase();
+    return '<label data-s="'+escHtml(s)+'"><input type="checkbox" value="'+k+'"'+(selected.indexOf(k)>-1?" checked":"")+'>'+escHtml(_eqLabel(e))+(e.client?' <span style="color:var(--grey);font-weight:400">· '+escHtml(e.client)+'</span>':"")+'</label>';}).join("")+'</div>';
+}
+function _jbRenderForm(){
+  const body=document.getElementById("jobsBody");if(!body)return;
+  if(!_jbCanPlan()){_jbBack(false);return;}
+  const editId=_jbS.edit;
+  const j=editId?(_jbJobs[editId]||{}):Object.assign({type:"service",priority:"normal"},_jbS.prefill||{});
+  const sel=_jbArr(j.assigned),selEq=_jbArr(j.equipment);
+  const crew=_jbCrewOptions();sel.forEach(n=>{if(crew.indexOf(n)<0)crew.push(n)});
+  const opt=(list,pre,cur)=>list.map(v=>'<option value="'+v+'"'+(cur===v?" selected":"")+'>'+jt(pre+v)+'</option>').join("");
+  const hasEq=Object.keys(_jbEq).length>0;
+  body.innerHTML='<h2 style="color:var(--navy);margin:0 0 10px">'+(editId?jt("editJob")+" "+escHtml(j.no||""):jt("newJob"))+'</h2>'
+    +'<div class="jb-box">'
+    +'<label class="jb-lbl" for="jbTitle">'+jt("f_title")+' *</label><input id="jbTitle" class="jb-in" value="'+escHtml(j.title||"")+'" placeholder="'+jt("ph_title")+'">'
+    +'<div class="jb-two"><div><label class="jb-lbl" for="jbType">'+jt("f_type")+'</label><select id="jbType" class="jb-in">'+opt(JB_TYPES,"t_",j.type||"service")+'</select></div>'
+    +'<div><label class="jb-lbl" for="jbPri">'+jt("f_pri")+'</label><select id="jbPri" class="jb-in">'+opt(JB_PRI,"p_",j.priority||"normal")+'</select></div></div>'
+    +_jbDatalist("jbClientList","client")+_jbDatalist("jbProjectList","project")+_jbDatalist("jbSiteList","site")
+    +'<label class="jb-lbl" for="jbClient">'+jt("f_client")+'</label><input id="jbClient" list="jbClientList" class="jb-in" value="'+escHtml(j.client||"")+'" placeholder="'+jt("ph_client")+'">'
+    +'<label class="jb-lbl" for="jbSite">'+jt("f_site")+'</label><input id="jbSite" list="jbSiteList" class="jb-in" value="'+escHtml(j.site||"")+'" placeholder="'+jt("ph_site")+'">'
+    +'<label class="jb-lbl" for="jbProject">'+jt("f_project")+'</label><input id="jbProject" list="jbProjectList" class="jb-in" value="'+escHtml(j.project||"")+'" placeholder="'+jt("ph_project")+'">'
+    +'<span class="jb-lbl">'+jt("f_assigned")+'</span><div class="jb-crew" id="jbCrew">'
+    +crew.map(n=>'<label><input type="checkbox" value="'+escHtml(n)+'"'+(sel.indexOf(n)>-1?" checked":"")+'>'+escHtml(n)+'</label>').join("")+'</div>'
+    +'<div class="jb-two"><div><label class="jb-lbl" for="jbSched">'+jt("f_sched")+'</label><input id="jbSched" type="date" class="jb-in" value="'+(j.schedDate||"")+'"></div>'
+    +'<div><label class="jb-lbl" for="jbDue">'+jt("f_due")+'</label><input id="jbDue" type="date" class="jb-in" value="'+(j.due||"")+'"></div></div>'
+    +'<label class="jb-lbl" for="jbEst">'+jt("f_est")+'</label><input id="jbEst" type="number" inputmode="decimal" min="0" class="jb-in" value="'+(j.estHrs||"")+'">'
+    +(hasEq?'<span class="jb-lbl">'+jt("f_equip")+'</span><input id="jbEqSearch" class="jb-in" placeholder="'+jt("ph_eqSearch")+'" oninput="_jbEqFilterChips(\'jbEqSearch\',\'jbEqBox\')">'+_jbEqChips("jbEqBox",selEq):"")
+    +'<label class="jb-lbl" for="jbNotes">'+jt("f_notes")+'</label><textarea id="jbNotes" class="jb-in" rows="3">'+escHtml(j.notes||"")+'</textarea>'
+    +'</div><div class="jb-acts"><button class="btn jb-ghost" onclick="_jbBack()">'+jt("cancel")+'</button><button class="btn btn-primary" id="jbSaveBtn" onclick="_jbSave()">'+jt("save")+'</button></div>';
+  if(hasEq&&selEq.length===0&&j.client){const s=document.getElementById("jbEqSearch");if(s){s.value=j.client;_jbEqFilterChips("jbEqSearch","jbEqBox");}}
+  setTimeout(()=>{const t=document.getElementById("jbTitle");if(t&&!editId&&!t.value)t.focus();},50);
+}
+function _jbSave(){
+  const v=id=>((document.getElementById(id)||{}).value||"").trim();
+  const title=v("jbTitle");if(!title){showToast(jt("needTitle"));return;}
+  const assigned=Array.from(document.querySelectorAll("#jbCrew input:checked")).map(i=>i.value);
+  const equipment=Array.from(document.querySelectorAll("#jbEqBox input:checked")).map(i=>i.value);
+  const data={title:title,type:v("jbType")||"service",priority:v("jbPri")||"normal",client:v("jbClient"),site:v("jbSite"),project:v("jbProject"),
+    assigned:assigned,equipment:equipment,estHrs:parseFloat(v("jbEst"))||0,schedDate:v("jbSched"),due:v("jbDue"),notes:v("jbNotes"),updatedAt:Date.now()};
+  const btn=document.getElementById("jbSaveBtn");if(btn)btn.disabled=true;
+  const fail=()=>{if(btn)btn.disabled=false;showToast(jt("failed"));};
+  const editId=_jbS.edit;
+  if(editId){_jbWrite("/jobs/"+editId,"PATCH",data).then(()=>{showToast(jt("saved"));_jbBack(true);}).catch(fail);return;}
+  // New job: reload first so the job number continues from the latest list.
+  _jbLoad().then(()=>{
+    let max=0;Object.values(_jbJobs).forEach(j=>{const n=parseInt(String((j&&j.no)||"").replace(/\D/g,""),10);if(n>max)max=n;});
+    const id="jb"+Date.now();
+    Object.assign(data,{no:"J-"+String(max+1).padStart(4,"0"),status:"open",createdAt:Date.now(),createdBy:currentUser?currentUser.username:""});
+    _jbWrite("/jobs/"+id,"PUT",data).then(()=>{showToast(jt("saved"));_jbReplace({mode:"detail",id:id,edit:null,prefill:null},true);}).catch(fail);
+  });
+}
+function _jbSetStatus(st,btn){
+  const id=_jbS.id,j=_jbJobs[id];if(!j)return;
+  const now=Date.now(),patch={status:st,updatedAt:now};
+  if(st==="progress"&&!j.startedAt)patch.startedAt=now;
+  if(st==="done"){patch.doneAt=now;patch.doneBy=currentUser?currentUser.username:"";}
+  if(st!=="done"&&j.status==="done"){patch.doneAt=null;patch.doneBy=null;}
+  const wantLoc=(st==="progress"&&!j.locStart)||st==="done";
+  if(btn)btn.disabled=true;
+  if(wantLoc)showToast(jt("locWait"));
+  (wantLoc?_jbGeo():Promise.resolve(null)).then(loc=>{
+    if(loc){if(st==="done")patch.locDone=loc;else patch.locStart=loc;}
+    return _jbWrite("/jobs/"+id,"PATCH",patch);
+  }).then(()=>{showToast("✅ "+jt("s_"+st));_jbRender(true);}).catch(()=>{if(btn)btn.disabled=false;showToast(jt("failed"));});
+}
+function _jbAddHours(btn){
+  const id=_jbS.id,j=_jbJobs[id];if(!j)return;
+  const date=(document.getElementById("jbLogDate")||{}).value||_jbToday();
+  const crew=parseFloat((document.getElementById("jbLogCrew")||{}).value);
+  const hrs=parseFloat((document.getElementById("jbLogHrs")||{}).value);
+  const note=((document.getElementById("jbLogNote")||{}).value||"").trim();
+  if(!(crew>0)||!(hrs>0)){showToast(jt("needHrs"));return;}
+  if(btn)btn.disabled=true;
+  const entry={date:date,crew:crew,hrs:hrs,note:note,by:currentUser?currentUser.username:"",byName:currentUser?currentUser.name:"",at:Date.now()};
+  _jbWrite("/jobs/"+id+"/log","POST",entry).then(()=>{
+    // Logging hours on an open job means work has started.
+    const after=(j.status||"open")==="open"?_jbWrite("/jobs/"+id,"PATCH",{status:"progress",startedAt:j.startedAt||Date.now(),updatedAt:Date.now()}).catch(()=>{}):Promise.resolve();
+    return after.then(()=>{showToast(jt("hrsSaved"));_jbRender(true);});
+  }).catch(()=>{if(btn)btn.disabled=false;showToast(jt("failed"));});
+}
+function _jbDelHours(lid){
+  const id=_jbS.id;if(!_jbCanPlan()||!id)return;
+  _jbWrite("/jobs/"+id+"/log/"+lid,"DELETE").then(()=>_jbRender(true)).catch(()=>showToast(jt("failed")));
+}
+function _jbDelete(){
+  const id=_jbS.id;if(!_jbCanPlan()||!id)return;
+  showModal(jt("delQ"),jt("delMsg"),()=>{
+    _jbWrite("/jobs/"+id,"DELETE").then(()=>{_jbWrite("/jobphotos/"+id,"DELETE").catch(()=>{});showToast(jt("deleted"));delete _jbJobs[id];_jbBack(true);}).catch(()=>showToast(jt("failed")));
+  },{danger:true,okText:jt("del"),cancelText:jt("cancel")});
+}
+
+// ── dispatch board (planners) ──
+function _jbDispNav(d){_jbDispDate=_jbPlusDays(_jbDispDate||_jbToday(),d);_jbRenderDispatch();}
+function _jbDispSet(v){if(v){_jbDispDate=v;_jbRenderDispatch();}}
+function _jbDispRow(j,date,crew){
+  const cur=_jbArr(j.assigned)[0]||"";
+  const where=[j.client,j.site].filter(Boolean).map(escHtml).join(" · ");
+  return '<div class="jb-disp"><div class="jb-top"><span><span class="jb-no">'+escHtml(j.no||"")+'</span>'+((j.priority==="urgent"||j.priority==="high")?'<span class="jb-pri '+j.priority+'">'+jt("p_"+j.priority)+'</span>':"")+'</span><span class="jb-pill jb-s-'+(j.status||"open")+'">'+jt("s_"+(j.status||"open"))+'</span></div>'
+    +'<div class="jb-title" style="font-size:14px;cursor:pointer" onclick="_jbGo({mode:\'detail\',id:\''+j._id+'\'})">'+escHtml(j.title||"")+'</div>'
+    +(where?'<div class="jb-sub">'+where+'</div>':"")
+    +(_jbArr(j.assigned).length>1?'<div class="jb-meta">'+_jbArr(j.assigned).map(escHtml).join(", ")+'</div>':"")
+    +'<div class="jb-ctl"><select id="dsL_'+j._id+'" aria-label="'+jt("assign")+'"><option value="">'+jt("nobody")+'</option>'+crew.map(n=>'<option value="'+escHtml(n)+'"'+(n===cur?" selected":"")+'>'+escHtml(n)+'</option>').join("")+'</select>'
+    +'<input id="dsD_'+j._id+'" type="date" value="'+(j.schedDate||date)+'" aria-label="'+jt("f_sched")+'">'
+    +'<button onclick="_jbDispatch(\''+j._id+'\',this)">'+jt("dispatchBtn")+'</button></div></div>';
+}
+function _jbRenderDispatch(){
+  const el=document.getElementById("jbTabBody");if(!el)return;
+  if(!_jbCanPlan()){el.innerHTML="";return;}
+  const date=_jbDispDate||(_jbDispDate=_jbToday());
+  const crew=_jbCrewOptions();
+  const open=_jbList().filter(j=>j.status!=="done").sort(_jbSort);
+  const notDisp=open.filter(j=>!j.schedDate||!_jbArr(j.assigned).length);
+  const late=open.filter(j=>j.schedDate&&_jbArr(j.assigned).length&&j.schedDate<date);
+  const day=open.filter(j=>j.schedDate===date&&_jbArr(j.assigned).length);
+  const byLead={};day.forEach(j=>_jbArr(j.assigned).forEach(n=>{(byLead[n]=byLead[n]||[]).push(j)}));
+  let h='<div class="jb-day"><button onclick="_jbDispNav(-1)" aria-label="Previous day">◀</button>'
+    +'<input type="date" class="jb-in" style="margin:0;text-align:center;font-weight:700;color:var(--navy)" value="'+date+'" onchange="_jbDispSet(this.value)">'
+    +'<button onclick="_jbDispNav(1)" aria-label="Next day">▶</button></div>';
+  if(notDisp.length)h+='<div class="jb-sech">'+jt("notDispatched")+' ('+notDisp.length+')</div>'+notDisp.map(j=>_jbDispRow(j,date,crew)).join("");
+  if(late.length)h+='<div class="jb-sech" style="color:var(--danger)">'+jt("lateSched")+' ('+late.length+')</div>'+late.map(j=>_jbDispRow(j,date,crew)).join("");
+  const leads=Object.keys(byLead).sort();
+  h+='<div class="jb-sech">📅 '+_jbD(date)+'</div>';
+  if(!leads.length)h+='<div class="jb-box jb-empty" style="padding:16px">'+jt("nothingDay")+'</div>';
+  leads.forEach(n=>{h+='<div style="font-size:12px;font-weight:700;color:var(--grey);margin:8px 0 4px">👷 '+escHtml(n)+' ('+byLead[n].length+')</div>'+byLead[n].map(j=>_jbDispRow(j,date,crew)).join("");});
+  el.innerHTML=h;
+}
+function _jbDispatch(id,btn){
+  const j=_jbJobs[id];if(!j)return;
+  const lead=(document.getElementById("dsL_"+id)||{}).value||"";
+  const d=(document.getElementById("dsD_"+id)||{}).value||"";
+  if(!lead||!d){showToast(jt("pickLead"));return;}
+  // The picked lead replaces the first name; anyone else already on the job stays.
+  const rest=_jbArr(j.assigned).slice(1).filter(n=>n!==lead);
+  if(btn)btn.disabled=true;
+  _jbWrite("/jobs/"+id,"PATCH",{assigned:[lead].concat(rest),schedDate:d,updatedAt:Date.now()})
+    .then(()=>{showToast(jt("dispatched"));return _jbLoad();}).then(()=>_jbRenderDispatch())
+    .catch(()=>{if(btn)btn.disabled=false;showToast(jt("failed"));});
+}
+
+// ── equipment register ──
+function _eqSetFilter(f){_eqFilter=f;_eqRenderList();}
+function _eqPass(e,f){if(f==="due"){const s=_eqSvc(e);return s==="over"||s==="due";}if(f==="warranty")return _eqWar(e)==="ending";return true;}
+function _eqRenderTab(){
+  const el=document.getElementById("jbTabBody");if(!el)return;
+  el.innerHTML=_jbRemindHtml()+'<input id="eqSearch" class="jb-in" style="margin-top:6px" placeholder="'+jt("ph_eqSearch")+'" value="'+escHtml(_eqQuery)+'" oninput="_eqQuery=this.value;_eqRenderList()">'
+    +'<div class="jb-chips" id="eqChips"></div><div id="eqList"></div>';
+  _eqRenderList();
+}
+function _eqRenderList(){
+  const chips=document.getElementById("eqChips"),list=document.getElementById("eqList");if(!list)return;
+  const q=(_eqQuery||"").toLowerCase();
+  const all=Object.entries(_jbEq).filter(([,e])=>e&&typeof e==="object").map(([id,e])=>Object.assign({_id:id},e))
+    .filter(e=>!q||[e.tag,e.brand,e.model,e.serial,e.client,e.site,e.location].filter(Boolean).join(" ").toLowerCase().indexOf(q)>-1);
+  if(chips)chips.innerHTML=[["all","eqAll"],["due","eqDue"],["warranty","eqWarr"]].map(f=>'<button class="jb-chip'+(_eqFilter===f[0]?" on":"")+'" onclick="_eqSetFilter(\''+f[0]+'\')">'+jt(f[1])+'<b>'+all.filter(e=>_eqPass(e,f[0])).length+'</b></button>').join("");
+  const rank={over:0,due:1,ok:2,nopm:3};
+  const rows=all.filter(e=>_eqPass(e,_eqFilter)).sort((a,b)=>(rank[_eqSvc(a)]-rank[_eqSvc(b)])||String(a.client||"").localeCompare(String(b.client||""))||String(a.tag||"").localeCompare(String(b.tag||""),undefined,{numeric:true}));
+  if(!rows.length){list.innerHTML='<div class="jb-box jb-empty">'+(Object.keys(_jbEq).length?jt("eqEmptyF"):jt("eqEmpty"))+'</div>';return;}
+  list.innerHTML=rows.map(e=>{
+    const s=_eqSvc(e),w=_eqWar(e),nx=_eqNext(e);
+    const meta=[];
+    if(nx)meta.push((s==="over"?'<span class="jb-late">':"")+jt("e_next")+" "+_jbD(nx)+(s==="over"?"</span>":""));
+    if(e.warrantyEnd)meta.push((w==="ending"?'<span style="color:#c0650f;font-weight:800">':"")+jt("e_warr")+" "+_jbD(e.warrantyEnd)+(w==="ending"?"</span>":""));
+    return '<button class="jb-card jb-e-'+s+'" onclick="_jbGo({mode:\'eq\',eq:\''+e._id+'\'})">'
+      +'<div class="jb-top"><span class="jb-no">'+escHtml(e.tag||"")+'</span><span class="jb-pill jb-s-'+s+'">'+jt("st_"+s)+'</span></div>'
+      +'<div class="jb-title" style="font-size:14px">'+jt("et_"+(e.type||"other"))+(e.brand||e.model?" · "+escHtml([e.brand,e.model].filter(Boolean).join(" ")):"")+'</div>'
+      +'<div class="jb-sub">'+[e.client,e.site,e.location].filter(Boolean).map(escHtml).join(" · ")+'</div>'
+      +(meta.length?'<div class="jb-meta">'+meta.join(" · ")+'</div>':"")+'</button>';
+  }).join("");
+}
+function _eqRenderDetail(){
+  const body=document.getElementById("jobsBody");if(!body)return;
+  const id=_jbS.eq,e=_jbEq[id];if(!e){_jbBack(false);return;}
+  const s=_eqSvc(e),w=_eqWar(e),nx=_eqNext(e);
+  const rows=[[jt("e_type"),jt("et_"+(e.type||"other"))],[jt("e_brand"),e.brand],[jt("e_model"),e.model],[jt("e_serial"),e.serial],[jt("e_ref"),e.refrigerant],[jt("e_cap"),e.capacity],
+    [jt("e_client"),e.client],[jt("e_site"),e.site],[jt("e_loc"),e.location],[jt("e_install"),e.installDate?_jbD(e.installDate):""],
+    [jt("e_warr"),e.warrantyEnd?_jbD(e.warrantyEnd)+(w==="x"?" · "+jt("st_warrx"):w==="ending"?" · "+jt("st_warr"):""):""],
+    [jt("e_pm"),e.pmMonths?String(e.pmMonths):""],[jt("e_last"),e.lastService?_jbD(e.lastService):""],[jt("e_next"),nx?_jbD(nx):""],[jt("e_notes"),e.notes]];
+  const hist=_jbList().filter(j=>_jbArr(j.equipment).indexOf(id)>-1).sort((a,b)=>(b.doneAt||b.createdAt||0)-(a.doneAt||a.createdAt||0));
+  let h='<div class="jb-box"><div class="jb-top"><span class="jb-no">'+jt("unit")+'</span><span class="jb-pill jb-s-'+s+'">'+jt("st_"+s)+'</span></div>'
+    +'<div class="jb-title" style="font-size:20px">'+escHtml(e.tag||"")+'</div></div>';
+  if(_jbCanPlan())h+='<div class="jb-acts" style="margin-bottom:10px"><button class="btn btn-primary" onclick="_eqMakeJob()">+ '+jt("makeJob")+'</button></div>';
+  h+='<div class="jb-box">'+rows.filter(x=>x[1]).map(x=>'<div class="jb-row"><span>'+x[0]+'</span><span'+((x[0]===jt("e_next")&&s==="over")?' class="jb-late"':"")+'>'+escHtml(String(x[1]))+'</span></div>').join("")+'</div>';
+  h+='<div class="jb-box"><h4>'+jt("history")+'</h4>'+(hist.length?hist.map(j=>'<div class="jb-log" style="cursor:pointer" onclick="_jbGo({mode:\'detail\',id:\''+j._id+'\'})"><div style="flex:1;min-width:0"><div style="font-weight:700;color:var(--navy)">'+escHtml(j.no||"")+' · '+escHtml(j.title||"")+'</div><div style="color:var(--grey)">'+jt("t_"+(j.type||"install"))+' · '+(j.doneAt?_jbD(j.doneAt):_jbD(j.createdAt))+(j.report&&j.report.signed?" · 📝":"")+'</div></div><span class="jb-pill jb-s-'+(j.status||"open")+'">'+jt("s_"+(j.status||"open"))+'</span></div>').join(""):'<div style="font-size:12px;color:var(--grey)">'+jt("noHistory")+'</div>')+'</div>';
+  h+='<div class="jb-acts"><button class="btn jb-ghost" onclick="_jbGo({mode:\'eqform\',eqEdit:\''+id+'\'})">'+jt("edit")+'</button>'+(_jbCanPlan()?'<button class="btn jb-dang" onclick="_eqDelete()">'+jt("delUnit")+'</button>':"")+'</div>';
+  body.innerHTML=h;
+}
+function _eqMakeJob(){
+  const id=_jbS.eq,e=_jbEq[id];if(!e)return;
+  _jbGo({mode:"form",edit:null,prefill:{type:"pm",title:jt("pmTitle")+" – "+(e.tag||""),client:e.client||"",site:e.site||"",equipment:[id]}});
+}
+function _eqRenderForm(){
+  const body=document.getElementById("jobsBody");if(!body)return;
+  const eid=_jbS.eqEdit,e=eid?(_jbEq[eid]||{}):{type:"split",pmMonths:3};
+  const f=(id,lbl,val,extra)=>'<label class="jb-lbl" for="'+id+'">'+jt(lbl)+'</label><input id="'+id+'" class="jb-in" value="'+escHtml(val==null?"":String(val))+'"'+(extra||"")+'>';
+  body.innerHTML='<h2 style="color:var(--navy);margin:0 0 10px">'+(eid?jt("editUnit"):jt("addUnit"))+'</h2><div class="jb-box">'
+    +_jbDatalist("eqClientList","client")+_jbDatalist("eqSiteList","site")+_jbDatalist("eqBrandList","brand")
+    +f("eqTag","e_tag",e.tag,' placeholder="'+jt("ph_tag")+'"')
+    +'<div class="jb-two"><div><label class="jb-lbl" for="eqType">'+jt("e_type")+'</label><select id="eqType" class="jb-in">'+EQ_TYPES.map(t=>'<option value="'+t+'"'+((e.type||"split")===t?" selected":"")+'>'+jt("et_"+t)+'</option>').join("")+'</select></div>'
+    +'<div>'+f("eqBrand","e_brand",e.brand,' list="eqBrandList"')+'</div></div>'
+    +'<div class="jb-two"><div>'+f("eqModel","e_model",e.model)+'</div><div>'+f("eqSerial","e_serial",e.serial)+'</div></div>'
+    +'<div class="jb-two"><div>'+f("eqRef","e_ref",e.refrigerant,' placeholder="R410A"')+'</div><div>'+f("eqCap","e_cap",e.capacity,' placeholder="'+jt("ph_cap")+'"')+'</div></div>'
+    +f("eqClient","e_client",e.client,' list="eqClientList"')
+    +f("eqSite","e_site",e.site,' list="eqSiteList"')
+    +f("eqLoc","e_loc",e.location,' placeholder="'+jt("ph_loc")+'"')
+    +'<div class="jb-two"><div>'+f("eqInstall","e_install",e.installDate,' type="date"')+'</div><div>'+f("eqWarr","e_warr",e.warrantyEnd,' type="date"')+'</div></div>'
+    +'<div class="jb-two"><div>'+f("eqPm","e_pm",e.pmMonths,' type="number" inputmode="numeric" min="0"')+'</div><div>'+f("eqLast","e_last",e.lastService,' type="date"')+'</div></div>'
+    +'<label class="jb-lbl" for="eqNotes">'+jt("e_notes")+'</label><textarea id="eqNotes" class="jb-in" rows="2">'+escHtml(e.notes||"")+'</textarea>'
+    +'</div><div class="jb-acts"><button class="btn jb-ghost" onclick="_jbBack()">'+jt("cancel")+'</button><button class="btn btn-primary" id="eqSaveBtn" onclick="_eqSave()">'+jt("saveUnit")+'</button></div>';
+}
+function _eqSave(){
+  const v=id=>((document.getElementById(id)||{}).value||"").trim();
+  const tag=v("eqTag");if(!tag){showToast(jt("needTag"));return;}
+  const data={tag:tag,type:v("eqType")||"other",brand:v("eqBrand"),model:v("eqModel"),serial:v("eqSerial"),refrigerant:v("eqRef"),capacity:v("eqCap"),
+    client:v("eqClient"),site:v("eqSite"),location:v("eqLoc"),installDate:v("eqInstall"),warrantyEnd:v("eqWarr"),pmMonths:parseFloat(v("eqPm"))||0,lastService:v("eqLast"),notes:v("eqNotes"),updatedAt:Date.now()};
+  const btn=document.getElementById("eqSaveBtn");if(btn)btn.disabled=true;
+  const fail=()=>{if(btn)btn.disabled=false;showToast(jt("failed"));};
+  const eid=_jbS.eqEdit;
+  if(eid){_jbWrite("/equipment/"+eid,"PATCH",data).then(()=>{showToast(jt("eqSaved"));_jbBack(true);}).catch(fail);return;}
+  const id="eq"+Date.now();
+  Object.assign(data,{createdAt:Date.now(),createdBy:currentUser?currentUser.username:""});
+  _jbWrite("/equipment/"+id,"PUT",data).then(()=>{showToast(jt("eqSaved"));_jbReplace({mode:"eq",eq:id,eqEdit:null},true);}).catch(fail);
+}
+function _eqDelete(){
+  const id=_jbS.eq;if(!_jbCanPlan()||!id)return;
+  showModal(jt("delUnitQ"),jt("delUnitMsg"),()=>{
+    _jbWrite("/equipment/"+id,"DELETE").then(()=>{showToast(jt("unitDeleted"));delete _jbEq[id];_jbBack(true);}).catch(()=>showToast(jt("failed")));
+  },{danger:true,okText:jt("delUnit"),cancelText:jt("cancel")});
+}
+
+// ── service report ──
+function _jbCompressPhoto(file){
+  return new Promise(res=>{
+    const fr=new FileReader();
+    fr.onload=e=>{const img=new Image();img.onload=()=>{
+      const max=1100;let w=img.width,h=img.height;if(w>h&&w>max){h=Math.round(h*max/w);w=max}else if(h>=w&&h>max){w=Math.round(w*max/h);h=max}
+      const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);res(c.toDataURL("image/jpeg",0.62));
+    };img.onerror=()=>res(null);img.src=e.target.result;};
+    fr.onerror=()=>res(null);fr.readAsDataURL(file);
+  });
+}
+function _jbRenderReport(){
+  const body=document.getElementById("jobsBody");if(!body)return;
+  const id=_jbS.id,j=_jbJobs[id];if(!j||!_jbCanAct(j)){_jbBack(false);return;}
+  if(!_jbDraft||_jbDraft.jobId!==id){
+    body.innerHTML='<div class="jb-empty">'+jt("loading")+'</div>';
+    _jbLoadPhotos(id).then(ph=>{
+      const r=j.report||{};
+      _jbDraft={jobId:id,photos:_jbArr(ph.photos),sig:ph.sig||null,eq:r.eq?_jbArr(r.eq):_jbArr(j.equipment)};
+      _jbRenderReport();
+    });
+    return;
+  }
+  const r=j.report||{},rd=r.readings||{};
+  const eqIds=Object.keys(_jbEq).filter(k=>_jbEq[k]);
+  const jobEq=_jbArr(j.equipment);
+  // Units on the job first; the rest of the register sits behind the search box.
+  const eqHtml=eqIds.length?'<span class="jb-lbl">'+jt("r_eq")+'</span><input id="rpEqSearch" class="jb-in" placeholder="'+jt("ph_eqSearch")+'" oninput="_jbEqFilterChips(\'rpEqSearch\',\'rpEqBox\')">'+_jbEqChips("rpEqBox",_jbDraft.eq,jobEq.concat(eqIds.filter(k=>jobEq.indexOf(k)<0))):"";
+  body.innerHTML='<h2 style="color:var(--navy);margin:0">'+jt("report")+'</h2><p style="color:var(--grey);font-size:12px;margin:2px 0 10px">'+escHtml(j.no||"")+' · '+escHtml(j.title||"")+'</p>'
+    +'<div class="jb-box">'
+    +'<label class="jb-lbl" for="rpDate">'+jt("r_date")+'</label><input id="rpDate" type="date" class="jb-in" value="'+(r.date||_jbToday())+'">'
+    +'<label class="jb-lbl" for="rpWork">'+jt("r_work")+' *</label><textarea id="rpWork" class="jb-in" rows="4" placeholder="'+jt("ph_work")+'">'+escHtml(r.work||"")+'</textarea>'
+    +eqHtml
+    +'</div><div class="jb-box"><h4>'+jt("r_read")+'</h4><div class="jb-read">'
+    +JB_READ.map(k=>'<div><label class="jb-lbl" for="rd_'+k+'">'+jt("rd_"+k)+'</label><input id="rd_'+k+'" class="jb-in"'+(k==="ref"?' placeholder="R410A"':' type="number" inputmode="decimal" step="any"')+' value="'+escHtml(rd[k]==null?"":String(rd[k]))+'"></div>').join("")
+    +'</div></div><div class="jb-box">'
+    +'<label class="jb-lbl" for="rpParts">'+jt("r_parts")+'</label><textarea id="rpParts" class="jb-in" rows="3" placeholder="'+jt("ph_parts")+'">'+escHtml(r.parts||"")+'</textarea>'
+    +'<span class="jb-lbl">'+jt("r_photos")+'</span><div class="jb-thumbs" id="rpThumbs"></div>'
+    +'<label class="jb-file">📷 '+jt("addPhoto")+'<input type="file" accept="image/*" multiple style="display:none" onchange="_jbAddPhotos(this)"></label>'
+    +'</div><div class="jb-box"><h4>'+jt("r_time")+'</h4>'
+    +'<div class="jb-two"><div><label class="jb-lbl" for="rpCrew">'+jt("people")+'</label><input id="rpCrew" type="number" inputmode="numeric" min="1" class="jb-in" value="'+(_jbArr(j.assigned).length||1)+'"></div>'
+    +'<div><label class="jb-lbl" for="rpHrs">'+jt("hrsEach")+'</label><input id="rpHrs" type="number" inputmode="decimal" min="0" step="0.5" class="jb-in" placeholder="0"></div></div>'
+    +'</div><div class="jb-box">'
+    +'<label class="jb-lbl" for="rpClient">'+jt("r_client")+'</label><input id="rpClient" class="jb-in" value="'+escHtml(r.clientName||"")+'">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center"><span class="jb-lbl">'+jt("r_sig")+'</span><button class="jb-x" style="color:var(--navy);font-size:12px;font-weight:700" onclick="_jbSigClear()">'+jt("clearSig")+'</button></div>'
+    +'<canvas id="rpSig" class="jb-sig"></canvas>'
+    +'</div><div class="jb-acts"><button class="btn jb-ghost" id="rpDraftBtn" onclick="_jbSaveReport(false)">'+jt("saveDraft")+'</button><button class="btn btn-success" id="rpSignBtn" onclick="_jbSaveReport(true)">'+jt("signOff")+'</button></div>';
+  _jbThumbs();_jbSigInit();
+}
+function _jbThumbs(){
+  const el=document.getElementById("rpThumbs");if(!el||!_jbDraft)return;
+  el.innerHTML=_jbDraft.photos.map((p,i)=>'<div><img src="'+p+'" alt=""><button aria-label="Remove photo" onclick="_jbDelPhoto('+i+')">✕</button></div>').join("");
+}
+function _jbDelPhoto(i){if(_jbDraft){_jbDraft.photos.splice(i,1);_jbThumbs();}}
+function _jbAddPhotos(inp){
+  const files=Array.from(inp.files||[]);inp.value="";if(!_jbDraft||!files.length)return;
+  const room=8-_jbDraft.photos.length;if(room<=0){showToast(jt("photoMax"));return;}
+  if(files.length>room)showToast(jt("photoMax"));
+  Promise.all(files.slice(0,room).map(_jbCompressPhoto)).then(list=>{list.forEach(p=>{if(p)_jbDraft.photos.push(p)});_jbThumbs();});
+}
+function _jbSigInit(){
+  const c=document.getElementById("rpSig");if(!c||!_jbDraft)return;
+  const w=c.clientWidth||320,h=160,dpr=Math.min(window.devicePixelRatio||1,2);
+  c.width=w*dpr;c.height=h*dpr;
+  const x=c.getContext("2d");x.scale(dpr,dpr);x.fillStyle="#fff";x.fillRect(0,0,w,h);
+  x.lineWidth=2.2;x.lineCap="round";x.lineJoin="round";x.strokeStyle="#1d1a22";
+  if(_jbDraft.sig){const im=new Image();im.onload=()=>x.drawImage(im,0,0,w,h);im.src=_jbDraft.sig;}
+  let drawing=false,last=null;
+  const pos=e=>{const b=c.getBoundingClientRect();return [e.clientX-b.left,e.clientY-b.top];};
+  c.onpointerdown=e=>{drawing=true;last=pos(e);try{c.setPointerCapture(e.pointerId)}catch(_){}x.beginPath();x.arc(last[0],last[1],1,0,Math.PI*2);x.fillStyle="#1d1a22";x.fill();e.preventDefault();};
+  c.onpointermove=e=>{if(!drawing)return;const p=pos(e);x.beginPath();x.moveTo(last[0],last[1]);x.lineTo(p[0],p[1]);x.stroke();last=p;e.preventDefault();};
+  c.onpointerup=c.onpointercancel=()=>{if(drawing){drawing=false;_jbDraft.sig=c.toDataURL("image/jpeg",0.85);}};
+}
+function _jbSigClear(){if(_jbDraft){_jbDraft.sig=null;_jbSigInit();}}
+function _jbSaveReport(sign){
+  const id=_jbS.id,j=_jbJobs[id];if(!j||!_jbDraft)return;
+  const v=k=>((document.getElementById(k)||{}).value||"").trim();
+  const work=v("rpWork"),clientName=v("rpClient");
+  if(!work){showToast(jt("needWork"));return;}
+  if(sign&&(!clientName||!_jbDraft.sig)){showToast(jt("needSign"));return;}
+  const readings={};JB_READ.forEach(k=>{const x=v("rd_"+k);if(x!=="")readings[k]=k==="ref"?x:(parseFloat(x));});
+  const eq=Array.from(document.querySelectorAll("#rpEqBox input:checked")).map(i=>i.value);
+  const date=v("rpDate")||_jbToday();
+  const report={date:date,work:work,parts:v("rpParts"),readings:readings,eq:eq,clientName:clientName,photoCount:_jbDraft.photos.length,hasSig:!!_jbDraft.sig,
+    by:currentUser?currentUser.username:"",byName:currentUser?currentUser.name:"",at:Date.now(),signed:!!sign};
+  const b1=document.getElementById("rpDraftBtn"),b2=document.getElementById("rpSignBtn");[b1,b2].forEach(b=>{if(b)b.disabled=true;});
+  const fail=()=>{[b1,b2].forEach(b=>{if(b)b.disabled=false;});showToast(jt("failed"));};
+  const photos={photos:_jbDraft.photos,sig:_jbDraft.sig||null};
+  (sign?(showToast(jt("locWait")),_jbGeo()):Promise.resolve(null)).then(loc=>{
+    if(sign){report.signedAt=Date.now();if(loc)report.loc=loc;}
+    // Photos first: a report must never say "signed" with its signature missing.
+    return _jbWrite("/jobphotos/"+id,"PUT",photos).then(()=>_jbWrite("/jobs/"+id+"/report","PUT",report)).then(()=>{
+      const extra=[];
+      // Equipment on the job follows the units actually serviced.
+      const jobEq=_jbArr(j.equipment);const merged=jobEq.concat(eq.filter(k=>jobEq.indexOf(k)<0));
+      const patch={updatedAt:Date.now()};if(merged.length!==jobEq.length)patch.equipment=merged;
+      if(sign){
+        const now=Date.now();Object.assign(patch,{status:"done",doneAt:now,doneBy:currentUser?currentUser.username:""});
+        if(!j.startedAt)patch.startedAt=now;if(loc)patch.locDone=loc;
+        // Each serviced unit's clock restarts from this service date.
+        eq.forEach(eid=>{if(_jbEq[eid])extra.push(_jbWrite("/equipment/"+eid,"PATCH",{lastService:date,lastJob:id,updatedAt:now}).catch(()=>{}));});
+        // Visit time goes into the same hours log as everything else, so man-hours stay in one place.
+        const vc=parseFloat(v("rpCrew")),vh=parseFloat(v("rpHrs"));
+        if(vc>0&&vh>0)extra.push(_jbWrite("/jobs/"+id+"/log","POST",{date:date,crew:vc,hrs:vh,note:"Service visit",by:report.by,byName:report.byName,at:now}));
+      }
+      extra.push(_jbWrite("/jobs/"+id,"PATCH",patch));
+      return Promise.all(extra);
+    });
+  }).then(()=>{showToast(sign?jt("reportDone"):"✅ "+jt("draftSaved"));_jbDraft=null;_jbBack(true);}).catch(fail);
+}
+
+// Client-facing service report PDF. English labels; the crew's own words go in as written.
+function _jbPdfSafe(s){return String(s==null?"":s).replace(/µ/g,"u").replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,"-").replace(/…/g,"...").replace(/[^\x09\x0A\x0D\x20-\xFF]/g,"");}
+function _jbReportPdf(id){
+  const j=_jbJobs[id];if(!j||!j.report)return;
+  if(!window.jspdf||!window.jspdf.jsPDF){showToast(jt("pdfWait"));return;}
+  showToast(jt("pdfMaking"));
+  Promise.all([_pdfLoadLogo(),_jbLoadPhotos(id)]).then(([logo,ph])=>{
+    try{
+      const r=j.report,rd=r.readings||{};
+      const {jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","a4");
+      const W=pdf.internal.pageSize.getWidth(),H=pdf.internal.pageSize.getHeight(),M=14,CW=W-2*M;
+      const purple=[126,91,181];
+      let y=16;
+      if(logo){try{pdf.addImage(logo,"PNG",M,y-8,13,13)}catch(e){}}
+      const tx=logo?M+17:M;
+      pdf.setFont("helvetica","bold");pdf.setFontSize(15);pdf.setTextColor(purple[0],purple[1],purple[2]);pdf.text("ELGAWA Guyana Inc.",tx,y);
+      pdf.setFont("helvetica","normal");pdf.setFontSize(8.5);pdf.setTextColor(120);pdf.text("HVAC installation and service",tx,y+4.5);
+      pdf.setFont("helvetica","bold");pdf.setFontSize(16);pdf.setTextColor(40);pdf.text("Service Report",W-M,y,{align:"right"});
+      pdf.setFont("helvetica","normal");pdf.setFontSize(9);pdf.setTextColor(120);pdf.text(String(j.no||""),W-M,y+5,{align:"right"});
+      pdf.setDrawColor(purple[0],purple[1],purple[2]);pdf.setLineWidth(0.7);pdf.line(M,y+9,W-M,y+9);
+      y+=15;
+      const need=hh=>{if(y+hh>H-16){pdf.addPage();y=18;}};
+      const head=t=>{need(12);pdf.setFont("helvetica","bold");pdf.setFontSize(10.5);pdf.setTextColor(purple[0],purple[1],purple[2]);pdf.text(t,M,y);y+=2;pdf.setDrawColor(225);pdf.setLineWidth(0.3);pdf.line(M,y,W-M,y);y+=5;pdf.setFont("helvetica","normal");pdf.setTextColor(40);pdf.setFontSize(9.5);};
+      const para=t=>{const lines=pdf.splitTextToSize(_jbPdfSafe(t||"-"),CW);lines.forEach(l=>{need(5);pdf.text(l,M,y);y+=4.6;});y+=4;};
+      const crew=_jbArr(j.assigned).join(", ")||r.byName||"-";
+      const info=[["Client",j.client||"-","Job",j.title||"-"],["Site",j.site||"-","Type",jte("t_"+(j.type||"install"))],["Project",j.project||"-","Service date",_jbDE(r.date)],["Technician(s)",crew,"Man-hours",_jbNum(_jbMh(j))]].map(rw=>rw.map(_jbPdfSafe));
+      pdf.autoTable({startY:y,body:info,theme:"plain",styles:{fontSize:9,cellPadding:1.5,textColor:40},columnStyles:{0:{fontStyle:"bold",textColor:110,cellWidth:26},1:{cellWidth:CW/2-26},2:{fontStyle:"bold",textColor:110,cellWidth:26}},margin:{left:M,right:M}});
+      y=pdf.lastAutoTable.finalY+6;
+      const eqRows=_jbArr(r.eq).map(eid=>_jbEq[eid]).filter(Boolean).map(e=>[e.tag||"",jte("et_"+(e.type||"other")),[e.brand,e.model].filter(Boolean).join(" "),e.serial||"",[e.site,e.location].filter(Boolean).join(", ")].map(_jbPdfSafe));
+      if(eqRows.length){head("Equipment serviced");pdf.autoTable({startY:y,head:[["Tag","Type","Brand / model","Serial","Location"]],body:eqRows,theme:"grid",styles:{fontSize:8.5,cellPadding:1.8},headStyles:{fillColor:purple,textColor:255},margin:{left:M,right:M}});y=pdf.lastAutoTable.finalY+7;}
+      head("Work performed");para(r.work);
+      const rdRows=JB_READ.filter(k=>rd[k]!==undefined&&rd[k]!==""&&rd[k]!==null).map(k=>[jte("rd_"+k),_jbPdfSafe(rd[k])]);
+      if(rdRows.length){head("Readings");pdf.autoTable({startY:y,body:rdRows,theme:"striped",styles:{fontSize:9,cellPadding:1.6},columnStyles:{0:{cellWidth:60,fontStyle:"bold"}},margin:{left:M,right:M},tableWidth:110});y=pdf.lastAutoTable.finalY+7;}
+      if(r.parts){head("Parts and materials used");para(r.parts);}
+      head("Sign-off");
+      need(42);
+      pdf.setFontSize(9);pdf.setTextColor(110);pdf.text("Client representative",M,y);pdf.text("Technician",M+CW/2+4,y);y+=5;
+      pdf.setTextColor(40);pdf.setFontSize(10);pdf.text(_jbPdfSafe(r.clientName||"-"),M,y);pdf.text(_jbPdfSafe(r.byName||crew),M+CW/2+4,y);y+=3;
+      if(ph.sig){try{pdf.addImage(ph.sig,"JPEG",M,y,60,24);}catch(e){}}
+      pdf.setDrawColor(180);pdf.line(M,y+25,M+70,y+25);
+      y+=30;pdf.setFontSize(8.5);pdf.setTextColor(110);
+      pdf.text(r.signed?("Signed "+_jbDE(r.signedAt||r.at)+", "+new Date(r.signedAt||r.at).toLocaleTimeString("en-GB",{timeZone:"America/Guyana",hour:"2-digit",minute:"2-digit"})):"Not yet signed by the client",M,y);
+      if(r.loc&&r.loc.lat){y+=4.5;pdf.text("Signed at "+r.loc.lat+", "+r.loc.lng+" (within "+(r.loc.acc||"?")+" m)",M,y);}
+      y+=10;
+      const photos=_jbArr(ph.photos);
+      if(photos.length){
+        need(80);head("Photos");
+        const gw=(CW-6)/2;let col=0,rowH=0;
+        photos.forEach(p=>{
+          let ih=gw*0.75;try{const pr=pdf.getImageProperties(p);ih=Math.min(gw*pr.height/pr.width,95);}catch(e){}
+          if(col===0){need(ih+4);rowH=0;}
+          const x=M+col*(gw+6);
+          try{pdf.addImage(p,"JPEG",x,y,gw,ih);}catch(e){}
+          rowH=Math.max(rowH,ih);
+          if(col===1){y+=rowH+5;col=0;}else col=1;
+        });
+        if(col===1)y+=rowH+5;
+        y+=2;
+      }
+      _pdfFooter(pdf);
+      showPDFPreview(pdf,"Service_Report_"+(j.no||id)+".pdf");
+    }catch(e){console.error("Service report PDF error:",e);showToast("❌ PDF failed: "+e.message);}
+  });
+}
+
 function showDash(){
   document.getElementById("loginScreen").classList.add("hidden");
   document.getElementById("navbar").classList.remove("hidden");
@@ -2596,6 +3437,9 @@ function showDash(){
   // Work Plan & Output button — planners and recorders (v166)
   const wplBtn=document.getElementById("workPlanBtn");
   if(wplBtn)wplBtn.style.display=_wpCanRecord()?"block":"none";
+  // v195: Jobs button — planners plus team leads, lead workers and supervisors
+  const jbBtn=document.getElementById("jobsBtn");
+  if(jbBtn){jbBtn.style.display=_jbCanUse()?"block":"none";_jbLabel();try{_jbBadge()}catch(e){}}
 
   // ═══ WORKER ROLE DETECTION ═══
   const wsv=document.getElementById("workerSignInView");
@@ -11846,7 +12690,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v194";
+const APP_VERSION="v196";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -13738,6 +14582,8 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v196 — FIELD SERVICE. Built on v195 Jobs. (1) SERVICE REPORTS: on any job the crew fills work performed, units serviced, readings (supply/return air, suction/discharge, amps, volts, refrigerant), parts used, up to 8 photos (compressed to ~1100px) and the client's name + finger signature; "Client signs off" finishes the job. One-tap client-facing PDF (English labels, ELGAWA letterhead, photos, signature) through the existing PDF preview/share. Photos + signature live at /jobphotos/{id} so the job list stays a small download. (2) EQUIPMENT REGISTER at /equipment: tag, type, brand, model, serial, refrigerant, capacity, client, site, location, install date, warranty end, service interval. Next service = last service (or install) + interval; flags overdue, due within 30 days, warranty ending within 60 days. Sign-off resets each serviced unit's last-service date. "Create service job" from a unit pre-fills a maintenance job. Reminder strip on Jobs/Equipment and a count on the dashboard button for planners. (3) DISPATCH tab for planners: not-dispatched, behind-schedule and per-lead day board with lead + date pickers. Jobs get a Scheduled-for date; leads get a red New badge on the dashboard button and on each unseen job (cleared when opened). (4) LOCATION STAMP at job start, job finish and client sign-off only (map link on the job, coordinates on the PDF). No background tracking. In-view and phone back now step through a screen stack. No existing path, function or screen changed beyond v195's hooks.
+// Build: v195 — JOBS. New Jobs screen (dashboard button, same people as Work Plan) for install, service and repair work on ANY project, not only BBI. Job card = number (J-0001…), title, type, priority, client, site, project, assigned leads, estimated man-hours, due date, notes, status (Open / In progress / On hold / Done). Leads log hours as people x hours each, so man-hours roll up per job against the estimate; logging hours on an Open job moves it to In progress. Planners create, edit, delete and remove hour entries. English + Spanish labels. Data at /jobs only (new path, covered by the existing auth != null rule) — no existing path, function or screen changed apart from the button, the back-button branch and the language refresh hook.
 // Build: v193 — TRACK EVERY TEAM, and fix the labour total. Two things. (1) WP_SECTIONS was missing ADJ-01 and therefore summed to 477,978.05 against the mastersheet's 475,299.65; the 2,678.40 gap is the insulation tube already paid for inside the copper BOQ rate. ADJ-01 added at qty 0, labour -2,678.40, so the list now totals exactly 475,299.65. This defect has been open since the PM Console was first built and is now closed on both sides. (2) Seven TRACKING lines added: TK-01 insulation, TK-02 drainage and condensate, TK-03 welding and fabrication, TK-04 general labour, TK-05 controls and electrical, TK-06 commissioning and testing, TK-07 refrigerant support. Until now those five crews had quantity columns on their checksheets and nowhere for the numbers to go, so their work and their man-days were invisible to the console. All seven carry labour 0 DELIBERATELY — that work is already inside the AW rates, and giving it a value would earn the same money twice and inflate every margin figure. qty is 0 because there is no take-off for them, so percent complete is meaningless on these lines and neither app pretends otherwise. TK-05/06/07 have no quantity column on their checksheets at all, so the console counts them in completed tasks, which is an activity count and is labelled as one. _wpLpu already guards against dividing by a zero qty, so nothing else needed changing. Crews get seven more options in the section dropdown and nothing they do today stops working. Verified: WP_SECTIONS totals 475,299.65 exactly, 18 lines, full file node --check clean, sw.js v193, and the console's own suite at 248 assertions passing.
 // Build: v192 — Quantity fields become numbers. Every work-row quantity (length, qty, joints, volume) was a plain text input, so the database holds "5.60 metro", "8.60 metros", "18 pares", "15 unidades conectadas" and "32 unidades (50-50)" sitting in the same column as bare numbers. Measured across the whole history: 101 quantity cells are clean numbers and 146 are free text, which is why three months of site output could not be totalled and could not be back-filled into the PM Console. The unit was never the problem — it has always been declared in the label ("Length(m)") and is now shown beside the field and enforced by input type=number with inputmode=decimal, so phones open the numeric keypad. NOTHING IS LOST: a new full-width Note field is added to every team's work row, and when an old sheet with a free-text quantity is opened the number is extracted into the numeric field while the original text is carried into the Note, so re-saving legacy data cannot silently drop what somebody wrote. On the existing history that recovers a usable number from 123 of the 146 messy cells, 84 percent. "note" was appended to every team's workKeys and workLabels, so it flows into the PDF and Excel exports automatically without touching either export path. Crews get one extra optional box and a numeric keypad; nothing they do today stops working.
 // Build: v191 — Stop duplicate checksheets. cloudSaveSheet always POSTed a new record and a fresh _id was minted on each save, so re-submitting appended another sheet for the same team and day instead of replacing the last one. Found in the 8 Aug database read: Kenneth Soerowidjojo filed five ducting sheets between 20:33 and 20:39 on 2026-05-05, all carrying the same four man-days, and 43 of 200 team-days hold more than one sheet — which multiplied every man-day and quantity count read off /checksheets by an unknown factor and made the history impossible to back-fill into the PM Console. Now: one sheet per team per PERSON per day. On save the day's node is read and any existing record with the same teamKey and the same submitter (trimmed, case-insensitive) is PUT over rather than appended. Different people on the same team on the same day are legitimate and are preserved untouched — on 5 May that correctly keeps Jose Gonzalez, Julio Caraballo and Jose Rodriguez while collapsing Kenneth's five into one. Two areas in one day belong in the work rows inside the sheet. If the pre-read fails for any reason it falls back to the old POST so a save is never lost. Crews see no change whatsoever. Nothing else touched.
