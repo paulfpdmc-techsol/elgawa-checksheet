@@ -653,6 +653,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
   </div>
   <div id="fbHealthBanner" class="fb-expiry-warn"></div>
   <div id="tabForms">
+    <button onclick="openMyPlan()" id="myPlanBtn" style="width:100%;margin-bottom:10px;padding:13px;border:none;border-radius:12px;background:var(--navy);color:white;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;gap:8px">📋 <span class="mpLbl">My plan</span> <span id="myPlanBtnCount" style="display:none;background:#F59E0B;color:#111;border-radius:999px;padding:1px 9px;font-size:13px"></span></button>
     <button onclick="openMyAttendance()" id="myAttendanceBtn" style="width:100%;margin-bottom:10px;padding:12px;border:none;border-radius:12px;background:var(--teal);color:white;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(11,93,71,.25)">🕐 My Sign In / Sign Out</button>
     <button onclick="openMyProfile()" id="myProfileDashBtn" style="width:100%;margin-bottom:10px;padding:11px;border:1.5px solid var(--navy);border-radius:12px;background:white;color:var(--navy);font-size:14px;font-weight:700;cursor:pointer">👤 My Profile</button>
     <button onclick="openWorkerProfiles()" id="workforceProfilesBtn" style="display:none;width:100%;margin-bottom:10px;padding:11px;border:none;border-radius:12px;background:var(--navy);color:white;font-size:14px;font-weight:700;cursor:pointer">👥 Workforce Profiles</button>
@@ -850,6 +851,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
   <div id="hubSafetyView" style="display:none"></div>
 </div>
 <div id="workerSignInView" class="hidden" style="max-width:500px;margin:0 auto;padding:16px">
+  <button onclick="openMyPlan()" id="myPlanBtn2" style="width:100%;margin-bottom:10px;padding:13px;border:none;border-radius:12px;background:var(--navy);color:white;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;gap:8px">📋 <span class="mpLbl">My plan</span> <span id="myPlanBtnCount2" style="display:none;background:#F59E0B;color:#111;border-radius:999px;padding:1px 9px;font-size:13px"></span></button>
   <div id="workerBackRow" style="display:none;margin-bottom:10px">
     <button class="btn-s" onclick="closeMyAttendance()" style="font-size:13px;padding:8px 16px;border:1.5px solid var(--border);background:white;color:var(--navy);border-radius:8px;cursor:pointer;font-weight:600">◀ Back to Dashboard</button>
   </div>
@@ -885,6 +887,10 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
 <div id="jobsView" class="hidden" style="max-width:680px;margin:0 auto;padding:16px;padding-bottom:40px">
   <div class="back-row"><button class="back-btn" id="jobsBackBtn" onclick="_jbBack()">← Back</button></div>
   <div id="jobsBody"></div>
+</div>
+<div id="myPlanView" class="hidden" style="max-width:680px;margin:0 auto;padding:16px;padding-bottom:40px">
+  <div class="back-row" style="display:flex;justify-content:space-between;align-items:center"><button class="back-btn" onclick="closeMyPlan()">← <span class="mpBack">Back</span></button><button class="btn-s" onclick="renderMyPlan(true)" style="padding:7px 12px">⟳</button></div>
+  <div id="myPlanBody"></div>
 </div>
 <div id="workerProfilesView" class="hidden" style="max-width:680px;margin:0 auto;padding:16px;padding-bottom:40px">
   <div style="margin-bottom:10px"><button class="btn-s" onclick="closeWorkerProfiles()" style="font-size:13px;padding:8px 16px;border:1.5px solid var(--border);background:white;color:var(--navy);border-radius:8px;cursor:pointer;font-weight:600">◀ Back</button></div>
@@ -1508,6 +1514,27 @@ let _formTeamKey=null;
 const T={
   dailyChecksheet:{en:"Daily Checksheet",es:"Registro Diario",nl:"Dagelijkse Checklist"},
   forms:{en:"Forms",es:"Formularios",nl:"Formulieren"},
+  myPlan:{en:"My plan",es:"Mi plan",nl:"Mijn planning"},
+  mpSub:{en:"the work planned for you",es:"el trabajo planificado para ti",nl:"het werk dat voor jou gepland is"},
+  mpToday:{en:"Today",es:"Hoy",nl:"Vandaag"},
+  mpBack:{en:"Back",es:"Volver",nl:"Terug"},
+  mpWeek:{en:"This week",es:"Esta semana",nl:"Deze week"},
+  mpMonth:{en:"This month",es:"Este mes",nl:"Deze maand"},
+  mpOpen:{en:"still to do",es:"por hacer",nl:"nog te doen"},
+  mpNone:{en:"Nothing planned for you in this period.",es:"No hay trabajo planificado para ti en este periodo.",nl:"Niets gepland voor jou in deze periode."},
+  mpLoading:{en:"Loading your plan…",es:"Cargando tu plan…",nl:"Planning laden…"},
+  mpBy:{en:"by",es:"para el",nl:"voor"},
+  mpLate:{en:"Late",es:"Atrasado",nl:"Te laat"},
+  mpDone:{en:"Done",es:"Hecho",nl:"Klaar"},
+  mpProblem:{en:"Problem",es:"Problema",nl:"Probleem"},
+  mpMarkDone:{en:"Done",es:"Hecho",nl:"Klaar"},
+  mpMarkProblem:{en:"Problem",es:"Problema",nl:"Probleem"},
+  mpUndo:{en:"Undo",es:"Deshacer",nl:"Ongedaan"},
+  mpWhatProblem:{en:"What is stopping the work? (material, access, tools…)",es:"¿Qué detiene el trabajo? (material, acceso, herramientas…)",nl:"Wat houdt het werk tegen? (materiaal, toegang, gereedschap…)"},
+  mpSentDone:{en:"Marked done. The office sees it now.",es:"Marcado como hecho. La oficina ya lo ve.",nl:"Gemarkeerd als klaar. Het kantoor ziet het nu."},
+  mpSentProblem:{en:"Problem sent to the office.",es:"Problema enviado a la oficina.",nl:"Probleem naar het kantoor gestuurd."},
+  mpSentUndo:{en:"Back to open.",es:"Abierto de nuevo.",nl:"Weer open."},
+  mpOffline:{en:"Could not send. Check the signal and try again.",es:"No se pudo enviar. Revisa la señal e intenta de nuevo.",nl:"Kon niet verzenden. Controleer het signaal en probeer opnieuw."},
   // Team / form display names (used by getTeamName helper — does NOT mutate TEAMS object)
   teamName_ducting:{en:"Ducting",es:"Ductos",nl:"Kanalen"},
   teamName_copper:{en:"Copper Piping",es:"Tubería de Cobre",nl:"Koperleidingen"},
@@ -3467,6 +3494,9 @@ function showDash(){
   }else{
     if(hrv)hrv.classList.add("hidden");
   }
+  // v195: My plan button label in the chosen language, and today's open count
+  document.querySelectorAll(".mpLbl").forEach(el=>{el.textContent=t("myPlan")});
+  try{mpRefreshBadge()}catch(e){}
 }
 
 function renderHistory(){
@@ -12693,7 +12723,115 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v197";
+
+// ═══ v195 — MY PLAN ═══════════════════════════════════════════════════════════
+// Paul, 6 Oct: "after the plan is created we can share it to the person's name on
+// CrewFlow, where they receive their plans depending on whether it is daily,
+// weekly or monthly." Dioptra (the PM console) writes each person's steps to
+//   /pm/crewplan/<username>/<pid>_<taskId> = {pid, job, tid, t, es, parent, start,
+//                                             finish, who, by, at}
+// and this screen shows them as Today / This week / This month. A tick or a
+// problem goes to
+//   /pm/crewticks/<pid>/<taskId> = {st:"done"|"problem"|"open", note, by, name, at}
+// once per step, so a step shared to a whole crew is ticked once for everybody,
+// and Dioptra moves the task on its plan. Nothing here writes outside /pm.
+let _mpPeriod="today", _mpItems=null, _mpTicks={}, _mpBack=[];
+function _mpDay(iso,n){const d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
+function _mpRange(p){
+  const t=getGuyanaDate();
+  if(p==="today")return[t,t];
+  if(p==="week"){const d=new Date(t+"T12:00:00"),dow=(d.getDay()+6)%7;const mon=_mpDay(t,-dow);return[mon,_mpDay(mon,6)]}
+  return[t.slice(0,8)+"01",_mpDay(_mpDay(t.slice(0,8)+"01",32).slice(0,8)+"01",-1)];
+}
+function _mpKey(u){return String(u||"").toLowerCase().replace(/[.#$\[\]\/]/g,"_")}
+function _mpLoad(){
+  const fb=getFirebaseUrl();if(!fb||!currentUser)return Promise.resolve([]);
+  return fetch(fb+"/pm/crewplan/"+encodeURIComponent(_mpKey(currentUser.username))+".json").then(fbJson).then(d=>{
+    const items=Object.keys(d||{}).map(k=>Object.assign({key:k},d[k])).filter(x=>x&&x.tid&&x.pid);
+    const pids=[...new Set(items.map(x=>x.pid))];
+    return Promise.all(pids.map(p=>fetch(fb+"/pm/crewticks/"+encodeURIComponent(p)+".json").then(fbJson).then(v=>{_mpTicks[p]=v||{}}).catch(()=>{}))).then(()=>{_mpItems=items;return items});
+  }).catch(()=>{_mpItems=_mpItems||[];return _mpItems});
+}
+function _mpState(x){const k=(_mpTicks[x.pid]||{})[x.tid];return k&&k.st&&k.st!=="open"?k:null}
+function _mpIn(x,r){const s=x.start||x.finish||"",f=x.finish||x.start||"";if(!s&&!f)return r[0]===getGuyanaDate();if(f<r[0]&&!_mpState(x)&&f<getGuyanaDate())return true;return s<=r[1]&&f>=r[0]}
+function _mpOpenCount(){const r=_mpRange("today");return(_mpItems||[]).filter(x=>_mpIn(x,r)&&!_mpState(x)).length}
+function _mpBadge(){
+  document.querySelectorAll(".mpLbl").forEach(el=>{el.textContent=t("myPlan")});
+  const n=_mpOpenCount();
+  ["myPlanBtnCount","myPlanBtnCount2"].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent=n?String(n):"";el.style.display=n?"inline-block":"none"}});
+}
+function mpRefreshBadge(){if(!currentUser)return;_mpLoad().then(_mpBadge)}
+function openMyPlan(){
+  _mpBack=["dashView","workerSignInView","bottomNav","hrView"].filter(id=>{const el=document.getElementById(id);return el&&!el.classList.contains("hidden")});
+  _mpBack.forEach(id=>document.getElementById(id).classList.add("hidden"));
+  const v=document.getElementById("myPlanView");if(v)v.classList.remove("hidden");
+  window.scrollTo(0,0);renderMyPlan(true);
+}
+function closeMyPlan(){
+  const v=document.getElementById("myPlanView");if(v)v.classList.add("hidden");
+  (_mpBack.length?_mpBack:["dashView","bottomNav"]).forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove("hidden")});
+  _mpBadge();
+}
+function _mpSetPeriod(p){_mpPeriod=p;renderMyPlan(false)}
+function _mpDate(iso){if(!iso)return"";const loc=LANG==="es"?"es-ES":LANG==="nl"?"nl-NL":"en-GB";return new Date(iso+"T12:00:00").toLocaleDateString(loc,{weekday:"short",day:"numeric",month:"short"})}
+function renderMyPlan(reload){
+  const body=document.getElementById("myPlanBody");if(!body)return;
+  document.querySelectorAll(".mpBack").forEach(el=>{el.textContent=t("mpBack")});
+  if(reload||!_mpItems){body.innerHTML='<div style="text-align:center;color:var(--grey);padding:24px">'+t("mpLoading")+'</div>';_mpLoad().then(()=>renderMyPlan(false));return}
+  const r=_mpRange(_mpPeriod),today=getGuyanaDate();
+  const list=_mpItems.filter(x=>_mpIn(x,r)).sort((a,b)=>String(a.finish||a.start).localeCompare(String(b.finish||b.start))||String(a.t).localeCompare(String(b.t)));
+  const open=list.filter(x=>!_mpState(x)).length;
+  let h='<div style="text-align:center;margin-bottom:10px"><h2 style="color:var(--navy);margin:0">📋 '+t("myPlan")+'</h2>'
+    +'<p style="color:var(--grey);font-size:12px;margin:2px 0">'+escHtml(currentUser.name||"")+' · '+t("mpSub")+'</p></div>';
+  h+='<div class="tab-row" style="margin:8px 0;display:flex;gap:6px">'+[["today","mpToday"],["week","mpWeek"],["month","mpMonth"]].map(p=>'<button class="tab-btn'+(_mpPeriod===p[0]?" active":"")+'" style="flex:1" onclick="_mpSetPeriod(\''+p[0]+'\')">'+t(p[1])+'</button>').join("")+'</div>';
+  h+='<div style="font-size:12px;color:var(--grey);text-align:center;margin:4px 0 10px">'+(r[0]===r[1]?_mpDate(r[0]):_mpDate(r[0])+' – '+_mpDate(r[1]))+' · <b style="color:var(--navy)">'+open+'</b> '+t("mpOpen")+'</div>';
+  if(!list.length){
+    h+='<div class="hr-card"><div style="text-align:center;color:var(--grey);padding:16px;font-size:13px">'+t("mpNone")+'</div></div>';
+    body.innerHTML=h;return;
+  }
+  const byJob={};list.forEach(x=>{(byJob[x.job||x.pid]=byJob[x.job||x.pid]||[]).push(x)});
+  Object.keys(byJob).forEach(job=>{
+    h+='<div style="font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--navy);margin:14px 2px 6px">'+escHtml(job)+'</div>';
+    byJob[job].forEach(x=>{
+      const st=_mpState(x),late=!st&&x.finish&&x.finish<today;
+      const title=(LANG!=="en"&&x.es)?x.es:x.t, alt=(LANG!=="en"&&x.es)?x.t:(LANG==="en"&&x.es?x.es:"");
+      const bg=st?(st.st==="done"?"#eaf7ef":"#fff1ef"):"white";
+      h+='<div style="background:'+bg+';border-radius:12px;box-shadow:var(--shadow);padding:12px;margin-bottom:8px;border:1.5px solid '+(late?"var(--danger)":"var(--border)")+'">'
+        +'<div style="font-size:15px;font-weight:700;color:var(--navy);line-height:1.35'+(st&&st.st==="done"?";text-decoration:line-through;opacity:.7":"")+'">'+escHtml(title||"")+'</div>'
+        +(alt?'<div style="font-size:12px;color:var(--grey);margin-top:2px">'+escHtml(alt)+'</div>':'')
+        +'<div style="font-size:12px;color:var(--grey);margin-top:4px">'+(x.parent?escHtml(x.parent)+' · ':'')
+        +(x.finish?(late?'<b style="color:var(--danger)">'+t("mpLate")+'</b> · ':'')+t("mpBy")+' '+_mpDate(x.finish):'')+(x.who?' · '+escHtml(x.who):'')+'</div>';
+      if(st){
+        h+='<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px">'
+          +'<span style="flex:1;font-weight:700;color:'+(st.st==="done"?"#12734A":"var(--danger)")+'">'+(st.st==="done"?"✅ "+t("mpDone"):"⚠️ "+t("mpProblem")+(st.note?": "+escHtml(st.note):""))
+          +' <span style="font-weight:400;color:var(--grey)">· '+escHtml(st.name||st.by||"")+'</span></span>'
+          +'<button class="btn-s" style="padding:7px 12px;font-size:13px" onclick="_mpTick(\''+x.key+'\',\'open\')">'+t("mpUndo")+'</button></div>';
+      }else{
+        h+='<div style="display:flex;gap:8px;margin-top:10px">'
+          +'<button onclick="_mpTick(\''+x.key+'\',\'done\')" class="btn btn-primary" style="flex:1;padding:11px;font-size:15px">✓ '+t("mpMarkDone")+'</button>'
+          +'<button onclick="_mpTick(\''+x.key+'\',\'problem\')" style="flex:1;padding:11px;font-size:14px;border:1.5px solid var(--danger);background:white;color:var(--danger);border-radius:10px;font-weight:700;cursor:pointer">⚠ '+t("mpMarkProblem")+'</button></div>';
+      }
+      h+='</div>';
+    });
+  });
+  body.innerHTML=h;
+}
+// keep the count on the button fresh: shortly after opening, and every 5 minutes
+setTimeout(function(){try{if(currentUser)mpRefreshBadge()}catch(e){}},2500);
+setInterval(function(){try{if(currentUser&&document.visibilityState!=="hidden")mpRefreshBadge()}catch(e){}},300000);
+function _mpTick(key,st){
+  const x=(_mpItems||[]).find(i=>i.key===key);if(!x)return;
+  let note="";
+  if(st==="problem"){note=prompt(t("mpWhatProblem"),"");if(note===null)return;note=note.trim()}
+  const fb=getFirebaseUrl();if(!fb){showToast(t("mpOffline"));return}
+  const rec={st:st,note:note,by:currentUser.username,name:currentUser.name||currentUser.username,at:Date.now(),date:getGuyanaDate()};
+  fetch(fb+"/pm/crewticks/"+encodeURIComponent(x.pid)+"/"+encodeURIComponent(x.tid)+".json",{method:"PUT",body:JSON.stringify(rec)})
+    .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);_mpTicks[x.pid]=_mpTicks[x.pid]||{};_mpTicks[x.pid][x.tid]=rec;renderMyPlan(false);_mpBadge();
+      showToast(st==="done"?"✅ "+t("mpSentDone"):(st==="problem"?"⚠️ "+t("mpSentProblem"):t("mpSentUndo")))})
+    .catch(()=>showToast("⚠️ "+t("mpOffline")));
+}
+
+const APP_VERSION="v198";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -14585,6 +14723,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v198 — MY PLAN merged onto v197. My plan (Dioptra crew steps: Today / This week / This month, Done / Problem / Undo) ported unchanged from the unpushed v195 My plan build. Jobs, Dispatch, Equipment, service reports and the v197 refresh fix unchanged.
 // Build: v197 — REFRESH FIX. On refresh/reopen with a saved session, showDash ran before the rest of the script had loaded, threw on _chatDotPoll, and the Workforce Profiles, Work Plan & Output, Jobs and Backup buttons (plus Worker/HR role routing) were skipped. Session resume now waits for the script to finish before drawing the dashboard.
 // Build: v196 — FIELD SERVICE. Built on v195 Jobs. (1) SERVICE REPORTS: on any job the crew fills work performed, units serviced, readings (supply/return air, suction/discharge, amps, volts, refrigerant), parts used, up to 8 photos (compressed to ~1100px) and the client's name + finger signature; "Client signs off" finishes the job. One-tap client-facing PDF (English labels, ELGAWA letterhead, photos, signature) through the existing PDF preview/share. Photos + signature live at /jobphotos/{id} so the job list stays a small download. (2) EQUIPMENT REGISTER at /equipment: tag, type, brand, model, serial, refrigerant, capacity, client, site, location, install date, warranty end, service interval. Next service = last service (or install) + interval; flags overdue, due within 30 days, warranty ending within 60 days. Sign-off resets each serviced unit's last-service date. "Create service job" from a unit pre-fills a maintenance job. Reminder strip on Jobs/Equipment and a count on the dashboard button for planners. (3) DISPATCH tab for planners: not-dispatched, behind-schedule and per-lead day board with lead + date pickers. Jobs get a Scheduled-for date; leads get a red New badge on the dashboard button and on each unseen job (cleared when opened). (4) LOCATION STAMP at job start, job finish and client sign-off only (map link on the job, coordinates on the PDF). No background tracking. In-view and phone back now step through a screen stack. No existing path, function or screen changed beyond v195's hooks.
 // Build: v195 — JOBS. New Jobs screen (dashboard button, same people as Work Plan) for install, service and repair work on ANY project, not only BBI. Job card = number (J-0001…), title, type, priority, client, site, project, assigned leads, estimated man-hours, due date, notes, status (Open / In progress / On hold / Done). Leads log hours as people x hours each, so man-hours roll up per job against the estimate; logging hours on an Open job moves it to In progress. Planners create, edit, delete and remove hour entries. English + Spanish labels. Data at /jobs only (new path, covered by the existing auth != null rule) — no existing path, function or screen changed apart from the button, the back-button branch and the language refresh hook.
@@ -14619,6 +14758,7 @@ function saveSelfAttEdit(date,username){
 // Build: v165 — Firebase rules are now LIVE (auth != null, published by Paul), so two dormant bugs became urgent and are fixed here: (1) auth-retry after token expiry now passes the request options through (a retried PUT stayed a PUT; before it silently became a GET and the write was lost); (2) payroll cloud saves now %hex-encode worker-name keys exactly like attendance has since v133 ("Jose N. Queipo" on the installation roster made every whole-day pay PUT fail HTTP 400 while still toasting success) — all 4 payroll write sites encode, both loaders decode, and every payroll save now checks the response and warns instead of lying.
 // Build: v164 — PDF preview no longer freezes phones (pages render sequentially in batches of 4 with a Show-more button + 15s watchdog fallback; was: every page at once in parallel, which hung photo-heavy daily/weekly/monthly reports and the workforce profiles PDF). Attendance clock fixes: admin edits to self sign-in times now ALWAYS sync into the register for confirmed records (old code checked only the local register copy), and register time edits flow back into the worker's self sign-in record, so the two screens can't disagree.
 // Build: v127 — bolder visual theme (pill bottom-nav, accent headers, gradient stats), self sign-in table restacked to fit narrow screens, team category badges (ELGAWA Guyana Team / Suriname ELGAWA)
+// Build: v195 — MY PLAN. A "My plan" button on the home screen (and on the worker sign-in screen) opens the steps Dioptra has planned for the logged-in person: Today / This week / This month, in English, Spanish or Dutch with the app's language. Each step shows job, main task, due date and who; Done or Problem (with a reason) is written once per step to /pm/crewticks/<job>/<task>, so a crew ticks a shared step once and Dioptra moves its plan. Reads /pm/crewplan/<username>. Writes only under /pm, which the current Firebase rules (step 1 and step 2) both allow. The button shows how many of today's steps are still open.
 // Build: v126 — visual refresh, viewport fixes, back/forward buttons, 3 daily reminders (chime+vibrate), hub bug fixes (/checksheets source, crash guards)
 // Build: v125 — fbJson hardening, attendance auto-sync, home/refresh buttons, live Firebase health banner
 </script>
