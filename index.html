@@ -11116,7 +11116,10 @@ try{const u=localStorage.getItem("elg_user");if(u){currentUser=JSON.parse(u);
   // Auto-resume session — skip login screen entirely on refresh
   const loginScr=document.getElementById("loginScreen");
   loginScr.classList.add("hidden");
-  showDash();
+  // v197: run showDash after the whole script has loaded. Called here directly it hit
+  // variables declared further down (_chatDotPoll), threw, and silently skipped every
+  // role button after the chat button on refresh.
+  setTimeout(showDash,0);
   // Restore last active tab on refresh
   setTimeout(()=>{
     try{
@@ -12690,7 +12693,7 @@ function loadAllSelfAttendance(date){
 // quantity, admin/Field Engineer approves (mirrors the attendance flow).
 // Approved output is valued at the BOQ labour rate per section — same data
 // model as the Additional Works Labour Control workbook.
-const APP_VERSION="v196";
+const APP_VERSION="v197";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -14582,6 +14585,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v197 — REFRESH FIX. On refresh/reopen with a saved session, showDash ran before the rest of the script had loaded, threw on _chatDotPoll, and the Workforce Profiles, Work Plan & Output, Jobs and Backup buttons (plus Worker/HR role routing) were skipped. Session resume now waits for the script to finish before drawing the dashboard.
 // Build: v196 — FIELD SERVICE. Built on v195 Jobs. (1) SERVICE REPORTS: on any job the crew fills work performed, units serviced, readings (supply/return air, suction/discharge, amps, volts, refrigerant), parts used, up to 8 photos (compressed to ~1100px) and the client's name + finger signature; "Client signs off" finishes the job. One-tap client-facing PDF (English labels, ELGAWA letterhead, photos, signature) through the existing PDF preview/share. Photos + signature live at /jobphotos/{id} so the job list stays a small download. (2) EQUIPMENT REGISTER at /equipment: tag, type, brand, model, serial, refrigerant, capacity, client, site, location, install date, warranty end, service interval. Next service = last service (or install) + interval; flags overdue, due within 30 days, warranty ending within 60 days. Sign-off resets each serviced unit's last-service date. "Create service job" from a unit pre-fills a maintenance job. Reminder strip on Jobs/Equipment and a count on the dashboard button for planners. (3) DISPATCH tab for planners: not-dispatched, behind-schedule and per-lead day board with lead + date pickers. Jobs get a Scheduled-for date; leads get a red New badge on the dashboard button and on each unseen job (cleared when opened). (4) LOCATION STAMP at job start, job finish and client sign-off only (map link on the job, coordinates on the PDF). No background tracking. In-view and phone back now step through a screen stack. No existing path, function or screen changed beyond v195's hooks.
 // Build: v195 — JOBS. New Jobs screen (dashboard button, same people as Work Plan) for install, service and repair work on ANY project, not only BBI. Job card = number (J-0001…), title, type, priority, client, site, project, assigned leads, estimated man-hours, due date, notes, status (Open / In progress / On hold / Done). Leads log hours as people x hours each, so man-hours roll up per job against the estimate; logging hours on an Open job moves it to In progress. Planners create, edit, delete and remove hour entries. English + Spanish labels. Data at /jobs only (new path, covered by the existing auth != null rule) — no existing path, function or screen changed apart from the button, the back-button branch and the language refresh hook.
 // Build: v193 — TRACK EVERY TEAM, and fix the labour total. Two things. (1) WP_SECTIONS was missing ADJ-01 and therefore summed to 477,978.05 against the mastersheet's 475,299.65; the 2,678.40 gap is the insulation tube already paid for inside the copper BOQ rate. ADJ-01 added at qty 0, labour -2,678.40, so the list now totals exactly 475,299.65. This defect has been open since the PM Console was first built and is now closed on both sides. (2) Seven TRACKING lines added: TK-01 insulation, TK-02 drainage and condensate, TK-03 welding and fabrication, TK-04 general labour, TK-05 controls and electrical, TK-06 commissioning and testing, TK-07 refrigerant support. Until now those five crews had quantity columns on their checksheets and nowhere for the numbers to go, so their work and their man-days were invisible to the console. All seven carry labour 0 DELIBERATELY — that work is already inside the AW rates, and giving it a value would earn the same money twice and inflate every margin figure. qty is 0 because there is no take-off for them, so percent complete is meaningless on these lines and neither app pretends otherwise. TK-05/06/07 have no quantity column on their checksheets at all, so the console counts them in completed tasks, which is an activity count and is labelled as one. _wpLpu already guards against dividing by a zero qty, so nothing else needed changing. Crews get seven more options in the section dropdown and nothing they do today stops working. Verified: WP_SECTIONS totals 475,299.65 exactly, 18 lines, full file node --check clean, sw.js v193, and the console's own suite at 248 assertions passing.
