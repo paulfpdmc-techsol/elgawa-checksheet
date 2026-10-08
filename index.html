@@ -1537,6 +1537,11 @@ const T={
   mpMarkStarted:{en:"Started",es:"Empezado",nl:"Begonnen"},
   mpInProgress:{en:"In progress",es:"En curso",nl:"Bezig"},
   mpSentStarted:{en:"Marked as started",es:"Marcado como empezado",nl:"Gemarkeerd als begonnen"},
+  mpUpdate:{en:"Update progress",es:"Actualizar avance",nl:"Voortgang bijwerken"},
+  mpOf:{en:"of",es:"de",nl:"van"},
+  mpHowMuch:{en:"How much is done in total so far? (in",es:"¿Cuánto está hecho en total hasta ahora? (en",nl:"Hoeveel is er in totaal klaar? (in"},
+  mpBadNum:{en:"Type a number between 0 and",es:"Escriba un número entre 0 y",nl:"Typ een getal tussen 0 en"},
+  mpSentProgress:{en:"Progress sent. The office sees it now.",es:"Avance enviado. La oficina ya lo ve.",nl:"Voortgang verzonden. Het kantoor ziet het nu."},
   mpOffline:{en:"Could not send. Check the signal and try again.",es:"No se pudo enviar. Revisa la señal e intenta de nuevo.",nl:"Kon niet verzenden. Controleer het signaal en probeer opnieuw."},
   // Team / form display names (used by getTeamName helper — does NOT mutate TEAMS object)
   teamName_ducting:{en:"Ducting",es:"Ductos",nl:"Kanalen"},
@@ -12758,7 +12763,18 @@ function _mpLoad(){
   }).catch(()=>{_mpItems=_mpItems||[];return _mpItems});
 }
 function _mpState(x){const k=(_mpTicks[x.pid]||{})[x.tid];return k&&(k.st==="done"||k.st==="problem")?k:null}
-function _mpStarted(x){const k=(_mpTicks[x.pid]||{})[x.tid];return k&&k.st==="started"?k:null}
+function _mpStarted(x){const k=(_mpTicks[x.pid]||{})[x.tid];return k&&(k.st==="started"||k.st==="progress")?k:null}
+// v201: progress against a target set in Dioptra (q = target, u = unit, sp = size/spec, done = so far)
+const _MP_WHOLE={units:1,sys:1,pcs:1,pts:1,joints:1};
+function _mpDone(x){const k=(_mpTicks[x.pid]||{})[x.tid];if(k&&k.done!=null&&(k.st==="progress"||k.st==="done"))return +k.done||0;return +x.done||0}
+function _mpNum(v){v=Math.round((+v||0)*100)/100;return v.toLocaleString()}
+function _mpProgHtml(x,closed){
+  const q=+x.q||0;if(!(q>0))return "";
+  const d=Math.min(_mpDone(x),q),pc=Math.round(d/q*100);
+  return '<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--navy);font-weight:700"><span>'+_mpNum(d)+' '+t("mpOf")+' '+_mpNum(q)+' '+escHtml(x.u||"")+(x.sp?' <span style="font-weight:400;color:var(--grey)">· '+escHtml(x.sp)+'</span>':'')+'</span><span>'+pc+'%</span></div>'
+    +'<div style="height:8px;border-radius:99px;background:#e3e7ec;overflow:hidden;margin-top:4px"><div style="height:100%;width:'+pc+'%;background:#12734A;border-radius:99px"></div></div>'
+    +(closed?'':'<button onclick="_mpTick(\''+x.key+'\',\'progress\')" style="width:100%;margin-top:8px;padding:10px;font-size:14px;border:1.5px solid #12734A;background:white;color:#12734A;border-radius:10px;font-weight:700;cursor:pointer">＋ '+t("mpUpdate")+'</button>')+'</div>';
+}
 function _mpIn(x,r){const s=x.start||x.finish||"",f=x.finish||x.start||"";if(!s&&!f)return r[0]===getGuyanaDate();if(f<r[0]&&!_mpState(x)&&f<getGuyanaDate())return true;return s<=r[1]&&f>=r[0]}
 function _mpOpenCount(){const r=_mpRange("today");return(_mpItems||[]).filter(x=>_mpIn(x,r)&&!_mpState(x)).length}
 function _mpBadge(){
@@ -12806,7 +12822,8 @@ function renderMyPlan(reload){
         +'<div style="font-size:15px;font-weight:700;color:var(--navy);line-height:1.35'+(st&&st.st==="done"?";text-decoration:line-through;opacity:.7":"")+'">'+escHtml(title||"")+'</div>'
         +(alt?'<div style="font-size:12px;color:var(--grey);margin-top:2px">'+escHtml(alt)+'</div>':'')
         +'<div style="font-size:12px;color:var(--grey);margin-top:4px">'+(x.parent?escHtml(x.parent)+' · ':'')
-        +(x.finish?(late?'<b style="color:var(--danger)">'+t("mpLate")+'</b> · ':'')+t("mpBy")+' '+_mpDate(x.finish):'')+(x.who?' · '+escHtml(x.who):'')+'</div>';
+        +(x.finish?(late?'<b style="color:var(--danger)">'+t("mpLate")+'</b> · ':'')+t("mpBy")+' '+_mpDate(x.finish):'')+(x.who?' · '+escHtml(x.who):'')+'</div>'
+        +_mpProgHtml(x,!!st);
       if(st){
         h+='<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px">'
           +'<span style="flex:1;font-weight:700;color:'+(st.st==="done"?"#12734A":"var(--danger)")+'">'+(st.st==="done"?"✅ "+t("mpDone"):"⚠️ "+t("mpProblem")+(st.note?": "+escHtml(st.note):""))
@@ -12833,15 +12850,27 @@ function _mpTick(key,st){
   const x=(_mpItems||[]).find(i=>i.key===key);if(!x)return;
   let note="";
   if(st==="problem"){note=prompt(t("mpWhatProblem"),"");if(note===null)return;note=note.trim()}
+  let done=null;
+  if(st==="progress"){
+    const q=+x.q||0;if(!(q>0))return;
+    const ans=prompt(t("mpHowMuch")+" "+(x.u||"")+")",String(_mpDone(x)));if(ans===null)return;
+    let n=parseFloat(String(ans).replace(",","."));
+    if(isNaN(n)||n<0||n>q){showToast("⚠️ "+t("mpBadNum")+" "+_mpNum(q));return}
+    if(_MP_WHOLE[x.m])n=Math.round(n);
+    done=Math.round(n*100)/100;
+    if(done>=q)st="done";
+  }
   const fb=getFirebaseUrl();if(!fb){showToast(t("mpOffline"));return}
   const rec={st:st,note:note,by:currentUser.username,name:currentUser.name||currentUser.username,at:Date.now(),date:getGuyanaDate()};
+  if(done!=null)rec.done=done;
   fetch(fb+"/pm/crewticks/"+encodeURIComponent(x.pid)+"/"+encodeURIComponent(x.tid)+".json",{method:"PUT",body:JSON.stringify(rec)})
     .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);_mpTicks[x.pid]=_mpTicks[x.pid]||{};_mpTicks[x.pid][x.tid]=rec;renderMyPlan(false);_mpBadge();
-      showToast(st==="done"?"✅ "+t("mpSentDone"):(st==="problem"?"⚠️ "+t("mpSentProblem"):(st==="started"?"▶ "+t("mpSentStarted"):t("mpSentUndo"))))})
+      showToast(done!=null&&st==="progress"?"📏 "+t("mpSentProgress"):(st==="done"?"✅ "+t("mpSentDone"):(st==="problem"?"⚠️ "+t("mpSentProblem"):(st==="started"?"▶ "+t("mpSentStarted"):t("mpSentUndo")))))})
     .catch(()=>showToast("⚠️ "+t("mpOffline")));
 }
 
-const APP_VERSION="v199";
+// Build: v201 — PROGRESS AGAINST A TARGET. On My plan, a step Dioptra (v7.6+) gave a target (q, u, sp) shows "<done> of <q> <unit> · spec" with a bar and an Update progress button. The total so far is written once to /pm/crewticks/<job>/<task> as {st:"progress", done}; reaching the target writes st:"done". Started, Done and Problem are unchanged. Built on v199 (v200, the ID change, is parked and must be rebased on this).
+const APP_VERSION="v201";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
