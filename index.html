@@ -1534,6 +1534,9 @@ const T={
   mpSentDone:{en:"Marked done. The office sees it now.",es:"Marcado como hecho. La oficina ya lo ve.",nl:"Gemarkeerd als klaar. Het kantoor ziet het nu."},
   mpSentProblem:{en:"Problem sent to the office.",es:"Problema enviado a la oficina.",nl:"Probleem naar het kantoor gestuurd."},
   mpSentUndo:{en:"Back to open.",es:"Abierto de nuevo.",nl:"Weer open."},
+  mpMarkStarted:{en:"Started",es:"Empezado",nl:"Begonnen"},
+  mpInProgress:{en:"In progress",es:"En curso",nl:"Bezig"},
+  mpSentStarted:{en:"Marked as started",es:"Marcado como empezado",nl:"Gemarkeerd als begonnen"},
   mpOffline:{en:"Could not send. Check the signal and try again.",es:"No se pudo enviar. Revisa la señal e intenta de nuevo.",nl:"Kon niet verzenden. Controleer het signaal en probeer opnieuw."},
   // Team / form display names (used by getTeamName helper — does NOT mutate TEAMS object)
   teamName_ducting:{en:"Ducting",es:"Ductos",nl:"Kanalen"},
@@ -12732,7 +12735,9 @@ function loadAllSelfAttendance(date){
 //                                             finish, who, by, at}
 // and this screen shows them as Today / This week / This month. A tick or a
 // problem goes to
-//   /pm/crewticks/<pid>/<taskId> = {st:"done"|"problem"|"open", note, by, name, at}
+//   /pm/crewticks/<pid>/<taskId> = {st:"done"|"problem"|"open"|"started", note, by, name, at, date}
+// "started" means work is under way (Dioptra: Not started -> In progress). It is
+// not a closed state: a started step still counts as open on the button and header.
 // once per step, so a step shared to a whole crew is ticked once for everybody,
 // and Dioptra moves the task on its plan. Nothing here writes outside /pm.
 let _mpPeriod="today", _mpItems=null, _mpTicks={}, _mpBack=[];
@@ -12752,7 +12757,8 @@ function _mpLoad(){
     return Promise.all(pids.map(p=>fetch(fb+"/pm/crewticks/"+encodeURIComponent(p)+".json").then(fbJson).then(v=>{_mpTicks[p]=v||{}}).catch(()=>{}))).then(()=>{_mpItems=items;return items});
   }).catch(()=>{_mpItems=_mpItems||[];return _mpItems});
 }
-function _mpState(x){const k=(_mpTicks[x.pid]||{})[x.tid];return k&&k.st&&k.st!=="open"?k:null}
+function _mpState(x){const k=(_mpTicks[x.pid]||{})[x.tid];return k&&(k.st==="done"||k.st==="problem")?k:null}
+function _mpStarted(x){const k=(_mpTicks[x.pid]||{})[x.tid];return k&&k.st==="started"?k:null}
 function _mpIn(x,r){const s=x.start||x.finish||"",f=x.finish||x.start||"";if(!s&&!f)return r[0]===getGuyanaDate();if(f<r[0]&&!_mpState(x)&&f<getGuyanaDate())return true;return s<=r[1]&&f>=r[0]}
 function _mpOpenCount(){const r=_mpRange("today");return(_mpItems||[]).filter(x=>_mpIn(x,r)&&!_mpState(x)).length}
 function _mpBadge(){
@@ -12793,9 +12799,9 @@ function renderMyPlan(reload){
   Object.keys(byJob).forEach(job=>{
     h+='<div style="font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--navy);margin:14px 2px 6px">'+escHtml(job)+'</div>';
     byJob[job].forEach(x=>{
-      const st=_mpState(x),late=!st&&x.finish&&x.finish<today;
+      const st=_mpState(x),sg=st?null:_mpStarted(x),late=!st&&x.finish&&x.finish<today;
       const title=(LANG!=="en"&&x.es)?x.es:x.t, alt=(LANG!=="en"&&x.es)?x.t:(LANG==="en"&&x.es?x.es:"");
-      const bg=st?(st.st==="done"?"#eaf7ef":"#fff1ef"):"white";
+      const bg=st?(st.st==="done"?"#eaf7ef":"#fff1ef"):(sg?"#eef5fc":"white");
       h+='<div style="background:'+bg+';border-radius:12px;box-shadow:var(--shadow);padding:12px;margin-bottom:8px;border:1.5px solid '+(late?"var(--danger)":"var(--border)")+'">'
         +'<div style="font-size:15px;font-weight:700;color:var(--navy);line-height:1.35'+(st&&st.st==="done"?";text-decoration:line-through;opacity:.7":"")+'">'+escHtml(title||"")+'</div>'
         +(alt?'<div style="font-size:12px;color:var(--grey);margin-top:2px">'+escHtml(alt)+'</div>':'')
@@ -12807,9 +12813,13 @@ function renderMyPlan(reload){
           +' <span style="font-weight:400;color:var(--grey)">· '+escHtml(st.name||st.by||"")+'</span></span>'
           +'<button class="btn-s" style="padding:7px 12px;font-size:13px" onclick="_mpTick(\''+x.key+'\',\'open\')">'+t("mpUndo")+'</button></div>';
       }else{
+        if(sg)h+='<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px">'
+          +'<span style="flex:1;font-weight:700;color:var(--navy)">▶ '+t("mpInProgress")+' <span style="font-weight:400;color:var(--grey)">· '+escHtml(sg.name||sg.by||"")+'</span></span>'
+          +'<button class="btn-s" style="padding:5px 10px;font-size:12px" onclick="_mpTick(\''+x.key+'\',\'open\')">'+t("mpUndo")+'</button></div>';
         h+='<div style="display:flex;gap:8px;margin-top:10px">'
-          +'<button onclick="_mpTick(\''+x.key+'\',\'done\')" class="btn btn-primary" style="flex:1;padding:11px;font-size:15px">✓ '+t("mpMarkDone")+'</button>'
-          +'<button onclick="_mpTick(\''+x.key+'\',\'problem\')" style="flex:1;padding:11px;font-size:14px;border:1.5px solid var(--danger);background:white;color:var(--danger);border-radius:10px;font-weight:700;cursor:pointer">⚠ '+t("mpMarkProblem")+'</button></div>';
+          +(sg?'':'<button onclick="_mpTick(\''+x.key+'\',\'started\')" style="flex:1;padding:11px 6px;font-size:14px;border:1.5px solid var(--navy);background:white;color:var(--navy);border-radius:10px;font-weight:700;cursor:pointer">▶ '+t("mpMarkStarted")+'</button>')
+          +'<button onclick="_mpTick(\''+x.key+'\',\'done\')" class="btn btn-primary" style="flex:1;padding:11px 6px;font-size:15px">✓ '+t("mpMarkDone")+'</button>'
+          +'<button onclick="_mpTick(\''+x.key+'\',\'problem\')" style="flex:1;padding:11px 6px;font-size:14px;border:1.5px solid var(--danger);background:white;color:var(--danger);border-radius:10px;font-weight:700;cursor:pointer">⚠ '+t("mpMarkProblem")+'</button></div>';
       }
       h+='</div>';
     });
@@ -12827,11 +12837,11 @@ function _mpTick(key,st){
   const rec={st:st,note:note,by:currentUser.username,name:currentUser.name||currentUser.username,at:Date.now(),date:getGuyanaDate()};
   fetch(fb+"/pm/crewticks/"+encodeURIComponent(x.pid)+"/"+encodeURIComponent(x.tid)+".json",{method:"PUT",body:JSON.stringify(rec)})
     .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);_mpTicks[x.pid]=_mpTicks[x.pid]||{};_mpTicks[x.pid][x.tid]=rec;renderMyPlan(false);_mpBadge();
-      showToast(st==="done"?"✅ "+t("mpSentDone"):(st==="problem"?"⚠️ "+t("mpSentProblem"):t("mpSentUndo")))})
+      showToast(st==="done"?"✅ "+t("mpSentDone"):(st==="problem"?"⚠️ "+t("mpSentProblem"):(st==="started"?"▶ "+t("mpSentStarted"):t("mpSentUndo"))))})
     .catch(()=>showToast("⚠️ "+t("mpOffline")));
 }
 
-const APP_VERSION="v198";
+const APP_VERSION="v199";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -14723,6 +14733,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v199 — MY PLAN "STARTED" TICK. Steps get a ▶ Started button next to Done / Problem; it writes st:"started" to /pm/crewticks/<pid>/<taskId> (no prompt) and Dioptra shows the step In progress. A started card turns light blue with "▶ In progress · <name>" and an Undo (st:"open"). Started is not closed: it still counts as open on the button badge and the header. EN/ES/NL labels.
 // Build: v198 — MY PLAN merged onto v197. My plan (Dioptra crew steps: Today / This week / This month, Done / Problem / Undo) ported unchanged from the unpushed v195 My plan build. Jobs, Dispatch, Equipment, service reports and the v197 refresh fix unchanged.
 // Build: v197 — REFRESH FIX. On refresh/reopen with a saved session, showDash ran before the rest of the script had loaded, threw on _chatDotPoll, and the Workforce Profiles, Work Plan & Output, Jobs and Backup buttons (plus Worker/HR role routing) were skipped. Session resume now waits for the script to finish before drawing the dashboard.
 // Build: v196 — FIELD SERVICE. Built on v195 Jobs. (1) SERVICE REPORTS: on any job the crew fills work performed, units serviced, readings (supply/return air, suction/discharge, amps, volts, refrigerant), parts used, up to 8 photos (compressed to ~1100px) and the client's name + finger signature; "Client signs off" finishes the job. One-tap client-facing PDF (English labels, ELGAWA letterhead, photos, signature) through the existing PDF preview/share. Photos + signature live at /jobphotos/{id} so the job list stays a small download. (2) EQUIPMENT REGISTER at /equipment: tag, type, brand, model, serial, refrigerant, capacity, client, site, location, install date, warranty end, service interval. Next service = last service (or install) + interval; flags overdue, due within 30 days, warranty ending within 60 days. Sign-off resets each serviced unit's last-service date. "Create service job" from a unit pre-fills a maintenance job. Reminder strip on Jobs/Equipment and a count on the dashboard button for planners. (3) DISPATCH tab for planners: not-dispatched, behind-schedule and per-lead day board with lead + date pickers. Jobs get a Scheduled-for date; leads get a red New badge on the dashboard button and on each unseen job (cleared when opened). (4) LOCATION STAMP at job start, job finish and client sign-off only (map link on the job, coordinates on the PDF). No background tracking. In-view and phone back now step through a screen stack. No existing path, function or screen changed beyond v195's hooks.
