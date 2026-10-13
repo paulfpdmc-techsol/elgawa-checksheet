@@ -1543,6 +1543,7 @@ const T={
   mpBadNum:{en:"Type a number between 0 and",es:"Escriba un número entre 0 y",nl:"Typ een getal tussen 0 en"},
   mpSentProgress:{en:"Progress sent. The office sees it now.",es:"Avance enviado. La oficina ya lo ve.",nl:"Voortgang verzonden. Het kantoor ziet het nu."},
   mpOffline:{en:"Could not send. Check the signal and try again.",es:"No se pudo enviar. Revisa la señal e intenta de nuevo.",nl:"Kon niet verzenden. Controleer het signaal en probeer opnieuw."},
+  pfIdOnFile:{en:"On file ✓ (kept on the office PC). Type only if it changed",es:"Registrado ✓ (guardado en la PC de la oficina). Escribe solo si cambió",nl:"Bekend ✓ (bewaard op de kantoor-pc). Alleen invullen als het veranderd is"},
   // Team / form display names (used by getTeamName helper — does NOT mutate TEAMS object)
   teamName_ducting:{en:"Ducting",es:"Ductos",nl:"Kanalen"},
   teamName_copper:{en:"Copper Piping",es:"Tubería de Cobre",nl:"Koperleidingen"},
@@ -8652,8 +8653,25 @@ function backupAllData(auto){
   if(!auto)showToast("⏳ Preparing backup…");
   const go=function(tok){
     if(!tok){if(!auto)showToast("⚠️ Could not sign in for backup");return;}
-    _origFetch(fb+"/.json?auth="+encodeURIComponent(tok))
-      .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.blob();})
+    // v199: the database root is closed by the rules, so read each node and
+    // stitch them into one file with the same shape as the old root export.
+    // Raw text is joined as-is (no parse/re-stringify) to keep memory low.
+    const NODES=["appUsers","attendance","chat","checksheets","equipment","hseq","jobphotos","jobs","payroll","payrollConfig","pm/crewplan","pm/crewticks","reports","satNotes","sectionprogress","selfAttendance","status","suriname","workerProfiles","workplans"];
+    Promise.all(NODES.map(function(n){
+      return _origFetch(fb+"/"+n+".json?auth="+encodeURIComponent(tok))
+        .then(function(r){if(!r.ok)throw new Error(n+" HTTP "+r.status);return r.text();})
+        .then(function(txt){return[n,txt];});
+    }))
+      .then(function(parts){
+        const top=[],pm=[];
+        parts.forEach(function(p){
+          const txt=(p[1]||"").trim();if(!txt||txt==="null")return;
+          if(p[0].indexOf("pm/")===0)pm.push(JSON.stringify(p[0].slice(3))+":"+txt);
+          else top.push(JSON.stringify(p[0])+":"+txt);
+        });
+        if(pm.length)top.push('"pm":{'+pm.join(",")+'}');
+        return new Blob(["{"+top.join(",")+"}"],{type:"application/json"});
+      })
       .then(function(blob){
         const dt=getGuyanaDate();
         const a=document.createElement("a");
@@ -8765,7 +8783,7 @@ function cloudGetLatestDate(){
 }
 function testFirebaseConnection(url){
   url=url.trim().replace(/\/+$/,"");
-  return fetch(`${url}/.json?shallow=true`)
+  return fetch(`${url}/appUsers.json?shallow=true`)
     .then(r=>r.ok)
     .catch(()=>false);
 }
@@ -10022,7 +10040,7 @@ function renderFbHealthBanner(){
 function checkFirebaseExpiry(){ // kept name so existing call sites still work
   const fb=getFirebaseUrl();
   if(!fb){window._fbRulesBroken=false;renderFbHealthBanner();return}
-  fetch(fb+"/.json?shallow=true").then(r=>{
+  fetch(fb+"/appUsers.json?shallow=true").then(r=>{
     window._fbRulesBroken=(r.status===401||r.status===403);
     renderFbHealthBanner();
   }).catch(()=>{/* offline — not a rules problem, leave banner as-is */});
@@ -12870,7 +12888,8 @@ function _mpTick(key,st){
 }
 
 // Build: v201 — PROGRESS AGAINST A TARGET. On My plan, a step Dioptra (v7.6+) gave a target (q, u, sp) shows "<done> of <q> <unit> · spec" with a bar and an Update progress button. The total so far is written once to /pm/crewticks/<job>/<task> as {st:"progress", done}; reaching the target writes st:"done". Started, Done and Problem are unchanged. Built on v199 (v200, the ID change, is parked and must be rebased on this).
-const APP_VERSION="v201";
+// Build: v202 — v201 plus the v200 ID change: a typed ID/passport number goes only to /idinbox/<user> (phones can write, not read), profiles keep idnum:null and idOnFile:true, the phone never stores the number, and nothing reads the database root (health check probes /appUsers; backup fetches node by node). Needed before the tighter Firebase rules are published.
+const APP_VERSION="v202";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -13957,21 +13976,42 @@ function calcAge(dob){
   const m=now.getMonth()-d.getMonth();if(m<0||(m===0&&now.getDate()<d.getDate()))a--;
   return a>=0&&a<120?a:"";
 }
+// v199: ID / passport numbers never live in Firebase profiles or on the phone.
+// A typed number goes to /idinbox/<username> (phones can write it, not read it);
+// Dioptra on the office PC collects it, keeps it locally and deletes the inbox
+// entry. The profile itself only carries idOnFile:true and idnum:null.
+function _pfNoId(d){if(d&&typeof d==="object"&&"idnum" in d){d=Object.assign({},d);delete d.idnum;}return d;}
+function _pfCache(username,d){try{localStorage.setItem("elg_profile_"+username,JSON.stringify(_pfNoId(d)))}catch(e){}}
+// Strip any number left in cached copies from older builds.
+(function(){try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k||k.indexOf("elg_profile_")!==0)continue;const v=JSON.parse(localStorage.getItem(k)||"null");if(v&&typeof v==="object"&&"idnum" in v){delete v.idnum;localStorage.setItem(k,JSON.stringify(v));}}}catch(e){}})();
 function saveWorkerProfile(username,data){
-  try{localStorage.setItem("elg_profile_"+username,JSON.stringify(data))}catch(e){}
+  data=Object.assign({},data||{});
+  const idv=String(data.idnum==null?"":data.idnum).trim();
+  const prevOnFile=data.idOnFile===true;
+  data.idnum=null;
+  data.idOnFile=prevOnFile;
+  _pfCache(username,data);
   const fb=getFirebaseUrl();
   if(!fb)return Promise.resolve(false);
-  // Return a promise that resolves true only if the cloud actually accepted the
-  // write, so the caller can warn the worker instead of falsely saying "saved".
-  return fetch(fb+"/workerProfiles/"+username+".json",{method:"PUT",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}})
-    .then(r=>!!(r&&r.ok)).catch(()=>false);
+  // Resolves true only if the cloud accepted BOTH writes (the ID inbox when a
+  // number was typed, then the profile), so the caller can warn instead of
+  // falsely saying "saved". The profile is only marked idOnFile once the
+  // number has actually reached the inbox.
+  const inbox=idv?fetch(fb+"/idinbox/"+username+".json",{method:"PUT",body:JSON.stringify({idnum:idv,name:data.name||"",at:Date.now(),by:currentUser?currentUser.username:""}),headers:{"Content-Type":"application/json"}})
+    .then(r=>!!(r&&r.ok)).catch(()=>false):Promise.resolve(true);
+  return inbox.then(ok=>{
+    if(!ok)return false;
+    if(idv){data.idOnFile=true;_pfCache(username,data);}
+    return fetch(fb+"/workerProfiles/"+username+".json",{method:"PUT",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}})
+      .then(r=>!!(r&&r.ok)).catch(()=>false);
+  });
 }
 function loadWorkerProfile(username){
   return new Promise(resolve=>{
     const fb=getFirebaseUrl();
     if(fb){
       fetch(fb+"/workerProfiles/"+username+".json").then(fbJson).then(d=>{
-        if(d){try{localStorage.setItem("elg_profile_"+username,JSON.stringify(d))}catch(e){}}
+        if(d)_pfCache(username,d);
         resolve(d||null);
       }).catch(()=>{try{const l=localStorage.getItem("elg_profile_"+username);resolve(l?JSON.parse(l):null)}catch(e){resolve(null)}});
     }else{try{const l=localStorage.getItem("elg_profile_"+username);resolve(l?JSON.parse(l):null)}catch(e){resolve(null)}}
@@ -14001,7 +14041,7 @@ function _compressProfilePhoto(file,cb){
   };
   reader.readAsDataURL(file);
 }
-let _myProfilePhoto="";
+let _myProfilePhoto="",_myProfileIdOnFile=false;
 // _profileTarget tells the form whose profile is being edited. self=true means
 // the logged-in user editing their own (saves pending). Admin editing someone
 // else sets self=false and the save is auto-approved (admin is the approver).
@@ -14040,7 +14080,7 @@ function renderMyProfile(){
   const username=tgt.key;
   body.innerHTML='<div style="text-align:center;color:var(--grey);padding:20px">Loading…</div>';
   loadWorkerProfile(username).then(p=>{
-    p=p||{};_myProfilePhoto=p.photo||"";
+    p=p||{};_myProfilePhoto=p.photo||"";_myProfileIdOnFile=p.idOnFile===true;
     const team=getPersonTeam(tgt.name)||p.team||"";
     const opt=(arr,sel)=>arr.map(o=>'<option'+(o===sel?' selected':'')+'>'+o+'</option>').join("");
     const fld=(lbl,id,val,type)=>'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:3px">'+lbl+'</label><input id="'+id+'" type="'+(type||"text")+'" value="'+(val?String(val).replace(/"/g,"&quot;"):"")+'" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px"></div>';
@@ -14071,7 +14111,7 @@ function renderMyProfile(){
       +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:3px">Team</label><input value="'+escHtml(team||"Not assigned")+'" disabled style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:#f5f5f5;color:var(--grey)"></div>'
       +fld("Cellphone","pf_phone",p.phone,"tel")
       +fld("Address","pf_address",p.address)
-      +fld("National ID / Passport #","pf_id",p.idnum)
+      +(p.idOnFile===true?fld("National ID / Passport #","pf_id","").replace('id="pf_id"','id="pf_id" placeholder="'+escHtml(t("pfIdOnFile"))+'"'):fld("National ID / Passport #","pf_id",p.idnum))
       +'<div style="display:flex;gap:8px"><div style="flex:1">'+fld("Emergency Contact Name","pf_emname",p.emName)+'</div><div style="flex:1">'+fld("Emergency Phone","pf_emphone",p.emPhone,"tel")+'</div></div>'
       +'<div style="margin-bottom:10px"><label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:3px">Blood Type</label><select id="pf_blood" style="width:100%;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">'+opt(BLOOD_TYPES,p.blood||"Unknown")+'</select></div>'
       +fld("Start Date","pf_start",p.startDate,"date")
@@ -14102,18 +14142,18 @@ function submitMyProfile(){
     phone:g("pf_phone"),address:g("pf_address"),idnum:g("pf_id"),
     emName:g("pf_emname"),emPhone:g("pf_emphone"),blood:g("pf_blood"),startDate:g("pf_start"),
     photo:_myProfilePhoto||"",username:tgt.key,role:tgt.role||"Worker",
-    approved:adminEdit,savedAt:new Date().toISOString()
+    approved:adminEdit,savedAt:new Date().toISOString(),idOnFile:_myProfileIdOnFile
   };
   if(adminEdit){data.approvedBy=currentUser.name;data.approvedAt=new Date().toISOString();}
   Promise.resolve(saveWorkerProfile(tgt.key,data)).then(synced=>{
     if(adminEdit){
       showToast(synced?"✅ Saved & approved":"⚠️ Saved on this device but NOT synced — check internet and Save again");
-      closeMyProfile();
+      if(synced)closeMyProfile(); // v199: on failure stay on the form so the typed ID is still there to Save again
     }else if(synced){
       showToast("✅ Profile saved — pending admin approval");renderMyProfile();
     }else{
       showToast("⚠️ Saved on this phone but NOT sent to the office. Connect to internet and tap Save again.");
-      renderMyProfile();
+      // v199: no re-render, so the typed ID stays in the form for Save again
     }
   });
 }
@@ -14234,7 +14274,7 @@ function downloadWorkforceProfilesPDF(){
             pdf.setFontSize(8);pdf.setFont(undefined,"normal");pdf.setTextColor(70);
             const age=calcAge(p.dob);
             const l1=[p.trade||"—",age!==""?age+"y":"",p.gender||"",p.nationality||""].filter(Boolean).join("  |  ");
-            const l2=["Cell: "+(p.phone||"—"),"ID: "+(p.idnum||"—"),"Blood: "+(p.blood||"—")].join("  |  ");
+            const l2=["Cell: "+(p.phone||"—"),"ID: "+((p.idOnFile===true||p.idnum)?"on file":"—"),"Blood: "+(p.blood||"—")].join("  |  ");
             const l3=["Emergency: "+(p.emName||"—")+" "+(p.emPhone||""),p.approved?"APPROVED":"PENDING"].join("  |  ");
             const l4="Address: "+(p.address||"—");
             pdf.text(l1,tx,ty);ty+=4;pdf.text(l2,tx,ty);ty+=4;pdf.text(l3,tx,ty);ty+=4;
@@ -14762,6 +14802,7 @@ function saveSelfAttEdit(date,username){
   });
 }
 
+// Build: v200 — ID NUMBERS OFF THE CLOUD. Profile saves send a typed ID / passport number only to /idinbox/<username> (write-only for phones; Dioptra collects it, keeps it on the office PC and deletes the entry); /workerProfiles carries idnum:null + idOnFile:true, and the phone never caches the number. Profile form shows "On file" instead of the number, the Workforce PDF prints "ID: on file". Root reads removed for the new rules: health check and connection test probe /appUsers, admin backup fetches each node and stitches the same file.
 // Build: v199 — MY PLAN "STARTED" TICK. Steps get a ▶ Started button next to Done / Problem; it writes st:"started" to /pm/crewticks/<pid>/<taskId> (no prompt) and Dioptra shows the step In progress. A started card turns light blue with "▶ In progress · <name>" and an Undo (st:"open"). Started is not closed: it still counts as open on the button badge and the header. EN/ES/NL labels.
 // Build: v198 — MY PLAN merged onto v197. My plan (Dioptra crew steps: Today / This week / This month, Done / Problem / Undo) ported unchanged from the unpushed v195 My plan build. Jobs, Dispatch, Equipment, service reports and the v197 refresh fix unchanged.
 // Build: v197 — REFRESH FIX. On refresh/reopen with a saved session, showDash ran before the rest of the script had loaded, threw on _chatDotPoll, and the Workforce Profiles, Work Plan & Output, Jobs and Backup buttons (plus Worker/HR role routing) were skipped. Session resume now waits for the script to finish before drawing the dashboard.
