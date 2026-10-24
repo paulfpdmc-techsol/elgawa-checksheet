@@ -1538,6 +1538,17 @@ const T={
   mpInProgress:{en:"In progress",es:"En curso",nl:"Bezig"},
   mpAskTitle:{en:"{n} asks for an update",es:"{n} pide una actualización",nl:"{n} vraagt om een update"},
   mpAskHow:{en:"Answer on each step below: Started, Done, Problem, Need or New date. If everything is going to plan, press All on track.",es:"Responde en cada paso abajo: Empezado, Hecho, Problema, Necesito o Nueva fecha. Si todo va según el plan, toca Todo va bien.",nl:"Antwoord bij elke stap hieronder: Begonnen, Klaar, Probleem, Nodig of Nieuwe datum. Gaat alles volgens plan, druk dan op Alles op schema."},
+  mpHowFar:{en:"How far?",es:"¿Cuánto va?",nl:"Hoe ver?"},
+  mpSentPct:{en:"Sent. The office sees how far it is.",es:"Enviado. La oficina ve cuánto va.",nl:"Verzonden. Het kantoor ziet hoe ver het is."},
+  mpComment:{en:"Comment",es:"Comentario",nl:"Opmerking"},
+  mpCommentPh:{en:"Write to the office: what happened, what you need, anything",es:"Escribe a la oficina: qué pasó, qué necesitas, lo que sea",nl:"Schrijf naar het kantoor: wat er gebeurde, wat je nodig hebt"},
+  mpSend:{en:"Send",es:"Enviar",nl:"Versturen"},
+  mpSentComment:{en:"Sent. The office sees your comment.",es:"Enviado. La oficina ve tu comentario.",nl:"Verzonden. Het kantoor ziet je opmerking."},
+  mpAnything:{en:"Anything else for the office?",es:"¿Algo más para la oficina?",nl:"Nog iets voor het kantoor?"},
+  mpYou:{en:"You",es:"Tú",nl:"Jij"},
+  mpCancel:{en:"Cancel",es:"Cancelar",nl:"Annuleren"},
+  mpPickDate:{en:"Pick the new date",es:"Elige la nueva fecha",nl:"Kies de nieuwe datum"},
+  mpHowMany:{en:"How many done in total so far?",es:"¿Cuántos hechos en total hasta ahora?",nl:"Hoeveel in totaal klaar?"},
   mpAllOk:{en:"All on track",es:"Todo va bien",nl:"Alles op schema"},
   mpAnswered:{en:"Answer sent",es:"Respuesta enviada",nl:"Antwoord verzonden"},
   mpNeed:{en:"Need",es:"Necesito",nl:"Nodig"},
@@ -12803,8 +12814,16 @@ function _mpStarted(x){const k=(_mpTicks[x.pid]||{})[x.tid];return k&&(k.st==="s
 const _MP_WHOLE={units:1,sys:1,pcs:1,pts:1,joints:1};
 function _mpDone(x){const k=(_mpTicks[x.pid]||{})[x.tid];if(k&&k.done!=null&&(k.st==="progress"||k.st==="done"))return +k.done||0;return +x.done||0}
 function _mpNum(v){v=Math.round((+v||0)*100)/100;return v.toLocaleString()}
+function _mpPctOf(x){const k=(_mpTicks[x.pid]||{})[x.tid];return k&&k.pct!=null&&k.st!=="open"?Math.round(+k.pct*100):null}
 function _mpProgHtml(x,closed){
-  const q=+x.q||0;if(!(q>0))return "";
+  const q=+x.q||0;
+  if(!(q>0)){
+    if(closed)return "";
+    const cur=_mpPctOf(x);
+    return '<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--navy);font-weight:700"><span>'+t("mpHowFar")+'</span>'+(cur!=null?'<span>'+cur+'%</span>':'')+'</div>'
+      +(cur!=null?'<div style="height:8px;border-radius:99px;background:#e3e7ec;overflow:hidden;margin-top:4px"><div style="height:100%;width:'+cur+'%;background:#12734A;border-radius:99px"></div></div>':'')
+      +'<div style="display:flex;gap:6px;margin-top:6px">'+[25,50,75].map(p=>'<button onclick="_mpPct(\''+x.key+'\','+p+')" style="flex:1;padding:9px 4px;font-size:14px;border:1.5px solid #12734A;background:'+(cur===p?'#12734A':'white')+';color:'+(cur===p?'white':'#12734A')+';border-radius:10px;font-weight:700;cursor:pointer">'+p+'%</button>').join("")+'</div></div>';
+  }
   const d=Math.min(_mpDone(x),q),pc=Math.round(d/q*100);
   return '<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--navy);font-weight:700"><span>'+_mpNum(d)+' '+t("mpOf")+' '+_mpNum(q)+' '+escHtml(x.u||"")+(x.sp?' <span style="font-weight:400;color:var(--grey)">· '+escHtml(x.sp)+'</span>':'')+'</span><span>'+pc+'%</span></div>'
     +'<div style="height:8px;border-radius:99px;background:#e3e7ec;overflow:hidden;margin-top:4px"><div style="height:100%;width:'+pc+'%;background:#12734A;border-radius:99px"></div></div>'
@@ -12831,9 +12850,29 @@ function _mpAskHtml(){
     +'<div style="font-size:16px;font-weight:800;color:#7A4A00">📣 '+escHtml(t("mpAskTitle").replace("{n}",nm))+'</div>'
     +(msg?'<div style="font-size:14px;color:#3d2a00;margin-top:6px;white-space:pre-wrap">'+escHtml(msg)+'</div>':'')
     +'<div style="font-size:12px;color:#7A4A00;margin-top:6px">'+t("mpAskHow")+'</div>'
-    +'<button onclick="_mpAllOk()" class="btn btn-primary" style="width:100%;margin-top:10px;padding:12px;font-size:15px">✓ '+t("mpAllOk")+'</button></div>';
+    +'<button onclick="_mpAllOk()" class="btn btn-primary" style="width:100%;margin-top:10px;padding:12px;font-size:15px">✓ '+t("mpAllOk")+'</button>'
+    +'<div style="font-size:13px;font-weight:700;color:#7A4A00;margin-top:12px">💬 '+t("mpAnything")+'</div>'
+    +'<textarea id="mpc_gen" rows="2" placeholder="'+escHtml(t("mpCommentPh"))+'" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px;border:1.5px solid #F59E0B;border-radius:10px;font:inherit;font-size:14px"></textarea>'
+    +'<button onclick="_mpCSend(\'\',true)" style="width:100%;margin-top:6px;padding:10px;font-size:14px;border:1.5px solid #B7791F;background:white;color:#7A4A00;border-radius:10px;font-weight:700;cursor:pointer">'+t("mpSend")+'</button></div>';
 }
-function _mpAsked(x){const k=(_mpTicks[x.pid]||{})[x.tid];return k&&(k.st==="need"||k.st==="date")?k:null}
+// comments live beside the step's tick, never in it
+let _mpOpenC=null;
+function _mpLastComment(x){const T=_mpTicks[x.pid]||{};let best=null;Object.keys(T).forEach(k=>{if(k.indexOf(x.tid+"~c")===0){const c=T[k];if(c&&c.text&&(!best||c.at>best.at))best=c}});return best}
+function _mpCToggle(key){_mpOpenC=_mpOpenC===key?null:key;renderMyPlan(false);setTimeout(()=>{const e=document.getElementById("mpc_"+key);if(e)e.focus()},50)}
+function _mpCSend(key,general){
+  const el=document.getElementById(general?"mpc_gen":"mpc_"+key);const text=(el&&el.value||"").trim();if(!text)return;
+  const fb=getFirebaseUrl();if(!fb){showToast(t("mpOffline"));return}
+  const now=Date.now(),rec={kind:"comment",text:text,by:currentUser.username,name:currentUser.name||currentUser.username,at:now,date:getGuyanaDate()};
+  let path,x=null;
+  if(general){path="/pm/crewticks/_fb/"+encodeURIComponent(_mpKey(currentUser.username)+"~c"+now)}
+  else{x=(_mpItems||[]).find(i=>i.key===key);if(!x)return;rec.tid=x.tid;path="/pm/crewticks/"+encodeURIComponent(x.pid)+"/"+encodeURIComponent(x.tid+"~c"+now)}
+  fetch(fb+path+".json",{method:"PUT",body:JSON.stringify(rec)}).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);
+    if(x){_mpTicks[x.pid]=_mpTicks[x.pid]||{};_mpTicks[x.pid][x.tid+"~c"+now]=rec;_mpOpenC=null}
+    else if(el)el.value="";
+    _mpAckWrite(true,false).then(()=>{renderMyPlan(false);_mpBadge()});showToast("💬 "+t("mpSentComment"))})
+    .catch(()=>showToast("⚠️ "+t("mpOffline")));
+}
+function _mpAsked(x){const T=_mpTicks[x.pid]||{};let best=null;Object.keys(T).forEach(k=>{if(k.indexOf(x.tid+"~n")===0||k.indexOf(x.tid+"~d")===0){const c=T[k];if(c&&(!best||c.at>best.at))best=c}});const k=T[x.tid];if(k&&(k.st==="need"||k.st==="date")&&(!best||k.at>best.at))best=k;return best}
 function _mpIn(x,r){const s=x.start||x.finish||"",f=x.finish||x.start||"";if(!s&&!f)return r[0]===getGuyanaDate();if(f<r[0]&&!_mpState(x)&&f<getGuyanaDate())return true;return s<=r[1]&&f>=r[0]}
 function _mpOpenCount(){const r=_mpRange("today");return(_mpItems||[]).filter(x=>_mpIn(x,r)&&!_mpState(x)).length}
 function _mpBadge(){
@@ -12904,53 +12943,97 @@ function renderMyPlan(reload){
         if(ak)h+='<div style="margin-top:8px;font-size:13px;font-weight:700;color:#8a5a00;background:#FFF7E0;border-radius:8px;padding:6px 9px">'+(ak.st==="need"?"📦 "+t("mpAsked")+": "+escHtml(ak.note||""):"📅 "+t("mpAskedDate")+" "+_mpDate(ak.want))+' <span style="font-weight:400;color:var(--grey)">· '+escHtml(ak.name||ak.by||"")+'</span></div>';
         h+='<div style="display:flex;gap:8px;margin-top:8px">'
           +'<button onclick="_mpTick(\''+x.key+'\',\'need\')" style="flex:1;padding:9px 6px;font-size:13px;border:1.5px solid #B7791F;background:white;color:#8a5a00;border-radius:10px;font-weight:700;cursor:pointer">📦 '+t("mpNeed")+'</button>'
-          +'<button onclick="_mpTick(\''+x.key+'\',\'date\')" style="flex:1;padding:9px 6px;font-size:13px;border:1.5px solid #6B7A88;background:white;color:#34414c;border-radius:10px;font-weight:700;cursor:pointer">📅 '+t("mpNewDate")+'</button></div>';
+          +'<button onclick="_mpTick(\''+x.key+'\',\'date\')" style="flex:1;padding:9px 6px;font-size:13px;border:1.5px solid #6B7A88;background:white;color:#34414c;border-radius:10px;font-weight:700;cursor:pointer">📅 '+t("mpNewDate")+'</button>'
+          +'<button onclick="_mpCToggle(\''+x.key+'\')" style="flex:1;padding:9px 6px;font-size:13px;border:1.5px solid #2B6CB0;background:'+(_mpOpenC===x.key?'#eaf2fb':'white')+';color:#1f5596;border-radius:10px;font-weight:700;cursor:pointer">💬 '+t("mpComment")+'</button></div>';
+        h+=_mpPanelHtml(x);
+        const lc=_mpLastComment(x);
+        if(lc)h+='<div style="margin-top:8px;font-size:13px;color:#1f5596;background:#eef5fc;border-radius:8px;padding:6px 9px">💬 <b>'+escHtml(lc.by===currentUser.username?t("mpYou"):(lc.name||lc.by||""))+':</b> '+escHtml(lc.text)+'</div>';
+        if(_mpOpenC===x.key)h+='<textarea id="mpc_'+x.key+'" rows="3" placeholder="'+escHtml(t("mpCommentPh"))+'" style="width:100%;box-sizing:border-box;margin-top:8px;padding:9px;border:1.5px solid #2B6CB0;border-radius:10px;font:inherit;font-size:14px"></textarea>'
+          +'<button onclick="_mpCSend(\''+x.key+'\',false)" class="btn btn-primary" style="width:100%;margin-top:6px;padding:10px;font-size:14px">💬 '+t("mpSend")+'</button>';
       }
       h+='</div>';
     });
   });
   body.innerHTML=h;
 }
+function _mpPct(key,p){
+  const x=(_mpItems||[]).find(i=>i.key===key);if(!x)return;
+  const fb=getFirebaseUrl();if(!fb){showToast(t("mpOffline"));return}
+  const rec={st:"progress",pct:p/100,note:"",by:currentUser.username,name:currentUser.name||currentUser.username,at:Date.now(),date:getGuyanaDate()};
+  fetch(fb+"/pm/crewticks/"+encodeURIComponent(x.pid)+"/"+encodeURIComponent(x.tid)+".json",{method:"PUT",body:JSON.stringify(rec)})
+    .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);_mpTicks[x.pid]=_mpTicks[x.pid]||{};_mpTicks[x.pid][x.tid]=rec;
+      _mpAckWrite(true,false).then(()=>{renderMyPlan(false);_mpBadge()});showToast("📏 "+t("mpSentPct"))})
+    .catch(()=>showToast("⚠️ "+t("mpOffline")));
+}
 // keep the count on the button fresh: shortly after opening, and every 5 minutes
 setTimeout(function(){try{if(currentUser)mpRefreshBadge()}catch(e){}},2500);
 setInterval(function(){try{if(currentUser&&document.visibilityState!=="hidden")mpRefreshBadge()}catch(e){}},120000);
-function _mpTick(key,st){
+let _mpPanel=null;
+function _mpPanelToggle(key,kind){_mpPanel=(_mpPanel&&_mpPanel.key===key&&_mpPanel.kind===kind)?null:{key:key,kind:kind};renderMyPlan(false);setTimeout(()=>{const e=document.getElementById("mpp_in");if(e){e.focus();try{e.scrollIntoView({block:"center",behavior:"smooth"})}catch(_){}}},60)}
+function _mpPanelHtml(x){
+  if(!_mpPanel||_mpPanel.key!==x.key)return "";
+  const k=_mpPanel.kind,col={need:"#B7791F",date:"#6B7A88",problem:"#C0392B",progress:"#12734A"}[k]||"#2B6CB0";
+  let lab="",inp="";
+  const box='width:100%;box-sizing:border-box;margin-top:4px;padding:10px;border:1.5px solid '+col+';border-radius:10px;font:inherit;font-size:15px';
+  if(k==="need"){lab="📦 "+t("mpWhatNeed");inp='<textarea id="mpp_in" rows="2" style="'+box+'"></textarea>'}
+  else if(k==="problem"){lab="⚠ "+t("mpWhatProblem");inp='<textarea id="mpp_in" rows="2" style="'+box+'"></textarea>'}
+  else if(k==="date"){lab="📅 "+t("mpPickDate");inp='<input id="mpp_in" type="date" min="'+getGuyanaDate()+'" value="'+escHtml(x.finish&&x.finish>=getGuyanaDate()?x.finish:getGuyanaDate())+'" style="'+box+'">'}
+  else if(k==="progress"){lab="📏 "+t("mpHowMany")+" ("+escHtml(x.u||"")+", 0–"+_mpNum(+x.q||0)+")";inp='<input id="mpp_in" type="number" inputmode="decimal" min="0" max="'+(+x.q||0)+'" step="any" value="'+_mpDone(x)+'" style="'+box+'">'}
+  return '<div style="margin-top:8px;padding:10px;border-radius:12px;background:#f7f9fb;border:1px solid #e3e7ec">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--navy)">'+lab+'</div>'+inp
+    +'<div style="display:flex;gap:8px;margin-top:8px"><button onclick="_mpPanel=null;renderMyPlan(false)" style="flex:1;padding:10px;font-size:14px;border:1.5px solid var(--border);background:white;color:var(--grey);border-radius:10px;font-weight:700;cursor:pointer">'+t("mpCancel")+'</button>'
+    +'<button onclick="_mpPanelSend()" class="btn btn-primary" style="flex:2;padding:10px;font-size:15px">'+t("mpSend")+'</button></div></div>';
+}
+function _mpPanelSend(){
+  if(!_mpPanel)return;const el=document.getElementById("mpp_in");const v=el?String(el.value||"").trim():"";
+  const k=_mpPanel.kind,key=_mpPanel.key;
+  if((k==="need"||k==="problem")&&!v)return;
+  if(k==="date"&&!/^\d{4}-\d{2}-\d{2}$/.test(v)){showToast("⚠️ "+t("mpBadDate"));return}
+  if(k==="progress"&&v==="")return;
+  _mpTick(key,k,v);
+}
+function _mpTick(key,st,val){
   const x=(_mpItems||[]).find(i=>i.key===key);if(!x)return;
-  let note="";
-  if(st==="problem"){note=prompt(t("mpWhatProblem"),"");if(note===null)return;note=note.trim()}
-  let want="";
-  if(st==="need"){note=prompt(t("mpWhatNeed"),"");if(note===null)return;note=note.trim();if(!note)return}
-  if(st==="date"){
-    const ans=prompt(t("mpWhichDate"),"");if(ans===null)return;
-    const m=/^\s*(\d{1,2})\s*[\/\-.]\s*(\d{1,2})(?:\s*[\/\-.]\s*(\d{2,4}))?\s*$/.exec(ans);
-    if(!m||+m[1]<1||+m[1]>31||+m[2]<1||+m[2]>12){showToast("⚠️ "+t("mpBadDate"));return}
-    const y=m[3]?(m[3].length===2?"20"+m[3]:m[3]):getGuyanaDate().slice(0,4);
-    want=y+"-"+("0"+m[2]).slice(-2)+"-"+("0"+m[1]).slice(-2);note=want;
+  if(val===undefined&&(st==="problem"||st==="need"||st==="date"||(st==="progress"&&+x.q>0))){_mpPanelToggle(key,st);return}
+  const fb=getFirebaseUrl();if(!fb){showToast(t("mpOffline"));return}
+  const base={by:currentUser.username,name:currentUser.name||currentUser.username,at:Date.now(),date:getGuyanaDate()};
+  // need and new date sit beside the tick: a status tap never wipes them
+  if(st==="need"||st==="date"){
+    const side=Object.assign({kind:st,st:st,tid:x.tid,note:st==="need"?val:val},base);if(st==="date")side.want=val;
+    const sk=x.tid+(st==="need"?"~n":"~d")+side.at;
+    fetch(fb+"/pm/crewticks/"+encodeURIComponent(x.pid)+"/"+encodeURIComponent(sk)+".json",{method:"PUT",body:JSON.stringify(side)})
+      .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);_mpTicks[x.pid]=_mpTicks[x.pid]||{};_mpTicks[x.pid][sk]=side;_mpPanel=null;
+        _mpAckWrite(true,false).then(()=>{renderMyPlan(false);_mpBadge()});renderMyPlan(false);
+        showToast(st==="need"?"📦 "+t("mpSentNeed"):"📅 "+t("mpSentDate"))})
+      .catch(()=>showToast("⚠️ "+t("mpOffline")));
+    return;
   }
+  let note="";if(st==="problem")note=String(val||"").trim();
   let done=null;
   if(st==="progress"){
     const q=+x.q||0;if(!(q>0))return;
-    const ans=prompt(t("mpHowMuch")+" "+(x.u||"")+")",String(_mpDone(x)));if(ans===null)return;
-    let n=parseFloat(String(ans).replace(",","."));
+    let n=parseFloat(String(val).replace(",","."));
     if(isNaN(n)||n<0||n>q){showToast("⚠️ "+t("mpBadNum")+" "+_mpNum(q));return}
     if(_MP_WHOLE[x.m])n=Math.round(n);
     done=Math.round(n*100)/100;
     if(done>=q)st="done";
   }
-  const fb=getFirebaseUrl();if(!fb){showToast(t("mpOffline"));return}
-  const rec={st:st,note:note,by:currentUser.username,name:currentUser.name||currentUser.username,at:Date.now(),date:getGuyanaDate()};
+  const rec=Object.assign({st:st,note:note},base);
   if(done!=null)rec.done=done;
-  if(want)rec.want=want;
+  const prev=(_mpTicks[x.pid]||{})[x.tid];if((st==="started"||st==="problem")&&prev&&prev.pct!=null)rec.pct=prev.pct;   // how far stays when they tap Started or Problem
   fetch(fb+"/pm/crewticks/"+encodeURIComponent(x.pid)+"/"+encodeURIComponent(x.tid)+".json",{method:"PUT",body:JSON.stringify(rec)})
-    .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);_mpTicks[x.pid]=_mpTicks[x.pid]||{};_mpTicks[x.pid][x.tid]=rec;renderMyPlan(false);_mpBadge();
+    .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);_mpTicks[x.pid]=_mpTicks[x.pid]||{};_mpTicks[x.pid][x.tid]=rec;_mpPanel=null;renderMyPlan(false);_mpBadge();
       if(st!=="open")_mpAckWrite(true,false).then(()=>{renderMyPlan(false);_mpBadge()});
-      showToast(st==="need"?"📦 "+t("mpSentNeed"):(st==="date"?"📅 "+t("mpSentDate"):(done!=null&&st==="progress"?"📏 "+t("mpSentProgress"):(st==="done"?"✅ "+t("mpSentDone"):(st==="problem"?"⚠️ "+t("mpSentProblem"):(st==="started"?"▶ "+t("mpSentStarted"):t("mpSentUndo")))))))})
+      showToast(done!=null&&st==="progress"?"📏 "+t("mpSentProgress"):(st==="done"?"✅ "+t("mpSentDone"):(st==="problem"?"⚠️ "+t("mpSentProblem"):(st==="started"?"▶ "+t("mpSentStarted"):t("mpSentUndo")))))})
     .catch(()=>showToast("⚠️ "+t("mpOffline")));
 }
 
 // Build: v201 — PROGRESS AGAINST A TARGET. On My plan, a step Dioptra (v7.6+) gave a target (q, u, sp) shows "<done> of <q> <unit> · spec" with a bar and an Update progress button. The total so far is written once to /pm/crewticks/<job>/<task> as {st:"progress", done}; reaching the target writes st:"done". Started, Done and Problem are unchanged. Built on v199 (v200, the ID change, is parked and must be rebased on this).
 // Build: v202 — v201 plus the v200 ID change: a typed ID/passport number goes only to /idinbox/<user> (phones can write, not read), profiles keep idnum:null and idOnFile:true, the phone never stores the number, and nothing reads the database root (health check probes /appUsers; backup fetches node by node). Needed before the tighter Firebase rules are published.
 // Build: v203 — THE OFFICE ASKS, THE CREW ANSWERS. Dioptra v9.49 writes a request for an update to /pm/crewplan/<user>/_ask = {id, at, from, msg, es, nl} (old builds skip it: no pid/tid). My plan shows it on top with All on track; every step gets Need (what, written as st:"need") and New date (day/month, st:"date", want:ISO) next to Started / Done / Problem. Opening My plan writes seen, any answer writes answered, to /pm/crewticks/_ask/<user> = {id, seen, answered, ok, by, name, at} (inside the rules' crewticks/$job/$task). The My plan button shows 📣 in red while a request waits; checked every 2 minutes. No change to the Firebase rules.
+// v203 (second pass): a step without a target gets How far? 25 / 50 / 75 % on My plan, sent as {st:"progress", pct}. Dioptra v9.51 reads it.
+// v203 (third pass): Comment on every step and "Anything else for the office?" on the request: /pm/crewticks/<job>/<task>~c<time> and /pm/crewticks/_fb/<user>~c<time>, beside the tick so the status never changes. Dioptra v9.51 moves them onto the activity.
+// v203 (fourth pass): Need, New date, Problem and Update progress open a box inside the card (calendar, text, number) instead of a browser pop-up. Need and New date are written beside the tick (/pm/crewticks/<job>/<task>~n<time>, ~d<time>), so a status tap never wipes them.
 const APP_VERSION="v203";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
