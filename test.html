@@ -1538,7 +1538,10 @@ const T={
   mpInProgress:{en:"In progress",es:"En curso",nl:"Bezig"},
   mpAskTitle:{en:"{n} asks for an update",es:"{n} pide una actualización",nl:"{n} vraagt om een update"},
   mpAskHow:{en:"Answer on each step below: Started, Done, Problem, Need or New date. If everything is going to plan, press All on track.",es:"Responde en cada paso abajo: Empezado, Hecho, Problema, Necesito o Nueva fecha. Si todo va según el plan, toca Todo va bien.",nl:"Antwoord bij elke stap hieronder: Begonnen, Klaar, Probleem, Nodig of Nieuwe datum. Gaat alles volgens plan, druk dan op Alles op schema."},
-  mpHowFar:{en:"How far?",es:"¿Cuánto va?",nl:"Hoe ver?"},
+  mpHowFar:{en:"Where is it at?",es:"¿Cómo va?",nl:"Hoe staat het?"},
+  mpStStarted:{en:"Just started",es:"Recién empezado",nl:"Net begonnen"},
+  mpStUnderway:{en:"Well under way",es:"Bien avanzado",nl:"Goed op weg"},
+  mpStAlmost:{en:"Almost finished",es:"Casi terminado",nl:"Bijna klaar"},
   mpSentPct:{en:"Sent. The office sees how far it is.",es:"Enviado. La oficina ve cuánto va.",nl:"Verzonden. Het kantoor ziet hoe ver het is."},
   mpComment:{en:"Comment",es:"Comentario",nl:"Opmerking"},
   mpCommentPh:{en:"Write to the office: what happened, what you need, anything",es:"Escribe a la oficina: qué pasó, qué necesitas, lo que sea",nl:"Schrijf naar het kantoor: wat er gebeurde, wat je nodig hebt"},
@@ -12814,15 +12817,17 @@ function _mpStarted(x){const k=(_mpTicks[x.pid]||{})[x.tid];return k&&(k.st==="s
 const _MP_WHOLE={units:1,sys:1,pcs:1,pts:1,joints:1};
 function _mpDone(x){const k=(_mpTicks[x.pid]||{})[x.tid];if(k&&k.done!=null&&(k.st==="progress"||k.st==="done"))return +k.done||0;return +x.done||0}
 function _mpNum(v){v=Math.round((+v||0)*100)/100;return v.toLocaleString()}
+const _MP_STAGES=[["started",15,"mpStStarted"],["underway",50,"mpStUnderway"],["almost",85,"mpStAlmost"]];
+function _mpStageOf(x){const k=(_mpTicks[x.pid]||{})[x.tid];if(!k||k.st==="open"||k.pct==null)return null;if(k.stage)return k.stage;const p=Math.round(+k.pct*100);return p>=75?"almost":(p>=40?"underway":"started")}
 function _mpPctOf(x){const k=(_mpTicks[x.pid]||{})[x.tid];return k&&k.pct!=null&&k.st!=="open"?Math.round(+k.pct*100):null}
 function _mpProgHtml(x,closed){
   const q=+x.q||0;
   if(!(q>0)){
     if(closed)return "";
     const cur=_mpPctOf(x);
-    return '<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--navy);font-weight:700"><span>'+t("mpHowFar")+'</span>'+(cur!=null?'<span>'+cur+'%</span>':'')+'</div>'
+    return '<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--navy);font-weight:700"><span>'+t("mpHowFar")+'</span>'+(_mpStageOf(x)?'<span>'+t((_MP_STAGES.find(g=>g[0]===_mpStageOf(x))||[])[2]||'')+'</span>':'')+'</div>'
       +(cur!=null?'<div style="height:8px;border-radius:99px;background:#e3e7ec;overflow:hidden;margin-top:4px"><div style="height:100%;width:'+cur+'%;background:#12734A;border-radius:99px"></div></div>':'')
-      +'<div style="display:flex;gap:6px;margin-top:6px">'+[25,50,75].map(p=>'<button onclick="_mpPct(\''+x.key+'\','+p+')" style="flex:1;padding:9px 4px;font-size:14px;border:1.5px solid #12734A;background:'+(cur===p?'#12734A':'white')+';color:'+(cur===p?'white':'#12734A')+';border-radius:10px;font-weight:700;cursor:pointer">'+p+'%</button>').join("")+'</div></div>';
+      +'<div style="display:flex;gap:6px;margin-top:6px">'+_MP_STAGES.map(g=>{const on=_mpStageOf(x)===g[0];return '<button onclick="_mpPct(\''+x.key+'\','+g[1]+',\''+g[0]+'\')" style="flex:1;padding:10px 4px;font-size:13px;line-height:1.2;border:1.5px solid #12734A;background:'+(on?'#12734A':'white')+';color:'+(on?'white':'#12734A')+';border-radius:10px;font-weight:700;cursor:pointer">'+t(g[2])+'</button>'}).join("")+'</div></div>';
   }
   const d=Math.min(_mpDone(x),q),pc=Math.round(d/q*100);
   return '<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:13px;color:var(--navy);font-weight:700"><span>'+_mpNum(d)+' '+t("mpOf")+' '+_mpNum(q)+' '+escHtml(x.u||"")+(x.sp?' <span style="font-weight:400;color:var(--grey)">· '+escHtml(x.sp)+'</span>':'')+'</span><span>'+pc+'%</span></div>'
@@ -12936,7 +12941,7 @@ function renderMyPlan(reload){
           +'<span style="flex:1;font-weight:700;color:var(--navy)">▶ '+t("mpInProgress")+' <span style="font-weight:400;color:var(--grey)">· '+escHtml(sg.name||sg.by||"")+'</span></span>'
           +'<button class="btn-s" style="padding:5px 10px;font-size:12px" onclick="_mpTick(\''+x.key+'\',\'open\')">'+t("mpUndo")+'</button></div>';
         h+='<div style="display:flex;gap:8px;margin-top:10px">'
-          +(sg?'':'<button onclick="_mpTick(\''+x.key+'\',\'started\')" style="flex:1;padding:11px 6px;font-size:14px;border:1.5px solid var(--navy);background:white;color:var(--navy);border-radius:10px;font-weight:700;cursor:pointer">▶ '+t("mpMarkStarted")+'</button>')
+          +((sg||!(+x.q>0))?'':'<button onclick="_mpTick(\''+x.key+'\',\'started\')" style="flex:1;padding:11px 6px;font-size:14px;border:1.5px solid var(--navy);background:white;color:var(--navy);border-radius:10px;font-weight:700;cursor:pointer">▶ '+t("mpMarkStarted")+'</button>')
           +'<button onclick="_mpTick(\''+x.key+'\',\'done\')" class="btn btn-primary" style="flex:1;padding:11px 6px;font-size:15px">✓ '+t("mpMarkDone")+'</button>'
           +'<button onclick="_mpTick(\''+x.key+'\',\'problem\')" style="flex:1;padding:11px 6px;font-size:14px;border:1.5px solid var(--danger);background:white;color:var(--danger);border-radius:10px;font-weight:700;cursor:pointer">⚠ '+t("mpMarkProblem")+'</button></div>';
         const ak=_mpAsked(x);
@@ -12956,10 +12961,10 @@ function renderMyPlan(reload){
   });
   body.innerHTML=h;
 }
-function _mpPct(key,p){
+function _mpPct(key,p,stage){
   const x=(_mpItems||[]).find(i=>i.key===key);if(!x)return;
   const fb=getFirebaseUrl();if(!fb){showToast(t("mpOffline"));return}
-  const rec={st:"progress",pct:p/100,note:"",by:currentUser.username,name:currentUser.name||currentUser.username,at:Date.now(),date:getGuyanaDate()};
+  const rec={st:"progress",pct:p/100,stage:stage||"",note:"",by:currentUser.username,name:currentUser.name||currentUser.username,at:Date.now(),date:getGuyanaDate()};
   fetch(fb+"/pm/crewticks/"+encodeURIComponent(x.pid)+"/"+encodeURIComponent(x.tid)+".json",{method:"PUT",body:JSON.stringify(rec)})
     .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);_mpTicks[x.pid]=_mpTicks[x.pid]||{};_mpTicks[x.pid][x.tid]=rec;
       _mpAckWrite(true,false).then(()=>{renderMyPlan(false);_mpBadge()});showToast("📏 "+t("mpSentPct"))})
@@ -13020,7 +13025,7 @@ function _mpTick(key,st,val){
   }
   const rec=Object.assign({st:st,note:note},base);
   if(done!=null)rec.done=done;
-  const prev=(_mpTicks[x.pid]||{})[x.tid];if((st==="started"||st==="problem")&&prev&&prev.pct!=null)rec.pct=prev.pct;   // how far stays when they tap Started or Problem
+  const prev=(_mpTicks[x.pid]||{})[x.tid];if((st==="started"||st==="problem")&&prev&&prev.pct!=null){rec.pct=prev.pct;if(prev.stage)rec.stage=prev.stage}   // how far stays when they tap Started or Problem
   fetch(fb+"/pm/crewticks/"+encodeURIComponent(x.pid)+"/"+encodeURIComponent(x.tid)+".json",{method:"PUT",body:JSON.stringify(rec)})
     .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);_mpTicks[x.pid]=_mpTicks[x.pid]||{};_mpTicks[x.pid][x.tid]=rec;_mpPanel=null;renderMyPlan(false);_mpBadge();
       if(st!=="open")_mpAckWrite(true,false).then(()=>{renderMyPlan(false);_mpBadge()});
@@ -13034,6 +13039,7 @@ function _mpTick(key,st,val){
 // v203 (second pass): a step without a target gets How far? 25 / 50 / 75 % on My plan, sent as {st:"progress", pct}. Dioptra v9.51 reads it.
 // v203 (third pass): Comment on every step and "Anything else for the office?" on the request: /pm/crewticks/<job>/<task>~c<time> and /pm/crewticks/_fb/<user>~c<time>, beside the tick so the status never changes. Dioptra v9.51 moves them onto the activity.
 // v203 (fourth pass): Need, New date, Problem and Update progress open a box inside the card (calendar, text, number) instead of a browser pop-up. Need and New date are written beside the tick (/pm/crewticks/<job>/<task>~n<time>, ~d<time>), so a status tap never wipes them.
+// v203 (fifth pass): a step without a target shows Just started / Well under way / Almost finished (15 / 50 / 85 %) and Done, written as {st:"progress", pct, stage}; no separate Started button there.
 const APP_VERSION="v203";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
