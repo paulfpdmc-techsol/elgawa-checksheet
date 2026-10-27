@@ -865,6 +865,7 @@ body{background:linear-gradient(180deg,#d9efe5 0%,#eef8f3 30%,#fbfdfc 100%)}
     <h2 style="color:var(--navy);margin:0" id="workerGreeting">Good Morning</h2>
     <p style="color:var(--grey);font-size:13px;margin:4px 0" id="workerDateLabel"></p>
   </div>
+  <div id="workerJobBox" style="margin-bottom:12px"></div>
   <div id="workerSignStatus" style="margin-bottom:16px"></div>
   <div id="workerSignActions" style="margin-bottom:20px"></div>
   <div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:16px">
@@ -1544,6 +1545,12 @@ const T={
   mpStAlmost:{en:"Almost finished",es:"Casi terminado",nl:"Bijna klaar"},
   mpSentPct:{en:"Sent. The office sees how far it is.",es:"Enviado. La oficina ve cuánto va.",nl:"Verzonden. Het kantoor ziet hoe ver het is."},
   mpComment:{en:"Comment",es:"Comentario",nl:"Opmerking"},
+  mpPhoto:{en:"Photo",es:"Foto",nl:"Foto"},
+  mpPhotoCap:{en:"A note with the photo (optional)",es:"Una nota con la foto (opcional)",nl:"Een notitie bij de foto (optioneel)"},
+  mpPhotoSent:{en:"Photo sent to the office",es:"Foto enviada a la oficina",nl:"Foto naar het kantoor gestuurd"},
+  mpPhotoBusy:{en:"Preparing the photo…",es:"Preparando la foto…",nl:"Foto voorbereiden…"},
+  mpPhotoBad:{en:"That photo could not be read. Try another.",es:"No se pudo leer la foto. Pruebe otra.",nl:"Die foto kon niet worden gelezen. Probeer een andere."},
+  mpPhotosSent:{en:"photo(s) sent today",es:"foto(s) enviada(s) hoy",nl:"foto('s) vandaag verstuurd"},
   mpCommentPh:{en:"Write to the office: what happened, what you need, anything",es:"Escribe a la oficina: qué pasó, qué necesitas, lo que sea",nl:"Schrijf naar het kantoor: wat er gebeurde, wat je nodig hebt"},
   mpSend:{en:"Send",es:"Enviar",nl:"Versturen"},
   mpSentComment:{en:"Sent. The office sees your comment.",es:"Enviado. La oficina ve tu comentario.",nl:"Verzonden. Het kantoor ziet je opmerking."},
@@ -2155,6 +2162,12 @@ const T={
   wGoodAfternoon:{en:"Good Afternoon",es:"Buenas Tardes",nl:"Goedemiddag"},
   wGoodEvening:{en:"Good Evening",es:"Buenas Noches",nl:"Goedenavond"},
   wNotSignedIn:{en:"Not Signed In Yet",es:"Aún No Registrado",nl:"Nog Niet Aangemeld"},
+  wJobQ:{en:"Which job are you on today?",es:"¿En qué obra estás hoy?",nl:"Op welk project werk je vandaag?"},
+  wJobOn:{en:"On",es:"En",nl:"Op"},
+  wJobChange:{en:"Change job",es:"Cambiar obra",nl:"Project wijzigen"},
+  wJobPick:{en:"Pick your job first",es:"Elige tu obra primero",nl:"Kies eerst je project"},
+  wJobSaved:{en:"Job saved",es:"Obra guardada",nl:"Project opgeslagen"},
+  pmRead:{en:"Sign-out was before sign-in, saved as",es:"La salida era antes de la entrada, guardada como",nl:"Afmelden was voor aanmelden, opgeslagen als"},
   wTapToStart:{en:"Tap the green button below to start your day",es:"Toca el botón verde abajo para comenzar tu día",nl:"Tik op de groene knop hieronder om je dag te beginnen"},
   wTapSignIn:{en:"TAP TO SIGN IN",es:"TOCA PARA REGISTRARTE",nl:"TIK OM AAN TE MELDEN"},
   wTapSignOut:{en:"TAP TO SIGN OUT",es:"TOCA PARA SALIR",nl:"TIK OM AF TE MELDEN"},
@@ -10556,6 +10569,7 @@ function updateAttTime(input){
   const name=input.dataset.worker;
   const field=input.dataset.field;
   if(!data.workers[name])data.workers[name]={present:false,timeIn:"",timeOut:""};
+  if(field==="timeOut"){const fx=_pmFix(data.workers[name].timeIn,input.value,data.workers[name].shift);if(fx!==input.value){input.value=fx;showToast("🕑 "+t("pmRead")+" "+fx)}}
   data.workers[name][field]=input.value;
   saveAttendanceLocal(_attDate,data);
   _attAutoCloudSave();
@@ -12935,7 +12949,8 @@ function renderMyPlan(reload){
         h+='<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px">'
           +'<span style="flex:1;font-weight:700;color:'+(st.st==="done"?"#12734A":"var(--danger)")+'">'+(st.st==="done"?"✅ "+t("mpDone"):"⚠️ "+t("mpProblem")+(st.note?": "+escHtml(st.note):""))
           +' <span style="font-weight:400;color:var(--grey)">· '+escHtml(st.name||st.by||"")+'</span></span>'
-          +'<button class="btn-s" style="padding:7px 12px;font-size:13px" onclick="_mpTick(\''+x.key+'\',\'open\')">'+t("mpUndo")+'</button></div>';
+          +'<button class="btn-s" style="padding:7px 12px;font-size:13px" onclick="_mpPhoto(\''+x.key+'\')">📷</button>'
+          +'<button class="btn-s" style="padding:7px 12px;font-size:13px" onclick="_mpTick(\''+x.key+'\',\'open\')">'+t("mpUndo")+'</button></div>'+_mpPhLine(x)+_mpPanelHtml(x);
       }else{
         if(sg)h+='<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px">'
           +'<span style="flex:1;font-weight:700;color:var(--navy)">▶ '+t("mpInProgress")+' <span style="font-weight:400;color:var(--grey)">· '+escHtml(sg.name||sg.by||"")+'</span></span>'
@@ -12949,7 +12964,8 @@ function renderMyPlan(reload){
         h+='<div style="display:flex;gap:8px;margin-top:8px">'
           +'<button onclick="_mpTick(\''+x.key+'\',\'need\')" style="flex:1;padding:9px 6px;font-size:13px;border:1.5px solid #B7791F;background:white;color:#8a5a00;border-radius:10px;font-weight:700;cursor:pointer">📦 '+t("mpNeed")+'</button>'
           +'<button onclick="_mpTick(\''+x.key+'\',\'date\')" style="flex:1;padding:9px 6px;font-size:13px;border:1.5px solid #6B7A88;background:white;color:#34414c;border-radius:10px;font-weight:700;cursor:pointer">📅 '+t("mpNewDate")+'</button>'
-          +'<button onclick="_mpCToggle(\''+x.key+'\')" style="flex:1;padding:9px 6px;font-size:13px;border:1.5px solid #2B6CB0;background:'+(_mpOpenC===x.key?'#eaf2fb':'white')+';color:#1f5596;border-radius:10px;font-weight:700;cursor:pointer">💬 '+t("mpComment")+'</button></div>';
+          +'<button onclick="_mpCToggle(\''+x.key+'\')" style="flex:1;padding:9px 6px;font-size:13px;border:1.5px solid #2B6CB0;background:'+(_mpOpenC===x.key?'#eaf2fb':'white')+';color:#1f5596;border-radius:10px;font-weight:700;cursor:pointer">💬 '+t("mpComment")+'</button></div>'
+          +'<button onclick="_mpPhoto(\''+x.key+'\')" style="width:100%;margin-top:8px;padding:10px 6px;font-size:14px;border:1.5px solid #0A7F86;background:white;color:#086A70;border-radius:10px;font-weight:700;cursor:pointer">📷 '+t("mpPhoto")+'</button>'+_mpPhLine(x);
         h+=_mpPanelHtml(x);
         const lc=_mpLastComment(x);
         if(lc)h+='<div style="margin-top:8px;font-size:13px;color:#1f5596;background:#eef5fc;border-radius:8px;padding:6px 9px">💬 <b>'+escHtml(lc.by===currentUser.username?t("mpYou"):(lc.name||lc.by||""))+':</b> '+escHtml(lc.text)+'</div>';
@@ -12977,21 +12993,60 @@ let _mpPanel=null;
 function _mpPanelToggle(key,kind){_mpPanel=(_mpPanel&&_mpPanel.key===key&&_mpPanel.kind===kind)?null:{key:key,kind:kind};renderMyPlan(false);setTimeout(()=>{const e=document.getElementById("mpp_in");if(e){e.focus();try{e.scrollIntoView({block:"center",behavior:"smooth"})}catch(_){}}},60)}
 function _mpPanelHtml(x){
   if(!_mpPanel||_mpPanel.key!==x.key)return "";
-  const k=_mpPanel.kind,col={need:"#B7791F",date:"#6B7A88",problem:"#C0392B",progress:"#12734A"}[k]||"#2B6CB0";
+  const k=_mpPanel.kind,col={need:"#B7791F",date:"#6B7A88",problem:"#C0392B",progress:"#12734A",photo:"#0A7F86"}[k]||"#2B6CB0";
   let lab="",inp="";
   const box='width:100%;box-sizing:border-box;margin-top:4px;padding:10px;border:1.5px solid '+col+';border-radius:10px;font:inherit;font-size:15px';
   if(k==="need"){lab="📦 "+t("mpWhatNeed");inp='<textarea id="mpp_in" rows="2" style="'+box+'"></textarea>'}
   else if(k==="problem"){lab="⚠ "+t("mpWhatProblem");inp='<textarea id="mpp_in" rows="2" style="'+box+'"></textarea>'}
   else if(k==="date"){lab="📅 "+t("mpPickDate");inp='<input id="mpp_in" type="date" min="'+getGuyanaDate()+'" value="'+escHtml(x.finish&&x.finish>=getGuyanaDate()?x.finish:getGuyanaDate())+'" style="'+box+'">'}
+  else if(k==="photo"){lab="📷 "+t("mpPhoto");inp=(_mpPh&&_mpPh.key===x.key?'<img src="'+_mpPh.data+'" alt="" style="display:block;width:100%;max-height:260px;object-fit:contain;border-radius:10px;margin-top:6px;background:#eef2f4">':'<div style="padding:16px;color:var(--grey);text-align:center">'+t("mpPhotoBusy")+'</div>')+'<textarea id="mpp_in" rows="2" placeholder="'+escHtml(t("mpPhotoCap"))+'" style="'+box+'"></textarea>'}
   else if(k==="progress"){lab="📏 "+t("mpHowMany")+" ("+escHtml(x.u||"")+", 0–"+_mpNum(+x.q||0)+")";inp='<input id="mpp_in" type="number" inputmode="decimal" min="0" max="'+(+x.q||0)+'" step="any" value="'+_mpDone(x)+'" style="'+box+'">'}
   return '<div style="margin-top:8px;padding:10px;border-radius:12px;background:#f7f9fb;border:1px solid #e3e7ec">'
     +'<div style="font-size:13px;font-weight:700;color:var(--navy)">'+lab+'</div>'+inp
     +'<div style="display:flex;gap:8px;margin-top:8px"><button onclick="_mpPanel=null;renderMyPlan(false)" style="flex:1;padding:10px;font-size:14px;border:1.5px solid var(--border);background:white;color:var(--grey);border-radius:10px;font-weight:700;cursor:pointer">'+t("mpCancel")+'</button>'
     +'<button onclick="_mpPanelSend()" class="btn btn-primary" style="flex:2;padding:10px;font-size:15px">'+t("mpSend")+'</button></div></div>';
 }
+// v204 photos: picked or taken, shrunk on the phone, sent with an optional note
+let _mpPh=null;const _mpPhSent={};
+function _mpPhLine(x){const n=_mpPhSent[x.pid+"/"+x.tid]||0;return n?'<div style="margin-top:6px;font-size:12px;color:#086A70;font-weight:700">📷 '+n+' '+t("mpPhotosSent")+'</div>':''}
+function _mpPhoto(key){
+  const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.setAttribute("capture","environment");inp.style.display="none";
+  inp.onchange=function(){const f=inp.files&&inp.files[0];if(inp.parentNode)inp.parentNode.removeChild(inp);if(!f)return;
+    _mpPh=null;_mpPanel={key:key,kind:"photo"};renderMyPlan(false);
+    _mpShrink(f).then(function(d){_mpPh={key:key,data:d};_mpPanel={key:key,kind:"photo"};renderMyPlan(false);
+      setTimeout(function(){const e=document.getElementById("mpp_in");if(e){try{e.scrollIntoView({block:"center",behavior:"smooth"})}catch(_){}}},60)})
+      .catch(function(){_mpPanel=null;renderMyPlan(false);showToast("⚠️ "+t("mpPhotoBad"))})};
+  document.body.appendChild(inp);inp.click();
+}
+function _mpShrink(file){
+  return new Promise(function(res,rej){
+    const url=URL.createObjectURL(file),img=new Image();
+    img.onload=function(){
+      try{let w=img.naturalWidth,h=img.naturalHeight,M=1600;if(!w||!h)throw new Error("size");
+        if(Math.max(w,h)>M){const r=M/Math.max(w,h);w=Math.round(w*r);h=Math.round(h*r)}
+        const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);
+        let q=.72,d=c.toDataURL("image/jpeg",q);
+        while(d.length>900000&&q>.35){q-=.12;d=c.toDataURL("image/jpeg",q)}
+        URL.revokeObjectURL(url);res(d)}catch(e){URL.revokeObjectURL(url);rej(e)}};
+    img.onerror=function(){URL.revokeObjectURL(url);rej(new Error("read"))};
+    img.src=url;
+  });
+}
+function _mpPhSend(key,cap){
+  const x=(_mpItems||[]).find(i=>i.key===key);if(!x||!_mpPh||_mpPh.key!==key)return;
+  const fb=getFirebaseUrl();if(!fb){showToast(t("mpOffline"));return}
+  const now=Date.now(),rec={pid:x.pid,tid:x.tid,t:x.t||"",data:_mpPh.data,caption:String(cap||"").slice(0,300),by:currentUser.username,name:currentUser.name||currentUser.username,at:now,date:getGuyanaDate()};
+  const k=x.pid+"~"+x.tid+"~"+now+"~"+_mpKey(currentUser.username);
+  showToast("📷 "+t("mpPhotoBusy"));
+  fetch(fb+"/pm/crewticks/_ph/"+encodeURIComponent(k)+".json",{method:"PUT",body:JSON.stringify(rec)})
+    .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);_mpPh=null;_mpPanel=null;_mpPhSent[x.pid+"/"+x.tid]=(_mpPhSent[x.pid+"/"+x.tid]||0)+1;
+      _mpAckWrite(true,false).then(()=>{renderMyPlan(false);_mpBadge()});renderMyPlan(false);showToast("📷 "+t("mpPhotoSent"))})
+    .catch(()=>showToast("⚠️ "+t("mpOffline")));
+}
 function _mpPanelSend(){
   if(!_mpPanel)return;const el=document.getElementById("mpp_in");const v=el?String(el.value||"").trim():"";
   const k=_mpPanel.kind,key=_mpPanel.key;
+  if(k==="photo"){_mpPhSend(key,v);return}
   if((k==="need"||k==="problem")&&!v)return;
   if(k==="date"&&!/^\d{4}-\d{2}-\d{2}$/.test(v)){showToast("⚠️ "+t("mpBadDate"));return}
   if(k==="progress"&&v==="")return;
@@ -13040,7 +13095,11 @@ function _mpTick(key,st,val){
 // v203 (third pass): Comment on every step and "Anything else for the office?" on the request: /pm/crewticks/<job>/<task>~c<time> and /pm/crewticks/_fb/<user>~c<time>, beside the tick so the status never changes. Dioptra v9.51 moves them onto the activity.
 // v203 (fourth pass): Need, New date, Problem and Update progress open a box inside the card (calendar, text, number) instead of a browser pop-up. Need and New date are written beside the tick (/pm/crewticks/<job>/<task>~n<time>, ~d<time>), so a status tap never wipes them.
 // v203 (fifth pass): a step without a target shows Just started / Well under way / Almost finished (15 / 50 / 85 %) and Done, written as {st:"progress", pct, stage}; no separate Started button there.
-const APP_VERSION="v203";
+// Build: v204 — A PHOTO ON EVERY STEP. My plan has 📷 Photo on each step (and on a finished one). The photo is shrunk on the phone (longest side 1600 px, JPEG) and sent with an optional note to /pm/crewticks/_ph/<job>~<task>~<time>~<user> = {pid, tid, t, data, caption, by, name, at, date}. Dioptra v9.68 saves it into the job's Photos\Site updates\<date> folder, files it on the step and clears it from the database. The phones never download that node: they read /pm/crewticks/<job> only.
+// Build: v205 — EVERY JOB ON CREWFLOW. Dioptra v9.72 publishes the live jobs to /pm/crewplan/_jobs = {pid:{n,c,k,o}}. The sign-in screen asks "Which job are you on today?" (the last one is kept on the phone); the choice goes with the sign-in (/selfAttendance/<date>/<login>.job, jobName, jobAt) and can be changed during the day. Dioptra puts the man on that job unless the office moves him. With one job there is nothing to choose; with no list (older Dioptra) the screen is as before.
+// v205: a day-shift sign-out typed before the sign-in (02:00 for 2 pm) is read as the afternoon, in the register and in the self sign-in edit, with a note.
+// Build: v206 — HIS OWN JOBS ONLY. The picker reads /pm/crewplan/<login>/_jobs, the list Dioptra v9.73 keeps for each man (where he is placed, his My plan, where he worked lately, and what Paul adds or hides). The shared list is gone. No list for him: no picker, sign in as before.
+const APP_VERSION="v206";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -14461,6 +14520,49 @@ function closeMyAttendance(){
   const bn=document.getElementById("bottomNav");if(bn)bn.classList.remove("hidden");
   const dv=document.getElementById("dashView");if(dv)dv.classList.remove("hidden");
 }
+// v205: the jobs from Dioptra, and the one this worker is on
+let _wJobs={},_wPick="";
+function _wJobsLoad(){
+  try{_wJobs=JSON.parse(localStorage.getItem("elg_jobs_"+currentUser.username)||"{}")||{}}catch(e){_wJobs={}}
+  try{localStorage.removeItem("elg_jobs")}catch(e){}
+  const fb=getFirebaseUrl();if(!fb)return Promise.resolve(_wJobs);
+  return fetch(fb+"/pm/crewplan/"+encodeURIComponent(_mpKey(currentUser.username))+"/_jobs.json").then(fbJson).then(v=>{_wJobs=(v&&typeof v==="object")?v:{};try{localStorage.setItem("elg_jobs_"+currentUser.username,JSON.stringify(_wJobs))}catch(e){}if(_wPick&&!_wJobs[_wPick])_wPick="";return _wJobs}).catch(()=>_wJobs);
+}
+function _wJobList(){return Object.keys(_wJobs||{}).filter(k=>_wJobs[k]&&_wJobs[k].n).sort((a,b)=>(+_wJobs[a].o||0)-(+_wJobs[b].o||0))}
+function _wNeedPick(){const L=_wJobList();return L.length>1&&!(_wPick&&_wJobs[_wPick])}
+function _wPickKey(){return "elg_wjob_"+((currentUser&&currentUser.username)||"")}
+let _wJobOpen=false,_wJobData=null,_wJobDate="";
+function _wJobRender(data,date){
+  _wJobData=data;_wJobDate=date;
+  const box=document.getElementById("workerJobBox");if(!box)return;
+  const L=_wJobList();
+  if(!L.length){box.innerHTML="";return}
+  if(L.length===1)_wPick=L[0];
+  else if(!_wPick){try{const k=localStorage.getItem(_wPickKey());if(k&&_wJobs[k])_wPick=k}catch(e){}}
+  const signed=data&&data.signIn&&!data.signOut, cur=(data&&data.job&&_wJobs[data.job])?data.job:_wPick;
+  if(signed&&!_wJobOpen){
+    box.innerHTML='<div style="display:flex;align-items:center;gap:10px;background:#eef7f8;border:1.5px solid #0A7F86;border-radius:12px;padding:10px 12px">'
+      +'<div style="flex:1;font-size:14px;color:var(--navy)">🏗️ '+t("wJobOn")+': <b>'+escHtml((_wJobs[cur]||{}).n||"")+'</b></div>'
+      +(L.length>1?'<button onclick="_wJobOpen=true;_wJobRender(_wJobData,_wJobDate)" style="padding:8px 12px;border:1.5px solid #0A7F86;background:white;color:#086A70;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer">'+t("wJobChange")+'</button>':'')+'</div>';
+    return;
+  }
+  if(L.length===1&&!signed){box.innerHTML='<div style="text-align:center;font-size:14px;color:var(--navy)">🏗️ '+t("wJobOn")+': <b>'+escHtml(_wJobs[L[0]].n)+'</b></div>';return}
+  box.innerHTML='<div style="background:white;border-radius:14px;box-shadow:var(--shadow);padding:12px">'
+    +'<div style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:8px;text-align:center">🏗️ '+t("wJobQ")+'</div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'+L.map(k=>{const on=k===cur;const j=_wJobs[k];
+      return '<button onclick="_wJobChoose(\''+k+'\')" style="padding:14px 12px;font-size:16px;font-weight:700;border-radius:12px;cursor:pointer;text-align:left;border:2px solid '+(on?'#0A7F86':'var(--border)')+';background:'+(on?'linear-gradient(180deg,#2ec4ca,#0A7F86)':'white')+';color:'+(on?'white':'var(--navy)')+'">'+(on?'✓ ':'')+escHtml(j.n)+(j.c?'<span style="display:block;font-size:12px;font-weight:500;opacity:.8">'+escHtml(j.c)+'</span>':'')+'</button>'}).join("")+'</div></div>';
+}
+function _wJobChoose(k){
+  if(!_wJobs[k])return;_wPick=k;try{localStorage.setItem(_wPickKey(),k)}catch(e){}
+  const d=_wJobData;
+  if(d&&d.signIn&&!d.signOut&&d.job!==k){d.job=k;d.jobName=_wJobs[k].n||k;d.jobAt=Date.now();saveSelfAttendance(_wJobDate,currentUser.username,d);showToast("🏗️ "+t("wJobSaved"))}
+  _wJobOpen=false;_wJobRender(d,_wJobDate);
+}
+function _pmFix(tin,tout,shift){
+  const m=x=>{const r=/^(\d{1,2}):(\d{2})/.exec(String(x||""));return r?(+r[1])*60+(+r[2]):null};
+  const a=m(tin),b=m(tout);if(shift==="night"||a==null||b==null||b>=a||b+720<=a)return tout;
+  const n=b+720;return ("0"+Math.floor(n/60)).slice(-2)+":"+("0"+(n%60)).slice(-2);
+}
 function renderWorkerSignIn(){
   // v186: highlight the worker-view language button for the current language
   try{document.querySelectorAll(".wlang-btn").forEach(b=>{const on=b.getAttribute("data-l")===LANG;b.style.background=on?"var(--navy)":"white";b.style.color=on?"white":"var(--navy)";b.style.borderColor=on?"var(--navy)":"var(--border)"});}catch(e){}
@@ -14476,6 +14578,8 @@ function renderWorkerSignIn(){
   loadSelfAttendance(date,username).then(data=>{
     renderWorkerStatus(data,date);
     renderWorkerHistory();
+    _wJobRender(data,date);
+    _wJobsLoad().then(()=>_wJobRender(data,date));
   });
   // Nudge every worker to complete their profile until it exists & is approved.
   loadWorkerProfile(username).then(p=>{
@@ -14529,6 +14633,7 @@ function renderWorkerStatus(data,date){
   }
   const statusEl=document.getElementById("workerSignStatus");
   const actionsEl=document.getElementById("workerSignActions");
+  try{_wJobRender(data,date)}catch(e){}
   const now=getGuyanaTimeNow();
   const timeStr=("0"+now.getHours()).slice(-2)+":"+("0"+now.getMinutes()).slice(-2);
 
@@ -14595,6 +14700,7 @@ function renderWorkerStatus(data,date){
 }
 
 function confirmWorkerSignIn(){
+  if(_wNeedPick()){showToast("👷 "+t("wJobPick"));const b=document.getElementById("workerJobBox");if(b)try{b.scrollIntoView({block:"center",behavior:"smooth"})}catch(e){}return}
   showModal(t("wBtnSignIn"),t("wConfirmSignIn"),()=>{workerSignIn()});
 }
 function confirmWorkerSignOut(){
@@ -14608,6 +14714,7 @@ function workerSignIn(){
   const timeStr=("0"+now.getHours()).slice(-2)+":"+("0"+now.getMinutes()).slice(-2);
   const _auto=(currentUser&&currentUser.username==="admin");
   const data={signIn:timeStr,signOut:null,source:"self",confirmed:_auto,name:currentUser.name,timestamp:Date.now(),shifts:[]};
+  if(_wPick&&_wJobs[_wPick]){data.job=_wPick;data.jobName=_wJobs[_wPick].n||_wPick;data.jobAt=Date.now()}
   if(_auto){data.confirmedBy=currentUser.name;data.confirmedAt=new Date().toISOString();}
   saveSelfAttendance(date,username,data);
   // Auto-confirmed (admin) sign-ins go straight into the main attendance
@@ -14647,6 +14754,7 @@ function startNewShift(){
       data.signIn=timeStr;
       data.signOut=null;
       data.totalMins=0;
+      if(_wPick&&_wJobs[_wPick]){data.job=_wPick;data.jobName=_wJobs[_wPick].n||_wPick;data.jobAt=Date.now()}
       data.confirmed=(currentUser&&currentUser.username==="admin");
       data.timestamp=Date.now();
       saveSelfAttendance(date,username,data);
@@ -14922,8 +15030,9 @@ function editSelfAttendance(date,username,signIn,signOut){
 
 function saveSelfAttEdit(date,username){
   const inVal=document.getElementById("editSelfIn").value;
-  const outVal=document.getElementById("editSelfOut").value;
+  let outVal=document.getElementById("editSelfOut").value;
   if(!inVal){showToast("Sign-in time required");return}
+  {const fx=_pmFix(inVal,outVal,"day");if(fx!==outVal){outVal=fx;document.getElementById("editSelfOut").value=fx;showToast("🕑 "+t("pmRead")+" "+fx)}}
   loadSelfAttendance(date,username).then(data=>{
     if(!data)data={source:"admin-created",name:username,timestamp:Date.now()};
     data.signIn=inVal;
