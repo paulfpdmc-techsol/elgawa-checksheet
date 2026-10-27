@@ -12654,11 +12654,15 @@ function renderHubReports(){
 function _applyAutoRegister(data,sheetData){
   if(!data)data={workers:{},verified:false};
   if(!data.workers)data.workers={};
+  // v207: switched off or removed here = never marked present by a team sheet
+  let _gone=new Set();try{_gone=_attRemovedSet()}catch(e){}
+  let _roster=new Set();try{getWorkerRoster().forEach(n=>_roster.add(String(n).trim().toLowerCase()))}catch(e){}
+  const _skip=n=>_gone.has(String(n||"").trim().toLowerCase());
   const now=new Date();
   const timeStr=now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0");
   // 1. Mark the team lead as present
-  if(sheetData.teamLead){
-    const leadName=sheetData.teamLead;
+  if(sheetData.teamLead&&!_skip(_canonWorker(String(sheetData.teamLead).trim()))){
+    const leadName=_canonWorker(String(sheetData.teamLead).trim());
     if(!data.workers[leadName])data.workers[leadName]={present:false,timeIn:"",timeOut:""};
     if(!data.workers[leadName].present){
       data.workers[leadName].present=true;
@@ -12670,13 +12674,16 @@ function _applyAutoRegister(data,sheetData){
   if(sheetData.manRows){
     sheetData.manRows.forEach(row=>{
       if(row.name&&row.name.trim()){
-        const wName=row.name.trim();
+        const wName=_canonWorker(row.name.trim());
+        if(_skip(wName))return;
         if(!data.workers[wName])data.workers[wName]={present:false,timeIn:"",timeOut:""};
         if(!data.workers[wName].present){
           data.workers[wName].present=true;
           data.workers[wName].timeIn=row.timeIn||timeStr;
           if(row.timeOut)data.workers[wName].timeOut=row.timeOut;
           data.workers[wName].autoRegistered=true;
+          data.workers[wName].sheetBy=sheetData.teamLead||"";
+          if(!_roster.has(wName.toLowerCase()))data.workers[wName].unlisted=true;
         }
       }
     });
@@ -13099,7 +13106,8 @@ function _mpTick(key,st,val){
 // Build: v205 — EVERY JOB ON CREWFLOW. Dioptra v9.72 publishes the live jobs to /pm/crewplan/_jobs = {pid:{n,c,k,o}}. The sign-in screen asks "Which job are you on today?" (the last one is kept on the phone); the choice goes with the sign-in (/selfAttendance/<date>/<login>.job, jobName, jobAt) and can be changed during the day. Dioptra puts the man on that job unless the office moves him. With one job there is nothing to choose; with no list (older Dioptra) the screen is as before.
 // v205: a day-shift sign-out typed before the sign-in (02:00 for 2 pm) is read as the afternoon, in the register and in the self sign-in edit, with a note.
 // Build: v206 — HIS OWN JOBS ONLY. The picker reads /pm/crewplan/<login>/_jobs, the list Dioptra v9.73 keeps for each man (where he is placed, his My plan, where he worked lately, and what Paul adds or hides). The shared list is gone. No list for him: no picker, sign in as before.
-const APP_VERSION="v206";
+// Build: v207 — TEAM SHEETS RESPECT SWITCHED-OFF MEN. Submitting a team sheet marks every name on its manpower list present. A man deactivated or removed here was still put on the register that way (Gean Marquez, 13 Oct). Now he is skipped. Each name a sheet adds carries sheetBy (the lead) and, when it is not on the worker list (typed under Other, like "Carlo Manrique" on 26 Oct), unlisted:true, so Dioptra can ask about it.
+const APP_VERSION="v207";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
