@@ -13107,7 +13107,7 @@ function _mpTick(key,st,val){
 // v205: a day-shift sign-out typed before the sign-in (02:00 for 2 pm) is read as the afternoon, in the register and in the self sign-in edit, with a note.
 // Build: v206 — HIS OWN JOBS ONLY. The picker reads /pm/crewplan/<login>/_jobs, the list Dioptra v9.73 keeps for each man (where he is placed, his My plan, where he worked lately, and what Paul adds or hides). The shared list is gone. No list for him: no picker, sign in as before.
 // Build: v207 — TEAM SHEETS RESPECT SWITCHED-OFF MEN. Submitting a team sheet marks every name on its manpower list present. A man deactivated or removed here was still put on the register that way (Gean Marquez, 13 Oct). Now he is skipped. Each name a sheet adds carries sheetBy (the lead) and, when it is not on the worker list (typed under Other, like "Carlo Manrique" on 26 Oct), unlisted:true, so Dioptra can ask about it.
-const APP_VERSION="v207";
+const APP_VERSION="v208";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -15111,5 +15111,220 @@ function saveSelfAttEdit(date,username){
 // Build: v126 — visual refresh, viewport fixes, back/forward buttons, 3 daily reminders (chime+vibrate), hub bug fixes (/checksheets source, crash guards)
 // Build: v125 — fbJson hardening, attendance auto-sync, home/refresh buttons, live Firebase health banner
 </script>
+<script>
+/* =============================================================================
+   CrewFlow v208 (Oct 2026)
+   1. ACCOUNTS: the newest action wins. Paul deactivated Alfredo, re-added him,
+      and he still could not sign in; re-added as "Alfredo Viñas G" it worked.
+      Cause: removed / inactive lists were merged across phones as a union, so a
+      flag could never be lifted - any phone still holding it put it back. Now
+      every change (active, inactive, removed; a name on or off the rosters) is
+      stamped with its time and the newest one wins everywhere. Stamps live in
+      appUsers/state. Old flags with no stamp count as time 0, so any new action
+      beats them. Saving first merges with the cloud, so a phone with an old copy
+      cannot push a removed or inactive person back.
+   2. Re-adding someone takes their full name off the "removed workers" list, so
+      they come back under their real name.
+   3. Sharing a login on WhatsApp: after Add user, and from each user's panel.
+   ========================================================================== */
+var US_SYNC=false;
+function usNow(){ return Date.now(); }
+function usGet(k){ try{ return JSON.parse(localStorage.getItem(k)||"{}")||{}; }catch(e){ return {}; } }
+function usPut(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+function usState(){ return usGet("elg_user_state"); }        /* uname -> {st:"active"|"inactive"|"removed", at} */
+function usNames(){ return usGet("elg_name_state"); }        /* lower-case full name -> {off:bool, at} */
+function usStamp(u,st){ var S2=usState(); S2[u]={st:st, at:usNow()}; usPut("elg_user_state",S2); }
+function usNameStamp(n,off){ var N=usNames(), k=String(n||"").trim().toLowerCase(); if(!k) return; N[k]={off:!!off, at:usNow()}; usPut("elg_name_state",N); }
+
+/* --- record every change the existing code makes, through its own save calls --- */
+(function(){
+  var _sd=saveDisabledUsers, _sr=saveRemovedUsers, _sw=saveRemovedWorkers, _sc=saveCustomUsers;
+  saveDisabledUsers=function(list){
+    if(!US_SYNC){ var prev=getDisabledUsers(), now=list||[];
+      now.forEach(function(u){ var s0=usState()[u]; if(prev.indexOf(u)<0 && !(s0 && s0.st==="removed")) usStamp(u,"inactive"); });
+      prev.forEach(function(u){ if(now.indexOf(u)<0){ var s=usState()[u]; if(!s || s.st==="inactive") usStamp(u,"active"); } }); }
+    return _sd.apply(this,arguments);
+  };
+  saveRemovedUsers=function(list){
+    if(!US_SYNC){ var prev=getRemovedUsers(), now=list||[];
+      now.forEach(function(u){ if(prev.indexOf(u)<0) usStamp(u,"removed"); });
+      prev.forEach(function(u){ if(now.indexOf(u)<0){ var s=usState()[u]; if(!s || s.st==="removed") usStamp(u,"active"); } }); }
+    return _sr.apply(this,arguments);
+  };
+  saveRemovedWorkers=function(list){
+    if(!US_SYNC){ var prev=getRemovedWorkers().map(function(n){ return String(n).toLowerCase(); }), now=(list||[]).map(function(n){ return String(n).toLowerCase(); });
+      now.forEach(function(n){ if(prev.indexOf(n)<0) usNameStamp(n,true); });
+      prev.forEach(function(n){ if(now.indexOf(n)<0) usNameStamp(n,false); }); }
+    return _sw.apply(this,arguments);
+  };
+  saveCustomUsers=function(cu){
+    if(!US_SYNC && cu){ var prev=getCustomUsers(), t=usNow();
+      Object.keys(cu).forEach(function(u){ var a=cu[u], b=prev[u];
+        if(!a || typeof a!=="object") return;
+        var ca=Object.assign({},a), cb=Object.assign({},b||{}); delete ca.at; delete cb.at;
+        if(!b || JSON.stringify(ca)!==JSON.stringify(cb)) a.at=t; }); }
+    return _sc.apply(this,arguments);
+  };
+})();
+
+/* --- merge: per person, the newer stamp wins; unstamped old flags are time 0 --- */
+function usMergeState(local,cloud,legacy){
+  var out={}, keys={};
+  [local,cloud].forEach(function(o){ Object.keys(o||{}).forEach(function(k){ keys[k]=1; }); });
+  Object.keys(keys).forEach(function(k){ var a=(local||{})[k], b=(cloud||{})[k]; out[k]=(!a)? b : (!b)? a : ((+b.at||0)>=(+a.at||0)? b : a); });
+  (legacy||[]).forEach(function(x){ if(!out[x.k]) out[x.k]=x.v; });          /* old flags only where nothing newer is known */
+  return out;
+}
+function usApply(st,nm){
+  US_SYNC=true;
+  try{
+    usPut("elg_user_state",st); usPut("elg_name_state",nm);
+    saveDisabledUsers(Object.keys(st).filter(function(u){ return st[u] && st[u].st==="inactive"; }));
+    saveRemovedUsers(Object.keys(st).filter(function(u){ return st[u] && st[u].st==="removed"; }));
+    var keepCase={}; getRemovedWorkers().forEach(function(n){ keepCase[String(n).toLowerCase()]=n; });
+    saveRemovedWorkers(Object.keys(nm).filter(function(k){ return nm[k] && nm[k].off; }).map(function(k){ return keepCase[k]||k; }));
+  } finally { US_SYNC=false; }
+}
+cloudLoadUsers=function(){
+  var fb=getFirebaseUrl(); if(!fb) return Promise.resolve(false);
+  return fetch(fb+"/appUsers.json").then(fbJson).then(function(data){
+    if(!data || !data.customUsers) return false;
+    var cs=(data.state||{}), cUser=cs.users||{}, cName=cs.names||{};
+    /* legacy flags, both sides, as time 0 */
+    var leg=[], legN=[];
+    (Array.isArray(data.removedUsers)? data.removedUsers : []).concat(getRemovedUsers()).forEach(function(u){ leg.push({k:u, v:{st:"removed", at:0}}); });
+    (Array.isArray(data.disabledUsers)? data.disabledUsers : []).concat(getDisabledUsers()).forEach(function(u){ if(!leg.some(function(x){ return x.k===u; })) leg.push({k:u, v:{st:"inactive", at:0}}); });
+    (Array.isArray(data.removedWorkers)? data.removedWorkers : []).concat(getRemovedWorkers()).forEach(function(n){ legN.push({k:String(n).toLowerCase(), v:{off:true, at:0}}); });
+    var st=usMergeState(usState(),cUser,leg), nm=usMergeState(usNames(),cName,legN);
+    /* accounts: the newer record wins; a removed account is struck */
+    var loc=getCustomUsers(), cloud=data.customUsers||{}, merged={};
+    Object.keys(Object.assign({},loc,cloud)).forEach(function(u){ var a=loc[u], b=cloud[u]; merged[u]=(!a)? b : (!b)? a : ((+b.at||0)>=(+a.at||0)? b : a); });
+    Object.keys(st).forEach(function(u){ if(st[u] && st[u].st==="removed") delete merged[u]; });
+    US_SYNC=true; try{ saveCustomUsers(merged); } finally { US_SYNC=false; }
+    usApply(st,nm);
+    var off={}; Object.keys(nm).forEach(function(k){ if(nm[k] && nm[k].off) off[k]=1; });
+    var cw=Array.from(new Set(getCustomWorkers().concat(Array.isArray(data.customWorkers)? data.customWorkers : []))).filter(function(n){ return !off[String(n).toLowerCase()]; });
+    saveCustomWorkers(cw);
+    USERS=getUsers();
+    return true;
+  }).catch(function(){ return false; });
+};
+cloudSaveUsers=function(){
+  var fb=getFirebaseUrl(); if(!fb) return Promise.resolve(false);
+  return cloudLoadUsers().then(function(){
+    var payload={ customUsers:getCustomUsers(), disabledUsers:getDisabledUsers(), removedUsers:getRemovedUsers(),
+      customWorkers:getCustomWorkers(), removedWorkers:getRemovedWorkers(), state:{users:usState(), names:usNames()}, updatedAt:Date.now() };
+    return fetch(fb+"/appUsers.json",{method:"PUT", body:JSON.stringify(payload), headers:{"Content-Type":"application/json"}})
+      .then(function(r){ if(!r.ok) throw new Error("user sync fail"); return true; });
+  }).catch(function(){ return false; });
+};
+
+/* --- adding someone: take the name off the removed list, keep the number, offer the WhatsApp invite --- */
+(function(){
+  var _add=addNewUser;
+  addNewUser=function(){
+    var g=function(id){ var e=document.getElementById(id); return e? e.value : ""; };
+    var uname=g("newUsername").trim().toLowerCase(), fname=g("newFullName").trim(), pass=g("newPassword"), phone=(g("newPhone")||"").replace(/[^\d]/g,"");
+    if(uname && fname && pass && getDisabledUsers().indexOf(uname)<0 && !getUsers()[uname]){ usStamp(uname,"active"); usNameStamp(fname,false); }
+    var r=_add.apply(this,arguments);
+    if(!uname || !fname || !pass) return r;
+    var tries=0, iv=setInterval(function(){
+      USERS=getUsers();
+      if(USERS[uname] && USERS[uname].name===fname){
+        clearInterval(iv);
+        var rw=getRemovedWorkers(), keep=rw.filter(function(n){ return String(n).toLowerCase()!==fname.toLowerCase(); });
+        if(keep.length!==rw.length) saveRemovedWorkers(keep);
+        var cu=getCustomUsers(); if(cu[uname]){ if(phone) cu[uname].phone=phone; saveCustomUsers(cu); }
+        var pe=document.getElementById("newPhone"); if(pe) pe.value="";
+        USERS=getUsers(); cloudSaveUsers(); renderUserList(); if(typeof renderWorkerRoster==="function") renderWorkerRoster();
+        cfShare(uname,pass);
+      } else if(++tries>200) clearInterval(iv);
+    },100);
+    return r;
+  };
+  /* reactivating also brings the name back onto the rosters */
+  var _act=setUserActive;
+  setUserActive=function(uname,makeActive){
+    if(uname!=="admin"){ usStamp(uname, makeActive? "active" : "inactive"); if(makeActive){ var u0=({...BASE_USERS,...getCustomUsers()})[uname]||{}; if(u0.name) usNameStamp(u0.name,false); } }
+    var r=_act.apply(this,arguments);
+    if(makeActive){ var u=({...BASE_USERS,...getCustomUsers()})[uname]||{}; if(u.name){ var rw=getRemovedWorkers(), keep=rw.filter(function(n){ return String(n).toLowerCase()!==String(u.name).toLowerCase(); }); if(keep.length!==rw.length){ saveRemovedWorkers(keep); cloudSaveUsers(); if(typeof renderWorkerRoster==="function") renderWorkerRoster(); } } }
+    return r;
+  };
+})();
+
+(function(){
+  var _ed=saveUserEdit;
+  saveUserEdit=function(username){
+    var el=document.getElementById("edit_name_"+username), nn=el? el.value.trim() : "";
+    if(nn){ usNameStamp(nn,false); var rw=getRemovedWorkers(), keep=rw.filter(function(n){ return String(n).toLowerCase()!==nn.toLowerCase(); }); if(keep.length!==rw.length) saveRemovedWorkers(keep); }
+    var keepPh=((getCustomUsers()[username])||{}).phone||"";
+    var r=_ed.apply(this,arguments);
+    if(keepPh){ var cu=getCustomUsers(); if(cu[username] && !cu[username].phone){ cu[username].phone=keepPh; saveCustomUsers(cu); USERS=getUsers(); cloudSaveUsers(); } }   /* the edit rebuilds the record; keep the number */
+    if(typeof renderWorkerRoster==="function") renderWorkerRoster();
+    return r;
+  };
+})();
+/* --- WhatsApp: the link, the username and the password, in Spanish or English --- */
+var CF_SHARE={u:"", p:"", lang:"es"};
+function cfAppLink(){ return String(location.href).split("#")[0].split("?")[0].replace(/test\.html$/,"index.html"); }
+function cfShareText(){
+  var u=CF_SHARE.u, usr=({...BASE_USERS,...getCustomUsers()})[u]||{}, first=String(usr.name||u).split(" ")[0], link=cfAppLink(), p=CF_SHARE.p||usr.pass||"";
+  if(CF_SHARE.lang==="es") return "Hola "+first+", esta es tu cuenta de CrewFlow (ELGAWA).\n\n1. Abre este enlace en tu teléfono:\n"+link+"\n2. Usuario: "+u+"\n3. Contraseña: "+p+"\n\nEn el menú del navegador toca «Añadir a pantalla de inicio» para tenerla como app. Puedes cambiar tu contraseña en Ajustes. Cualquier problema, escríbeme.";
+  return "Hi "+first+", this is your CrewFlow account (ELGAWA).\n\n1. Open this link on your phone:\n"+link+"\n2. Username: "+u+"\n3. Password: "+p+"\n\nIn the browser menu tap \"Add to Home screen\" to keep it as an app. You can change your password in Settings. Any problem, message me.";
+}
+function cfShare(u,p){
+  var usr=({...BASE_USERS,...getCustomUsers()})[u]; if(!usr){ showToast("That account is gone"); return; }
+  CF_SHARE={u:u, p:p||usr.pass||"", lang:CF_SHARE.lang||"es"};
+  var ov=document.getElementById("cfShareOv"); if(ov) ov.remove();
+  ov=document.createElement("div"); ov.id="cfShareOv";
+  ov.style.cssText="position:fixed;inset:0;background:rgba(10,20,30,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px";
+  ov.innerHTML='<div style="background:#fff;border-radius:16px;max-width:440px;width:100%;padding:18px;box-shadow:0 18px 40px rgba(0,0,0,.3);font-size:14px">'
+    +'<div style="font-weight:800;font-size:16px;color:var(--navy,#0B3C5D)">Send '+String(usr.name||u).split(" ")[0]+' the login</div>'
+    +'<div style="font-size:12px;color:#667;margin:2px 0 12px">Link, username and password on WhatsApp</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:10px"><button id="cfLes" class="btn" style="flex:1;padding:8px">Español</button><button id="cfLen" class="btn" style="flex:1;padding:8px">English</button></div>'
+    +'<input id="cfPh" type="tel" inputmode="numeric" placeholder="WhatsApp number with country code, e.g. 5926001234" value="'+(usr.phone||"")+'" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid #cfd6dc;border-radius:10px;font-size:14px;margin-bottom:8px">'
+    +'<textarea id="cfMsg" rows="9" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid #cfd6dc;border-radius:10px;font-size:13px;line-height:1.4"></textarea>'
+    +'<div style="font-size:11px;color:#8a7d20;margin:6px 0 10px">The password goes in the message. Ask them to change it in Settings once they are in.</div>'
+    +'<button id="cfWa" class="btn full" style="background:#25D366;color:#fff;font-weight:800;padding:12px;width:100%">Open WhatsApp</button>'
+    +'<div style="display:flex;gap:8px;margin-top:8px"><button id="cfCopy" class="btn full" style="flex:1;padding:10px">Copy message</button><button id="cfClose" class="btn full" style="flex:1;padding:10px;background:var(--grey,#888);color:#fff">Close</button></div></div>';
+  document.body.appendChild(ov);
+  var paint=function(){ document.getElementById("cfMsg").value=cfShareText();
+    ["es","en"].forEach(function(l){ var b=document.getElementById(l==="es"?"cfLes":"cfLen"); b.style.background=CF_SHARE.lang===l? "var(--navy,#0B3C5D)" : "#eef2f5"; b.style.color=CF_SHARE.lang===l? "#fff" : "#223"; }); };
+  document.getElementById("cfLes").onclick=function(){ CF_SHARE.lang="es"; paint(); };
+  document.getElementById("cfLen").onclick=function(){ CF_SHARE.lang="en"; paint(); };
+  document.getElementById("cfClose").onclick=function(){ ov.remove(); };
+  ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
+  document.getElementById("cfCopy").onclick=function(){ var m=document.getElementById("cfMsg").value; (navigator.clipboard? navigator.clipboard.writeText(m) : Promise.reject()).then(function(){ showToast("Message copied"); }).catch(function(){ var t=document.getElementById("cfMsg"); t.select(); try{ document.execCommand("copy"); showToast("Message copied"); }catch(e){ showToast("Select the text and copy it"); } }); };
+  document.getElementById("cfWa").onclick=function(){
+    var ph=(document.getElementById("cfPh").value||"").replace(/[^\d]/g,""), m=document.getElementById("cfMsg").value;
+    if(ph && ph.length<=7){ showToast("Add the country code: 592 Guyana, 597 Suriname"); return; }
+    if(ph){ var cu=getCustomUsers(); if(cu[u] && cu[u].phone!==ph){ cu[u].phone=ph; saveCustomUsers(cu); USERS=getUsers(); cloudSaveUsers(); } }
+    window.open("https://wa.me/"+(ph||"")+"?text="+encodeURIComponent(m),"_blank");
+  };
+  paint();
+}
+/* the number field on the Add form, and a Share button in every user's panel */
+(function(){
+  try{
+    var pw=document.getElementById("newPassword"), add=document.getElementById("addUserBtn");
+    if(add && !document.getElementById("newPhone")){
+      var ph=document.createElement("input"); ph.type="tel"; ph.id="newPhone"; ph.setAttribute("inputmode","numeric");
+      ph.placeholder="WhatsApp number with country code (optional)"; add.parentNode.insertBefore(ph,add);
+    }
+  }catch(e){}
+  var _rl=renderUserList;
+  renderUserList=function(){
+    var r=_rl.apply(this,arguments);
+    try{ document.querySelectorAll(".user-action-panel").forEach(function(p){
+      var u=p.id.replace(/^upanel_/,""); if(!u || u==="admin" || p.querySelector(".cfshareb")) return;
+      var b=document.createElement("button"); b.className="btn full cfshareb";
+      b.style.cssText="background:#25D366;color:#fff;font-size:13px;font-weight:700;padding:10px;margin-top:8px;width:100%";
+      b.textContent="Share login on WhatsApp"; b.onclick=function(e){ e.stopPropagation(); cfShare(u); };
+      p.appendChild(b); }); }catch(e){}
+    return r;
+  };
+})();
+</script>
+
 </body>
 </html>
