@@ -13106,9 +13106,10 @@ function _mpTick(key,st,val){
 // Build: v205 — EVERY JOB ON CREWFLOW. Dioptra v9.72 publishes the live jobs to /pm/crewplan/_jobs = {pid:{n,c,k,o}}. The sign-in screen asks "Which job are you on today?" (the last one is kept on the phone); the choice goes with the sign-in (/selfAttendance/<date>/<login>.job, jobName, jobAt) and can be changed during the day. Dioptra puts the man on that job unless the office moves him. With one job there is nothing to choose; with no list (older Dioptra) the screen is as before.
 // v205: a day-shift sign-out typed before the sign-in (02:00 for 2 pm) is read as the afternoon, in the register and in the self sign-in edit, with a note.
 // Build: v206 — HIS OWN JOBS ONLY. The picker reads /pm/crewplan/<login>/_jobs, the list Dioptra v9.73 keeps for each man (where he is placed, his My plan, where he worked lately, and what Paul adds or hides). The shared list is gone. No list for him: no picker, sign in as before.
+// Build: v210 — USER SYNC WORKS AGAIN. Names in the on/off list are encoded for Firebase ("Jose N. Queipo" made every /appUsers save fail with HTTP 400, silently, since v208).
 // Build: v209 — A WORKER TAKEN OFF STAYS OFF ON EVERY PHONE. Every change to the removed-workers list is stamped and synced (Settings roster x never synced).
 // Build: v207 — TEAM SHEETS RESPECT SWITCHED-OFF MEN. Submitting a team sheet marks every name on its manpower list present. A man deactivated or removed here was still put on the register that way (Gean Marquez, 13 Oct). Now he is skipped. Each name a sheet adds carries sheetBy (the lead) and, when it is not on the worker list (typed under Other, like "Carlo Manrique" on 26 Oct), unlisted:true, so Dioptra can ask about it.
-const APP_VERSION="v209";
+const APP_VERSION="v210";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -15190,7 +15191,7 @@ cloudLoadUsers=function(){
   var fb=getFirebaseUrl(); if(!fb) return Promise.resolve(false);
   return fetch(fb+"/appUsers.json").then(fbJson).then(function(data){
     if(!data || !data.customUsers) return false;
-    var cs=(data.state||{}), cUser=cs.users||{}, cName=cs.names||{};
+    var cs=(data.state||{}), cUser=cs.users||{}, cName=usDecNames(cs.names||{});
     /* legacy flags, both sides, as time 0 */
     var leg=[], legN=[];
     (Array.isArray(data.removedUsers)? data.removedUsers : []).concat(getRemovedUsers()).forEach(function(u){ leg.push({k:u, v:{st:"removed", at:0}}); });
@@ -15214,7 +15215,7 @@ cloudSaveUsers=function(){
   var fb=getFirebaseUrl(); if(!fb) return Promise.resolve(false);
   return cloudLoadUsers().then(function(){
     var payload={ customUsers:getCustomUsers(), disabledUsers:getDisabledUsers(), removedUsers:getRemovedUsers(),
-      customWorkers:getCustomWorkers(), removedWorkers:getRemovedWorkers(), state:{users:usState(), names:usNames()}, updatedAt:Date.now() };
+      customWorkers:getCustomWorkers(), removedWorkers:getRemovedWorkers(), state:{users:usState(), names:usEncNames(usNames())}, updatedAt:Date.now() };
     return fetch(fb+"/appUsers.json",{method:"PUT", body:JSON.stringify(payload), headers:{"Content-Type":"application/json"}})
       .then(function(r){ if(!r.ok) throw new Error("user sync fail"); return true; });
   }).catch(function(){ return false; });
@@ -15357,6 +15358,20 @@ function cfShare(u,p){
     return _set.apply(this,arguments);
   };
 })();
+</script>
+
+<script>
+/* ============================================================================
+   CrewFlow v210 (10 Nov 2026). Paul: "Wilfredo Arevalo still shows up" on v209.
+   v208 added a per-name on/off list (state.names) keyed by the full name. Firebase
+   refuses . # $ / [ ] in keys, and "Jose N. Queipo" is on that list, so every save
+   of /appUsers from every phone came back HTTP 400 and cloudSaveUsers swallowed it.
+   No removal, rename or reactivation has reached the cloud since v208. Same bug
+   as attendance (v133) and payroll: the names are now %hex-encoded going up and
+   decoded coming down, with the same _fbEncKey / _fbDecKey.
+   ========================================================================== */
+function usEncNames(nm){ var out={}; Object.keys(nm||{}).forEach(function(k){ out[_fbEncKey(k)]=nm[k]; }); return out; }
+function usDecNames(nm){ var out={}; Object.keys(nm||{}).forEach(function(k){ var dk=_fbDecKey(k).toLowerCase(), v=nm[k], c=out[dk]; if(v && typeof v==="object" && (!c || (+v.at||0)>(+c.at||0))) out[dk]=v; }); return out; }
 </script>
 
 </body>
