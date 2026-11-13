@@ -13106,10 +13106,11 @@ function _mpTick(key,st,val){
 // Build: v205 — EVERY JOB ON CREWFLOW. Dioptra v9.72 publishes the live jobs to /pm/crewplan/_jobs = {pid:{n,c,k,o}}. The sign-in screen asks "Which job are you on today?" (the last one is kept on the phone); the choice goes with the sign-in (/selfAttendance/<date>/<login>.job, jobName, jobAt) and can be changed during the day. Dioptra puts the man on that job unless the office moves him. With one job there is nothing to choose; with no list (older Dioptra) the screen is as before.
 // v205: a day-shift sign-out typed before the sign-in (02:00 for 2 pm) is read as the afternoon, in the register and in the self sign-in edit, with a note.
 // Build: v206 — HIS OWN JOBS ONLY. The picker reads /pm/crewplan/<login>/_jobs, the list Dioptra v9.73 keeps for each man (where he is placed, his My plan, where he worked lately, and what Paul adds or hides). The shared list is gone. No list for him: no picker, sign in as before.
+// Build: v211 — ONE MAN, ONE NAME. A sign-in under an old spelling (Julio Carballo, Jose González, Yuniel Larosa) lands on the register row Paul uses (Julio Caraballo, José González, Yuniel La Rosa Lopez): accents, case and spacing ignored, a one-letter slip folded when unique; Self Sign-In Records show the register name; lost confirmed sign-ins are put on the register.
 // Build: v210 — USER SYNC WORKS AGAIN. Names in the on/off list are encoded for Firebase ("Jose N. Queipo" made every /appUsers save fail with HTTP 400, silently, since v208).
 // Build: v209 — A WORKER TAKEN OFF STAYS OFF ON EVERY PHONE. Every change to the removed-workers list is stamped and synced (Settings roster x never synced).
 // Build: v207 — TEAM SHEETS RESPECT SWITCHED-OFF MEN. Submitting a team sheet marks every name on its manpower list present. A man deactivated or removed here was still put on the register that way (Gean Marquez, 13 Oct). Now he is skipped. Each name a sheet adds carries sheetBy (the lead) and, when it is not on the worker list (typed under Other, like "Carlo Manrique" on 26 Oct), unlisted:true, so Dioptra can ask about it.
-const APP_VERSION="v210";
+const APP_VERSION="v211";
 // Show the real version everywhere from one source, so the login/settings tags
 // can never drift out of date again (they read APP_VERSION on load).
 try{["loginVersionTag","settingsVersionTag"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="App version "+APP_VERSION;});}catch(e){}
@@ -15374,5 +15375,174 @@ function usEncNames(nm){ var out={}; Object.keys(nm||{}).forEach(function(k){ ou
 function usDecNames(nm){ var out={}; Object.keys(nm||{}).forEach(function(k){ var dk=_fbDecKey(k).toLowerCase(), v=nm[k], c=out[dk]; if(v && typeof v==="object" && (!c || (+v.at||0)>(+c.at||0))) out[dk]=v; }); return out; }
 </script>
 
+<script>
+// v211 — ONE MAN, ONE NAME. Paul, 13 Nov: Julio and José were signed in
+// (Self Sign-In Records showed OK) but the register showed "Julio Caraballo" and
+// "José González" as OUT. Their logins still carry the old spellings ("Julio
+// Carballo", "Jose González"), the register uses the spellings Paul chose, and a
+// confirmed sign-in was written to a row nobody sees (or blocked, when the
+// old-spelling row had been removed). Now:
+//  - names are matched without accents, case or extra spaces (José = Jose);
+//  - a one-letter slip in a long name (Carballo / Caraballo) folds into the
+//    roster name, when there is exactly one such roster man and no other login
+//    carries that roster name;
+//  - Paul's chosen spellings are fixed aliases: Julio Caraballo, José González;
+//  - Self Sign-In Records show the roster name, with the login spelling under it;
+//  - opening the records puts any confirmed sign-in that never reached the
+//    register onto the right row (only rows nobody has touched by hand).
+(function(){
+  if(typeof _canonWorker!=="function")return;
+  var _fold=function(s){
+    s=String(s==null?"":s);
+    try{s=s.normalize("NFD")}catch(e){}
+    return s.replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+  };
+  window._cwFold=_fold;
+  // Levenshtein, stops early past 1
+  var _d1=function(a,b){
+    if(a===b)return 0;var la=a.length,lb=b.length;if(Math.abs(la-lb)>1)return 2;
+    var i=0,j=0,n=0;
+    while(i<la&&j<lb){
+      if(a[i]===b[j]){i++;j++;continue}
+      if(++n>1)return 2;
+      if(la>lb)i++;else if(lb>la)j++;else{i++;j++}
+    }
+    return n+(la-i)+(lb-j);
+  };
+  var _orig=_canonWorker;
+  var _fixed={"julio carballo":"Julio Caraballo","jose gonzalez":"José González"};
+  // the names men are listed under: worker roster plus Paul's renames, minus removed
+  var _targets=function(){
+    var out=[];
+    try{
+      var rm={};try{JSON.parse(localStorage.getItem("elg_base_workers_removed")||"[]").forEach(function(n){rm[_fold(n)]=1})}catch(e){}
+      var base=(typeof BASE_WORKER_ROSTER!=="undefined"?BASE_WORKER_ROSTER:[]).concat(typeof getCustomWorkers==="function"?getCustomWorkers():[]);
+      base.forEach(function(n){if(n&&!rm[_fold(n)]&&out.indexOf(n)<0)out.push(n)});
+    }catch(e){}
+    return out;
+  };
+  var _loginNames=function(){
+    var L=[];try{var u=getUsers();Object.keys(u).forEach(function(k){if(u[k]&&u[k].name)L.push(u[k].name)})}catch(e){}
+    return L;
+  };
+  var _memo={},_memoAt=0;
+  _canonWorker=function(name){
+    if(!name)return name;
+    var a=_orig(name);
+    if(a!==name)return a;                       // the old alias list (galan) first
+    var now=Date.now();if(now-_memoAt>3000){_memo={};_memoAt=now}
+    var f=_fold(name);
+    var mk="k:"+name;
+    if(Object.prototype.hasOwnProperty.call(_memo,mk))return _memo[mk]||name;
+    var res="";
+    try{
+      var T=_targets();
+      // Paul's chosen spellings
+      if(_fixed[f]){
+        var want=_fold(_fixed[f]);
+        var hit=T.indexOf(_fixed[f])>-1?_fixed[f]:T.filter(function(t){return _fold(t)===want})[0];
+        res=hit||_fixed[f];
+        if(res===name)res="";
+      }
+      // same letters, accents, case and spacing aside (La Rosa = Larosa)
+      if(!res){
+        var f0=f.replace(/ /g,"");
+        var same=T.filter(function(t){return _fold(t).replace(/ /g,"")===f0});
+        if(same.length===1&&same[0]!==name)res=same[0];
+        else if(same.length)res="";
+      }
+      // one-letter slip in a long name, one candidate, first name the same
+      if(!res&&f.length>=9&&!T.some(function(t){return _fold(t).replace(/ /g,"")===f.replace(/ /g,"")})){
+        var first=f.split(" ")[0];
+        var near=T.filter(function(t){var g=_fold(t);return g.split(" ")[0]===first&&_d1(f,g)===1});
+        if(near.length===1){
+          var g=_fold(near[0]);
+          // another login already carries the roster name: they are two men
+          var other=_loginNames().some(function(n){return _fold(n)===g});
+          if(!other)res=near[0];
+        }
+      }
+    }catch(e){res=""}
+    _memo[mk]=res;
+    return res||name;
+  };
+  window._cwSame=function(a,b){return _fold(_canonWorker(a))===_fold(_canonWorker(b))};
+
+  // Register edits find the man's login by his roster name too
+  if(typeof _syncRegisterEditToSelf==="function"){
+    _syncRegisterEditToSelf=function(date,fullName,w){
+      try{
+        var users=getUsers();
+        var uname=Object.keys(users).find(function(u){return users[u].name&&_cwSame(users[u].name,fullName)});
+        if(!uname)return;
+        loadSelfAttendance(date,uname).then(function(rec){
+          if(!rec)return;
+          if((rec.signIn||"")===(w.timeIn||"")&&(rec.signOut||"")===(w.timeOut||""))return;
+          if(w.timeIn)rec.signIn=w.timeIn;
+          rec.signOut=w.timeOut||null;
+          if(rec.signIn&&rec.signOut)rec.totalMins=calcMinsBetween(rec.signIn,rec.signOut);
+          rec.editedBy=(currentUser&&currentUser.username)||"admin";
+          rec.editedAt=Date.now();
+          saveSelfAttendance(date,uname,rec);
+        });
+      }catch(e){}
+    };
+  }
+
+  // Self Sign-In Records: show the roster name; put lost confirmed sign-ins on the register
+  if(typeof renderSelfAttendanceDashboard==="function"){
+    var _rsd=renderSelfAttendanceDashboard,_healed={};
+    var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})};
+    renderSelfAttendanceDashboard=function(container,date){
+      var r=_rsd.apply(this,arguments);
+      if(!container)return r;
+      try{
+        var relabel=function(){
+          try{
+            container.querySelectorAll("span").forEach(function(sp){
+              if(sp.dataset.cw||sp.children.length)return;
+              var st=sp.getAttribute("style")||"";
+              if(st.indexOf("font-weight:600")<0||st.indexOf("flex:1")<0)return;
+              var n=sp.textContent,c=_canonWorker(n);
+              if(c&&c!==n){sp.dataset.cw="1";sp.innerHTML=esc(c)+'<div style="font-size:9.5px;color:var(--grey);font-weight:500">signs in as '+esc(n)+'</div>'}
+            });
+          }catch(e){}
+        };
+        if(typeof MutationObserver!=="undefined"){
+          var mo=new MutationObserver(function(){relabel()});
+          mo.observe(container,{childList:true,subtree:true});
+          setTimeout(function(){try{mo.disconnect()}catch(e){}},15000);
+        }
+        relabel();
+      }catch(e){}
+      try{
+        var admin=currentUser&&currentUser.role==="Project Lead";
+        if(admin&&date){
+          loadAllSelfAttendance(date).then(function(all){
+            var fb=getFirebaseUrl(),local=loadAttendance(date);
+            var p=fb?cloudLoadAttendance(date).then(function(c){if(c&&local)return (c.updatedAt||0)>=(local.updatedAt||0)?c:local;return c||local}).catch(function(){return local}):Promise.resolve(local);
+            return p.then(function(reg){
+              var W=(reg&&reg.workers)||{};
+              var rm=_attRemovedSet();
+              Object.keys(all||{}).forEach(function(un){
+                var d=all[un];if(!d||!d.confirmed||!d.signIn)return;
+                var key=date+"|"+un;if(_healed[key])return;
+                var nm=_canonWorker(d.name||((getUsers()[un]||{}).name)||un);
+                if(rm.has(String(nm).trim().toLowerCase()))return;
+                var row=W[nm];
+                if(row&&(row.present||row.markedBy||row._removed))return;   // Paul's own entry stands
+                _healed[key]=1;
+                _attMarkWorker(date,nm,{present:true,timeIn:d.signIn||"",timeOut:d.signOut||"",confirmedByAdmin:true,selfSignIn:true});
+              });
+            });
+          }).catch(function(){});
+        }
+      }catch(e){}
+      return r;
+    };
+  }
+})();
+
+</script>
 </body>
 </html>
